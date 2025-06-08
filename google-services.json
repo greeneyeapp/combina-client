@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "58339241217",
+    "project_id": "combina-7b033",
+    "storage_bucket": "combina-7b033.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:58339241217:android:07eeb49cd2afd9cb2dbf00",
+        "android_client_info": {
+          "package_name": "com.greeneyeapp.combina"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "58339241217-42ngl7dcijon8vd674am21h29j7p37ee.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.greeneyeapp.combina",
+            "certificate_hash": "b4a2a3323d59dc0d02ec81a5d9e3475b0d9939dd"
+          }
+        },
+        {
+          "client_id": "58339241217-f7682ccbkcdgqobsvcd3m3o3b0ll8562.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDL-XRmN451LRKGAH7PMWsTu-RPVCnxHDE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "58339241217-f7682ccbkcdgqobsvcd3m3o3b0ll8562.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

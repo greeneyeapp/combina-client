@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
 import Button from '@/components/common/Button';
 import { signInAnonymously } from 'firebase/auth';
-import { auth } from '@/firebaseConfig';
+import { auth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -18,9 +18,10 @@ export default function LoginScreen() {
     setIsGuestLoading(true);
     try {
       await signInAnonymously(auth);
-    } catch (error: any) {
+      // Yönlendirmeyi ana _layout.tsx yapacak
+    } catch (error) {
       console.error(error);
-      Alert.alert(t('common.error'), t('login.guestLoginError'));
+      alert('Misafir olarak giriş yapılamadı.');
     } finally {
       setIsGuestLoading(false);
     }
@@ -45,19 +46,20 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.buttonContainer}>
+          {/* DEĞİŞİKLİK: Dosya adını değiştirdikten sonra yolu güncelliyoruz */}
           <Button
-            label={t('login.title')}
-            onPress={() => router.push('/(auth)/login')}
+            label={t('login.emailSignIn')}
+            onPress={() => router.push({ pathname: '/(auth)/loginEmail' })}
             variant="primary"
             style={styles.button}
           />
           <Button
             label={t('login.register')}
-            onPress={() => router.push('/(auth)/register')}
+            onPress={() => router.push({ pathname: '/(auth)/register' })}
             variant="outline"
             style={styles.button}
           />
-          <TouchableOpacity style={styles.guestButton} onPress={handleGuestLogin} disabled={isGuestLoading}>
+          <TouchableOpacity style={styles.guestButton} onPress={handleGuestLogin}>
             <Text style={[styles.guestText, { color: theme.colors.text }]}>
               {isGuestLoading ? t('login.loading') : t('login.continueAsGuest')}
             </Text>

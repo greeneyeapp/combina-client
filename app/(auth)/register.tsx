@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { router } from 'expo-router';
@@ -9,6 +9,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { ArrowLeft } from 'lucide-react-native';
 import Button from '@/components/common/Button';
 import Input from '@/components/common/Input';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '@/firebaseConfig';
 
 type FormData = {
   name: string;
@@ -20,6 +22,7 @@ type FormData = {
 export default function RegisterScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const [loading, setLoading] = useState(false);
 
   const { control, handleSubmit, formState: { errors }, watch } = useForm<FormData>({
     defaultValues: {
@@ -32,9 +35,27 @@ export default function RegisterScreen() {
 
   const password = watch('password');
 
-  const onSubmit = (data: FormData) => {
-    console.log(data);
-    router.replace('/(tabs)' as any);
+  const onSubmit = async (data: FormData) => {
+    setLoading(true);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, { displayName: data.name });
+      }
+    } catch (error: any) {
+      const errorCode = error.code;
+      let errorMessage = t('register.genericError');
+      if (errorCode === 'auth/email-already-in-use') {
+        errorMessage = t('register.emailInUse');
+      } else if (errorCode === 'auth/invalid-email') {
+        errorMessage = t('register.emailInvalid');
+      } else if (errorCode === 'auth/weak-password') {
+        errorMessage = t('register.passwordLength');
+      }
+      Alert.alert(t('common.error'), errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -151,10 +172,11 @@ export default function RegisterScreen() {
             />
 
             <Button
-              label={t('register.createAccount')}
+              label={loading ? t('login.loading') : t('register.createAccount')}
               onPress={handleSubmit(onSubmit)}
               variant="primary"
               style={styles.button}
+              disabled={loading}
             />
           </View>
 
@@ -162,9 +184,9 @@ export default function RegisterScreen() {
             <Text style={[styles.loginText, { color: theme.colors.text }]}>
               {t('register.alreadyHaveAccount')}
             </Text>
-            <TouchableOpacity onPress={() => router.back()}>
+            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
               <Text style={[styles.loginLink, { color: theme.colors.primary }]}>
-                {t('register.login')}
+                {t('login.title')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -175,12 +197,8 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  gradient: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-  },
+  gradient: { flex: 1 },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -188,16 +206,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 16,
   },
-  backButton: {
-    padding: 8,
-  },
+  backButton: { padding: 8 },
   title: {
     fontFamily: 'PlayfairDisplay-Bold',
     fontSize: 24,
   },
-  scrollView: {
-    flex: 1,
-  },
+  scrollView: { flex: 1 },
   scrollContent: {
     padding: 24,
     paddingBottom: 48,
@@ -207,12 +221,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 24,
   },
-  form: {
-    gap: 16,
-  },
-  button: {
-    marginTop: 8,
-  },
+  form: { gap: 16 },
+  button: { marginTop: 8 },
   loginPrompt: {
     flexDirection: 'row',
     justifyContent: 'center',

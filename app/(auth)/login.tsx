@@ -1,13 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
-import { signInWithEmailAndPassword, PhoneAuthProvider, signInWithCredential } from 'firebase/auth';
-import { app, auth } from '@/firebaseConfig';
-import { FirebaseRecaptchaVerifierModal } from 'expo-firebase-recaptcha';
+// DİKKAT: Artık @react-native-firebase/auth kullanıyoruz
+import auth from '@react-native-firebase/auth';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
@@ -18,11 +17,11 @@ export default function LoginScreen() {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
-  
-  const recaptchaVerifier = useRef(null);
+
+  // Telefonla giriş için state'ler
+  const [confirm, setConfirm] = useState<any>(null); // Onay objesini saklamak için
+  const [code, setCode] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [verificationId, setVerificationId] = useState<string | null>(null);
-  const [verificationCode, setVerificationCode] = useState('');
 
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: { email: '', password: '' },
@@ -31,35 +30,32 @@ export default function LoginScreen() {
   const onEmailLogin = async (data: { email: string, password: string }) => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password);
+      await auth().signInWithEmailAndPassword(data.email, data.password);
     } catch (error: any) {
       Alert.alert(t('common.error'), t('login.loginError'));
     } finally {
       setLoading(false);
     }
   };
-  
-  const sendVerificationCode = async () => {
+
+  const signInWithPhoneNumber = async () => {
     setLoading(true);
     try {
-      const phoneProvider = new PhoneAuthProvider(auth);
-      const verId = await phoneProvider.verifyPhoneNumber(phoneNumber, recaptchaVerifier.current!);
-      setVerificationId(verId);
-      Alert.alert(t('login.codeSentTitle'), t('login.codeSentMessage'));
-    } catch (error: any) {
-      Alert.alert(t('common.error'), error.message);
+      const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
+      setConfirm(confirmation);
+    } catch (error) {
+       Alert.alert(t('common.error'), t('login.phoneError'));
     } finally {
       setLoading(false);
     }
   };
 
-  const confirmVerificationCode = async () => {
-    if (!verificationId) return;
+  const confirmCode = async () => {
+    if (!confirm) return;
     setLoading(true);
     try {
-      const credential = PhoneAuthProvider.credential(verificationId, verificationCode);
-      await signInWithCredential(auth, credential);
-    } catch (error: any) {
+      await confirm.confirm(code);
+    } catch (error) {
       Alert.alert(t('common.error'), t('login.codeError'));
     } finally {
       setLoading(false);
@@ -68,7 +64,6 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <FirebaseRecaptchaVerifierModal ref={recaptchaVerifier} firebaseConfig={app.options} />
       <HeaderBar
         title={t('login.title')}
         leftIcon={<ArrowLeft size={24} color={theme.colors.text} />}
@@ -134,11 +129,11 @@ export default function LoginScreen() {
         </View>
       ) : (
         <View style={styles.formContainer}>
-          {!verificationId ? (
+          {!confirm ? (
             <>
               <Input
                 label={t('login.phoneLabel')}
-                placeholder={t('login.phonePlaceholder')}
+                placeholder={t('login.phonePlaceholder')} // Örn: +90 555 123 4567
                 onChangeText={setPhoneNumber}
                 value={phoneNumber}
                 keyboardType="phone-pad"
@@ -146,7 +141,7 @@ export default function LoginScreen() {
               />
               <Button
                 label={t('login.sendCode')}
-                onPress={sendVerificationCode}
+                onPress={signInWithPhoneNumber}
                 loading={loading}
                 disabled={loading || !phoneNumber}
                 variant="primary"
@@ -158,16 +153,16 @@ export default function LoginScreen() {
               <Input
                 label={t('login.codeLabel')}
                 placeholder="123456"
-                onChangeText={setVerificationCode}
-                value={verificationCode}
+                onChangeText={setCode}
+                value={code}
                 keyboardType="number-pad"
                 maxLength={6}
               />
               <Button
                 label={t('login.confirmCode')}
-                onPress={confirmVerificationCode}
+                onPress={confirmCode}
                 loading={loading}
-                disabled={loading || verificationCode.length < 6}
+                disabled={loading || code.length < 6}
                 variant="primary"
                 style={{ marginTop: 24 }}
               />

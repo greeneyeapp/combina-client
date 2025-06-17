@@ -21,7 +21,7 @@ export default function LoginScreen() {
           <Image
             source={
               themeMode === 'dark'
-                ? require('@/assets/images/logo-dark.png')muhammedbozkurt@greeneyeapp.com
+                ? require('@/assets/images/logo-dark.png')
                 : require('@/assets/images/logo-light.png')
             }
             style={styles.logo}

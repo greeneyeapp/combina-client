@@ -10,6 +10,7 @@ interface EmptyStateProps {
   message: string;
   buttonText?: string;
   onButtonPress?: () => void;
+  children?: React.ReactNode;
 }
 
 const EmptyState: React.FC<EmptyStateProps> = ({
@@ -18,6 +19,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   message,
   buttonText,
   onButtonPress,
+  children,
 }) => {
   const { theme } = useTheme();
 
@@ -51,9 +53,10 @@ const EmptyState: React.FC<EmptyStateProps> = ({
           label={buttonText}
           onPress={onButtonPress}
           variant="primary"
-          style={styles.button}
+          style={styles.button} // Butonun kendi iç stili artık yeterli
         />
       )}
+      {children}
     </View>
   );
 };
@@ -81,7 +84,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   button: {
-    width: '80%',
+    paddingHorizontal: 32,
   },
 });
 

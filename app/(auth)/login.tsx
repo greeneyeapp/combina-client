@@ -1,198 +1,142 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert, Text, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/context/ThemeContext';
-import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
-// DİKKAT: Artık @react-native-firebase/auth kullanıyoruz
-import auth from '@react-native-firebase/auth';
-import HeaderBar from '@/components/common/HeaderBar';
+import { useTranslation } from 'react-i18next';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '@/context/ThemeContext';
+import { ArrowLeft } from 'lucide-react-native';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/firebaseConfig';
+import { router } from 'expo-router';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
-import { ArrowLeft } from 'lucide-react-native';
+import useAlertStore from '@/store/alertStore';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone'>('email');
-
-  // Telefonla giriş için state'ler
-  const [confirm, setConfirm] = useState<any>(null); // Onay objesini saklamak için
-  const [code, setCode] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: { email: '', password: '' },
   });
+  const { show: showAlert } = useAlertStore();
 
-  const onEmailLogin = async (data: { email: string, password: string }) => {
+  const onEmailLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
     try {
-      await auth().signInWithEmailAndPassword(data.email, data.password);
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+
+      if (!userCredential.user.emailVerified) {
+        showAlert({
+          title: t('login.emailNotVerifiedTitle'),
+          message: t('login.emailNotVerified'),
+          buttons: [{ text: t('common.ok'), onPress: () => { } }]
+        });
+        await auth.signOut();
+        return;
+      }
+      router.replace('/(tabs)/wardrobe');
+
     } catch (error: any) {
-      Alert.alert(t('common.error'), t('login.loginError'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const signInWithPhoneNumber = async () => {
-    setLoading(true);
-    try {
-      const confirmation = await auth().signInWithPhoneNumber(phoneNumber);
-      setConfirm(confirmation);
-    } catch (error) {
-       Alert.alert(t('common.error'), t('login.phoneError'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const confirmCode = async () => {
-    if (!confirm) return;
-    setLoading(true);
-    try {
-      await confirm.confirm(code);
-    } catch (error) {
-      Alert.alert(t('common.error'), t('login.codeError'));
+      showAlert({
+        title: t('common.error'),
+        message: t('login.loginError'),
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <HeaderBar
-        title={t('login.title')}
-        leftIcon={<ArrowLeft size={24} color={theme.colors.text} />}
-        onLeftPress={() => router.back()}
-      />
-      
-      <View style={styles.toggleContainer}>
-        <TouchableOpacity
-          style={[styles.toggleButton, loginMethod === 'email' && { backgroundColor: theme.colors.primary }]}
-          onPress={() => setLoginMethod('email')}>
-          <Text style={[styles.toggleText, loginMethod === 'email' && { color: theme.colors.background }]}>{t('login.withEmail')}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleButton, loginMethod === 'phone' && { backgroundColor: theme.colors.primary }]}
-          onPress={() => setLoginMethod('phone')}>
-          <Text style={[styles.toggleText, loginMethod === 'phone' && { color: theme.colors.background }]}>{t('login.withPhone')}</Text>
-        </TouchableOpacity>
-      </View>
+    <LinearGradient colors={[theme.colors.background, theme.colors.secondary]} style={styles.gradient}>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+            <ArrowLeft color={theme.colors.text} size={24} />
+          </TouchableOpacity>
+          <Text style={[styles.title, { color: theme.colors.text }]}>{t('login.title')}</Text>
+          <View style={{ width: 24 }} />
+        </View>
 
-      {loginMethod === 'email' ? (
-        <View style={styles.formContainer}>
-          <Controller
-            control={control}
-            rules={{ required: t('register.emailRequired') as string }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label={t('register.email')}
-                placeholder={t('register.emailPlaceholder')}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                error={errors.email?.message}
-                keyboardType="email-address"
-                autoCapitalize="none"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}
+        >
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.form}>
+              <Controller
+                control={control}
+                rules={{ required: t('register.emailRequired') as string }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input
+                    label={t('register.email')}
+                    placeholder={t('register.emailPlaceholder')}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={errors.email?.message}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                )}
+                name="email"
               />
-            )}
-            name="email"
-          />
-          <Controller
-            control={control}
-            rules={{ required: t('register.passwordRequired') as string }}
-            render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                label={t('register.password')}
-                placeholder={t('register.passwordPlaceholder')}
-                onBlur={onBlur}
-                onChangeText={onChange}
-                value={value}
-                error={errors.password?.message}
-                secureTextEntry
-              />
-            )}
-            name="password"
-          />
-          <Button
-            label={t('login.title')}
-            onPress={handleSubmit(onEmailLogin)}
-            loading={loading}
-            disabled={loading}
-            variant="primary"
-            style={{ marginTop: 24 }}
-          />
-        </View>
-      ) : (
-        <View style={styles.formContainer}>
-          {!confirm ? (
-            <>
-              <Input
-                label={t('login.phoneLabel')}
-                placeholder={t('login.phonePlaceholder')} // Örn: +90 555 123 4567
-                onChangeText={setPhoneNumber}
-                value={phoneNumber}
-                keyboardType="phone-pad"
-                autoComplete="tel"
+              <Controller
+                control={control}
+                rules={{ required: t('register.passwordRequired') as string }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input
+                    label={t('register.password')}
+                    placeholder={t('register.passwordPlaceholder')}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={errors.password?.message}
+                    secureTextEntry
+                  />
+                )}
+                name="password"
               />
               <Button
-                label={t('login.sendCode')}
-                onPress={signInWithPhoneNumber}
-                loading={loading}
-                disabled={loading || !phoneNumber}
+                label={loading ? t('login.loading') : t('login.title')}
+                onPress={handleSubmit(onEmailLogin)}
+                disabled={loading}
                 variant="primary"
-                style={{ marginTop: 24 }}
+                style={styles.button}
               />
-            </>
-          ) : (
-            <>
-              <Input
-                label={t('login.codeLabel')}
-                placeholder="123456"
-                onChangeText={setCode}
-                value={code}
-                keyboardType="number-pad"
-                maxLength={6}
-              />
-              <Button
-                label={t('login.confirmCode')}
-                onPress={confirmCode}
-                loading={loading}
-                disabled={loading || code.length < 6}
-                variant="primary"
-                style={{ marginTop: 24 }}
-              />
-            </>
-          )}
-        </View>
-      )}
-    </SafeAreaView>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    formContainer: { padding: 24, gap: 16 },
-    toggleContainer: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      margin: 24,
-      borderRadius: 8,
-      overflow: 'hidden',
-      borderWidth: 1,
-      borderColor: '#ccc'
-    },
-    toggleButton: {
-      flex: 1,
-      padding: 12,
-      alignItems: 'center',
-    },
-    toggleText: {
-      fontFamily: 'Montserrat-Medium',
-      fontSize: 16,
-    }
+  gradient: { flex: 1 },
+  container: { flex: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  backButton: { padding: 8 },
+  title: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 24 },
+  keyboardAvoidingView: { flex: 1 },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  subtitle: { fontFamily: 'Montserrat-Regular', fontSize: 16, marginBottom: 24, textAlign: 'center' },
+  form: { gap: 16 },
+  button: { marginTop: 8 },
 });

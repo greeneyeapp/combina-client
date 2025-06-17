@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,9 +9,24 @@ import { ArrowLeft, Check } from 'lucide-react-native';
 import Button from '@/components/common/Button';
 
 const languages = [
-  { code: 'en', name: 'English' },
-  { code: 'tr', name: 'Türkçe' },
+  { code: 'ar', name: 'العربية' },
+  { code: 'bg', name: 'Български' },
   { code: 'de', name: 'Deutsch' },
+  { code: 'el', name: 'Ελληνικά' },
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'he', name: 'עברית' },
+  { code: 'hi', name: 'हिन्दी' },
+  { code: 'id', name: 'Bahasa Indonesia' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'ja', name: '日本語' },
+  { code: 'ko', name: '한국어' },
+  { code: 'pt', name: 'Português' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'tl', name: 'Filipino' },
+  { code: 'tr', name: 'Türkçe' },
+  { code: 'zh', name: '中文' }
 ];
 
 export default function LanguageScreen() {
@@ -48,8 +63,11 @@ export default function LanguageScreen() {
           <Text style={[styles.subtitle, { color: theme.colors.text }]}>
             {t('language.subtitle')}
           </Text>
-
-          <View style={styles.languageList}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.languageList}
+            showsVerticalScrollIndicator={false}
+          >
             {languages.map((language) => (
               <TouchableOpacity
                 key={language.code}
@@ -77,8 +95,7 @@ export default function LanguageScreen() {
                 )}
               </TouchableOpacity>
             ))}
-          </View>
-
+          </ScrollView>
           <Button
             label={t('language.save')}
             onPress={saveLanguage}

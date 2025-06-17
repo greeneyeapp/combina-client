@@ -8,6 +8,8 @@ export type Outfit = {
   occasion: string;
   weather: string;
   date: string;
+  description: string;     // eklendi
+  suggestion_tip: string;  // eklendi
 };
 
 interface OutfitState {
@@ -21,11 +23,11 @@ export const useOutfitStore = create<OutfitState>()(
   persist(
     (set) => ({
       outfits: [],
-      addOutfit: (outfit) => set((state) => ({ 
-        outfits: [outfit, ...state.outfits] 
+      addOutfit: (outfit) => set((state) => ({
+        outfits: [outfit, ...state.outfits]
       })),
-      removeOutfit: (id) => set((state) => ({ 
-        outfits: state.outfits.filter((outfit) => outfit.id !== id) 
+      removeOutfit: (id) => set((state) => ({
+        outfits: state.outfits.filter((outfit) => outfit.id !== id)
       })),
       clearAllOutfits: () => set({ outfits: [] }),
     }),

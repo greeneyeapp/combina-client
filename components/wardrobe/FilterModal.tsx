@@ -1,20 +1,11 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Modal, 
-  ScrollView 
-} from 'react-native';
-import { useTheme } from '@/context/ThemeContext';
+// components/wardrobe/FilterModal.tsx
+import React, { useState, useEffect, useMemo } from 'react';
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react-native';
+import { useTheme } from '@/context/ThemeContext';
 import Button from '@/components/common/Button';
-import CategoryPicker from './CategoryPicker';
-import ColorPicker from './ColorPicker';
-import SeasonPicker from './SeasonPicker';
-import StylePicker from './StylePicker';
+import { X } from 'lucide-react-native';
+import { CATEGORY_HIERARCHY } from '@/utils/constants';
 
 interface FilterModalProps {
   isVisible: boolean;
@@ -33,27 +24,50 @@ interface FilterModalProps {
   };
 }
 
+const ALL_SEASONS = ['spring', 'summer', 'fall', 'winter'];
+
 const FilterModal: React.FC<FilterModalProps> = ({
   isVisible,
   onClose,
   onApply,
   initialFilters,
 }) => {
-  const { theme } = useTheme();
   const { t } = useTranslation();
+  const { theme } = useTheme();
+
+  // Dinamik renk ve stil anahtarları en.json'dan çekiliyor
+  const ALL_COLORS = useMemo(
+    () => Object.keys(t('colors', { returnObjects: true }) as Record<string, string>),
+    [t]
+  );
+  const ALL_STYLES = useMemo(
+    () => Object.keys(t('styles', { returnObjects: true }) as Record<string, string>),
+    [t]
+  );
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialFilters.categories);
   const [selectedColors, setSelectedColors] = useState<string[]>(initialFilters.colors);
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>(initialFilters.seasons);
   const [selectedStyles, setSelectedStyles] = useState<string[]>(initialFilters.styles);
 
-  const handleReset = () => {
-    setSelectedCategories([]);
-    setSelectedColors([]);
-    setSelectedSeasons([]);
-    setSelectedStyles([]);
+  useEffect(() => {
+    setSelectedCategories(initialFilters.categories);
+    setSelectedColors(initialFilters.colors);
+    setSelectedSeasons(initialFilters.seasons);
+    setSelectedStyles(initialFilters.styles);
+  }, [initialFilters]);
+
+  const toggleSelection = (
+    list: string[],
+    item: string,
+    setList: React.Dispatch<React.SetStateAction<string[]>>
+  ) => {
+    setList(prev =>
+      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+    );
   };
 
+  // Apply sonrası filtreleri uygula ve modal'ı kapat
   const handleApply = () => {
     onApply({
       categories: selectedCategories,
@@ -61,83 +75,140 @@ const FilterModal: React.FC<FilterModalProps> = ({
       seasons: selectedSeasons,
       styles: selectedStyles,
     });
+    onClose();
   };
 
+  const handleClearAll = () => {
+    setSelectedCategories([]);
+    setSelectedColors([]);
+    setSelectedSeasons([]);
+    setSelectedStyles([]);
+    onApply({ categories: [], colors: [], seasons: [], styles: [] });
+    onClose();
+  };
+
+  const renderCategoryOptions = () => (
+    Object.entries(CATEGORY_HIERARCHY).map(([mainCat, subcats]) => (
+      <View key={mainCat} style={styles.groupBlock}>
+        <Text style={[styles.filterGroupTitle, { color: theme.colors.text }]}>
+          {t(`categories.${mainCat}`)}
+        </Text>
+        <View style={styles.optionsGrid}>
+          {subcats.map(sub => (
+            <TouchableOpacity
+              key={sub}
+              style={[
+                styles.filterOption,
+                selectedCategories.includes(sub) && { backgroundColor: theme.colors.primaryLight },
+              ]}
+              onPress={() => toggleSelection(selectedCategories, sub, setSelectedCategories)}
+            >
+              <Text
+                style={[
+                  styles.filterOptionText,
+                  { color: selectedCategories.includes(sub) ? theme.colors.primary : theme.colors.text },
+                ]}
+              >
+                {t(`categories.${sub}`)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    ))
+  );
+
+  const renderOptions = (
+    items: string[],
+    selected: string[],
+    onToggle: (i: string) => void,
+    translationKey: string
+  ) => (
+    <View style={styles.optionsGrid}>
+      {items.map(item => (
+        <TouchableOpacity
+          key={item}
+          style={[
+            styles.filterOption,
+            selected.includes(item) && { backgroundColor: theme.colors.primaryLight },
+          ]}
+          onPress={() => onToggle(item)}
+        >
+          <Text
+            style={[
+              styles.filterOptionText,
+              { color: selected.includes(item) ? theme.colors.primary : theme.colors.text },
+            ]}
+          >
+            {t(`${translationKey}.${item}`)}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
   return (
-    <Modal
-      visible={isVisible}
-      animationType="slide"
-      transparent={true}
-      onRequestClose={onClose}
-    >
+    <Modal animationType="slide" transparent visible={isVisible} onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
-        <View style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
           <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
-              {t('wardrobe.filters')}
+              {t('wardrobe.filterTitle')}
             </Text>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <X color={theme.colors.text} size={24} />
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <X size={24} color={theme.colors.text} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.scrollView}>
-            <View style={styles.filterSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.category')}
-              </Text>
-              <CategoryPicker
-                multiSelect
-                selectedCategories={selectedCategories}
-                onSelectCategories={setSelectedCategories}
-              />
-            </View>
+          <ScrollView contentContainerStyle={styles.filterOptionsContainer}>
+            <Text style={[styles.sectionHeader, { color: theme.colors.text }]}>
+              {t('wardrobe.category')}
+            </Text>
+            {renderCategoryOptions()}
 
-            <View style={styles.filterSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.color')}
-              </Text>
-              <ColorPicker
-                multiSelect
-                selectedColors={selectedColors}
-                onSelectColors={setSelectedColors}
-              />
-            </View>
+            <Text style={[styles.sectionHeader, { color: theme.colors.text }]}>
+              {t('wardrobe.color')}
+            </Text>
+            {renderOptions(
+              ALL_COLORS,
+              selectedColors,
+              (c) => toggleSelection(selectedColors, c, setSelectedColors),
+              'colors'
+            )}
 
-            <View style={styles.filterSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.season')}
-              </Text>
-              <SeasonPicker
-                selectedSeasons={selectedSeasons}
-                onSelectSeason={setSelectedSeasons}
-              />
-            </View>
+            <Text style={[styles.sectionHeader, { color: theme.colors.text }]}>
+              {t('wardrobe.season')}
+            </Text>
+            {renderOptions(
+              ALL_SEASONS,
+              selectedSeasons,
+              (s) => toggleSelection(selectedSeasons, s, setSelectedSeasons),
+              'seasons'
+            )}
 
-            <View style={styles.filterSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.style')}
-              </Text>
-              <StylePicker
-                multiSelect
-                selectedStyles={selectedStyles}
-                onSelectStyles={setSelectedStyles}
-              />
-            </View>
+            <Text style={[styles.sectionHeader, { color: theme.colors.text }]}>
+              {t('wardrobe.style')}
+            </Text>
+            {renderOptions(
+              ALL_STYLES,
+              selectedStyles,
+              (s) => toggleSelection(selectedStyles, s, setSelectedStyles),
+              'styles'
+            )}
           </ScrollView>
 
-          <View style={styles.buttonContainer}>
+          <View style={styles.modalFooter}>
             <Button
-              label={t('wardrobe.reset')}
-              onPress={handleReset}
+              label={t('common.reset')}
+              onPress={handleClearAll}
               variant="outline"
-              style={styles.resetButton}
+              style={styles.footerButton}
             />
             <Button
-              label={t('wardrobe.apply')}
+              label={t('common.apply')}
               onPress={handleApply}
               variant="primary"
-              style={styles.applyButton}
+              style={styles.footerButton}
             />
           </View>
         </View>
@@ -149,55 +220,63 @@ const FilterModal: React.FC<FilterModalProps> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContainer: {
-    height: '90%',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 16,
+  modalContent: {
+    height: '80%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   modalTitle: {
-    fontFamily: 'PlayfairDisplay-Bold',
+    fontFamily: 'Montserrat-Bold',
     fontSize: 20,
   },
-  closeButton: {
-    padding: 8,
-  },
-  scrollView: {
-    paddingHorizontal: 20,
-  },
-  filterSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
+  closeButton: { padding: 5 },
+  filterOptionsContainer: { paddingBottom: 20 },
+  sectionHeader: {
     fontFamily: 'Montserrat-Bold',
     fontSize: 16,
-    marginBottom: 12,
+    marginTop: 10,
+    marginBottom: 10,
   },
-  buttonContainer: {
+  groupBlock: { marginBottom: 15 },
+  filterGroupTitle: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  optionsGrid: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  filterOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  filterOptionText: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 13,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    borderTopColor: '#eee',
+    paddingTop: 15,
   },
-  resetButton: {
-    flex: 1,
-    marginRight: 8,
-  },
-  applyButton: {
-    flex: 1,
-    marginLeft: 8,
-  },
+  footerButton: { flex: 1, marginHorizontal: 5 },
 });
 
 export default FilterModal;

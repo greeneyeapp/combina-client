@@ -15,7 +15,7 @@ import { useTheme } from '@/context/ThemeContext';
 interface ButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline';
+  variant?: 'primary' | 'secondary' | 'outline' | 'destructive';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   loading?: boolean;
@@ -54,6 +54,11 @@ const Button: React.FC<ButtonProps> = ({
           backgroundColor: 'transparent',
           borderColor: theme.colors.border,
         };
+      case 'destructive':
+        return {
+          backgroundColor: theme.colors.errorLight,
+          borderColor: theme.colors.errorLight,
+        };
       default:
         return {
           backgroundColor: theme.colors.primary,
@@ -69,6 +74,8 @@ const Button: React.FC<ButtonProps> = ({
         return theme.colors.white;
       case 'outline':
         return theme.colors.text;
+      case 'destructive':
+        return theme.colors.error;
       default:
         return theme.colors.white;
     }

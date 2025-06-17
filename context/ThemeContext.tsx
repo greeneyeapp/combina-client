@@ -5,6 +5,7 @@ import { lightTheme, darkTheme, Theme } from '@/theme';
 
 type ThemeContextType = {
   theme: Theme;
+  themeMode: 'light' | 'dark';
   toggleTheme: () => void;
 };
 
@@ -24,7 +25,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (savedTheme !== null) {
         setThemeMode(savedTheme as 'light' | 'dark');
       } else {
-        // Default to system preference if no saved preference
         setThemeMode(systemColorScheme || 'light');
       }
     } catch (error) {
@@ -49,7 +49,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = themeMode === 'dark' ? darkTheme : lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, themeMode, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );

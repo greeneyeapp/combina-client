@@ -1,3 +1,4 @@
+// wardrobe/add.tsx
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,10 +18,11 @@ import SeasonPicker from '@/components/wardrobe/SeasonPicker';
 import StylePicker from '@/components/wardrobe/StylePicker';
 import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
+import useAlertStore from '@/store/alertStore';
 
 type FormData = {
   name: string;
-  category: string;
+  category: string; // Bu artık detaylı kategori olacak
   color: string;
   season: string[];
   style: string;
@@ -33,18 +35,19 @@ export default function AddClothingScreen() {
   const { addClothing } = useClothingStore();
   const [image, setImage] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+  const { show: showAlert } = useAlertStore();
 
   const {
     control,
     handleSubmit,
-    setValue,
-    reset,
     formState: { errors },
-    watch
+    reset,
+    setValue,
+    watch,
   } = useForm<FormData>({
     defaultValues: {
       name: '',
-      category: '',
+      category: '', // Başlangıçta boş
       color: '',
       season: [],
       style: '',
@@ -52,10 +55,7 @@ export default function AddClothingScreen() {
     },
   });
 
-  const watchedCategory = watch('category');
-  const watchedColor = watch('color');
-  const watchedSeason = watch('season');
-  const watchedStyle = watch('style');
+  const selectedCategory = watch('category');
 
   useFocusEffect(
     useCallback(() => {
@@ -68,17 +68,14 @@ export default function AddClothingScreen() {
         notes: '',
       });
       setImage(null);
-      setTimeout(() => {
-        scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-      }, 0);
-      return () => { };
+      setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
   );
 
   const takePicture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      alert(t('permissions.cameraRequired'));
+      showAlert({ title: t('common.error'), message: t('permissions.cameraRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
       return;
     }
     try {
@@ -98,7 +95,7 @@ export default function AddClothingScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      alert(t('permissions.galleryRequired'));
+      showAlert({ title: t('common.error'), message: t('permissions.galleryRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
       return;
     }
     try {
@@ -122,13 +119,18 @@ export default function AddClothingScreen() {
 
   const onSubmit = (data: FormData) => {
     if (!image) {
-      alert(t('wardrobe.imageRequired'));
+      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
       return;
     }
+    if (!data.category) { // Kategori seçimi kontrolü
+      showAlert({ title: t('common.error'), message: t('wardrobe.categoryRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
+      return;
+    }
+
     const newItem = {
       id: generateUniqueId(),
       name: data.name,
-      category: data.category,
+      category: data.category, // Seçilen detaylı kategori
       color: data.color,
       season: data.season,
       style: data.style,
@@ -137,7 +139,11 @@ export default function AddClothingScreen() {
       createdAt: new Date().toISOString(),
     };
     addClothing(newItem);
-    router.back();
+    showAlert({
+      title: t('common.success'),
+      message: t('wardrobe.itemAddedSuccessfully'),
+      buttons: [{ text: t('common.ok'), onPress: () => router.back() }]
+    });
   };
 
   return (
@@ -147,8 +153,7 @@ export default function AddClothingScreen() {
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
         onLeftPress={() => router.back()}
       />
-      
-      {/* DEĞİŞİKLİK 1: KeyboardAvoidingView EKLENDİ */}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
@@ -158,6 +163,7 @@ export default function AddClothingScreen() {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.imageSection}>
             {image ? (
@@ -177,7 +183,6 @@ export default function AddClothingScreen() {
                 </Text>
               </View>
             )}
-
             <View style={styles.imageButtonsContainer}>
               <Button
                 icon={<Camera color={theme.colors.text} size={20} />}
@@ -199,9 +204,8 @@ export default function AddClothingScreen() {
           <View style={styles.formSection}>
             <Controller
               control={control}
-              rules={{
-                required: t('wardrobe.nameRequired') as string,
-              }}
+              name="name"
+              rules={{ required: t('wardrobe.nameRequired') as string }}
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
                   label={t('wardrobe.name')}
@@ -212,63 +216,66 @@ export default function AddClothingScreen() {
                   error={errors.name?.message}
                 />
               )}
-              name="name"
             />
 
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              {t('wardrobe.category')}
-            </Text>
-            <CategoryPicker
-              selectedCategory={watchedCategory}
-              onSelectCategory={(category) => setValue('category', category)}
-            />
-            {errors.category && (
-              <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                {errors.category.message}
-              </Text>
-            )}
+            <View>
+              <Controller
+                control={control}
+                name="category"
+                rules={{ required: t('wardrobe.categoryRequired') as string }}
+                render={({ field: { onChange, value } }) => (
+                  <CategoryPicker
+                    selectedCategory={value}
+                    onSelectCategory={onChange}
+                    error={errors.category?.message}
+                  />
+                )}
+              />
+            </View>
 
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              {t('wardrobe.color')}
-            </Text>
-            <ColorPicker
-              selectedColor={watchedColor}
-              onSelectColor={(color) => setValue('color', color)}
-            />
-            {errors.color && (
-              <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                {errors.color.message}
-              </Text>
-            )}
+            {/* Diğer alanlar (Color, Season, Style, Notes) değişiklik olmadan kalabilir */}
+            <View>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.color')}</Text>
+              <Controller
+                control={control}
+                name="color"
+                rules={{ required: t('wardrobe.colorRequired') as string }}
+                render={({ field: { onChange, value } }) => (
+                  <ColorPicker selectedColor={value} onSelectColor={onChange} />
+                )}
+              />
+              {errors.color && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.color.message}</Text>}
+            </View>
 
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              {t('wardrobe.season')}
-            </Text>
-            <SeasonPicker
-              selectedSeasons={watchedSeason}
-              onSelectSeason={(seasons) => setValue('season', seasons)}
-            />
-            {errors.season && (
-              <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                {errors.season.message}
-              </Text>
-            )}
+            <View>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.season')}</Text>
+              <Controller
+                control={control}
+                name="season"
+                rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }}
+                render={({ field: { onChange, value } }) => (
+                  <SeasonPicker selectedSeasons={value} onSelectSeason={onChange} />
+                )}
+              />
+              {errors.season && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>}
+            </View>
 
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              {t('wardrobe.style')}
-            </Text>
-            <StylePicker
-              selectedStyle={watchedStyle}
-              onSelectStyle={(style) => setValue('style', style)}
-            />
-            {errors.style && (
-              <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                {errors.style.message}
-              </Text>
-            )}
+            <View>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.style')}</Text>
+              <Controller
+                control={control}
+                name="style"
+                rules={{ required: t('wardrobe.styleRequired') as string }}
+                render={({ field: { onChange, value } }) => (
+                  <StylePicker selectedStyle={value} onSelectStyle={onChange} />
+                )}
+              />
+              {errors.style && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>}
+            </View>
 
             <Controller
               control={control}
+              name="notes"
               render={({ field: { onChange, onBlur, value } }) => (
                 <Input
                   label={t('wardrobe.notes')}
@@ -281,7 +288,6 @@ export default function AddClothingScreen() {
                   textAlignVertical="top"
                 />
               )}
-              name="notes"
             />
 
             <Button
@@ -301,7 +307,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  // DEĞİŞİKLİK 2: KeyboardAvoidingView için stil eklendi
   keyboardAvoidingView: {
     flex: 1,
   },

@@ -1,5 +1,6 @@
+// wardrobe/[id].tsx
 import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,12 +10,14 @@ import { ArrowLeft, Edit2, Trash2 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
+import useAlertStore from '@/store/alertStore';
 
 export default function ClothingDetailScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { clothing, removeClothing } = useClothingStore();
+  const { show: showAlert } = useAlertStore();
 
   const item = clothing.find((item) => item.id === id);
 
@@ -46,25 +49,21 @@ export default function ClothingDetailScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert(
-      t('wardrobe.deleteTitle'),
-      t('wardrobe.deleteMessage'),
-      [
-        {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('common.delete'),
-          onPress: () => {
-            removeClothing(id);
-            router.back();
-          },
-          style: 'destructive',
-        },
-      ],
-      { cancelable: true }
-    );
+    showAlert({
+        title: t('wardrobe.deleteTitle'),
+        message: t('wardrobe.deleteMessage'),
+        buttons: [
+            { text: t('common.cancel'), onPress: () => {}, variant: 'outline' },
+            {
+              text: t('common.delete'),
+              onPress: () => {
+                removeClothing(id);
+                router.back();
+              },
+              variant: 'destructive',
+            }
+        ]
+    });
   };
 
   return (
@@ -100,7 +99,9 @@ export default function ClothingDetailScreen() {
               {t('wardrobe.category')}
             </Text>
             <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-              {t(`categories.${item.category}`)}
+              {/* Burası item.category değerine göre çeviri yapacak. 
+                 Örn: item.category 't-shirt' ise t('categories.t-shirt') olarak aranacak */}
+              {t(`categories.${item.category}`)} 
             </Text>
           </View>
 

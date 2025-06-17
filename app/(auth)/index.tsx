@@ -1,30 +1,15 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
 import Button from '@/components/common/Button';
-import { signInAnonymously } from 'firebase/auth';
-import { auth } from '@/firebaseConfig';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
-  const { theme } = useTheme();
-  const [isGuestLoading, setIsGuestLoading] = useState(false);
-
-  const handleGuestLogin = async () => {
-    setIsGuestLoading(true);
-    try {
-      await signInAnonymously(auth);
-    } catch (error: any) {
-      console.error(error);
-      Alert.alert(t('common.error'), t('login.guestLoginError'));
-    } finally {
-      setIsGuestLoading(false);
-    }
-  };
+  const { theme, themeMode } = useTheme();
 
   return (
     <LinearGradient
@@ -34,11 +19,14 @@ export default function LoginScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.logoContainer}>
           <Image
-            source={require('@/assets/images/logo.png')}
+            source={
+              themeMode === 'dark'
+                ? require('@/assets/images/logo-dark.png')muhammedbozkurt@greeneyeapp.com
+                : require('@/assets/images/logo-light.png')
+            }
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={[styles.appName, { color: theme.colors.primary }]}>Combina</Text>
           <Text style={[styles.tagline, { color: theme.colors.text }]}>
             {t('login.tagline')}
           </Text>
@@ -57,9 +45,10 @@ export default function LoginScreen() {
             variant="outline"
             style={styles.button}
           />
-          <TouchableOpacity style={styles.guestButton} onPress={handleGuestLogin} disabled={isGuestLoading}>
-            <Text style={[styles.guestText, { color: theme.colors.text }]}>
-              {isGuestLoading ? t('login.loading') : t('login.continueAsGuest')}
+
+          <TouchableOpacity style={styles.forgotPasswordButton} onPress={() => router.push('/(auth)/forgot-password')}>
+            <Text style={[styles.guestText, { color: theme.colors.textLight }]}>
+              {t('login.forgotPassword')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -79,12 +68,13 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1, padding: 24, justifyContent: 'space-between' },
-  logoContainer: { alignItems: 'center', marginTop: 40 },
-  logo: { width: 120, height: 120 },
+  logoContainer: { alignItems: 'center', marginTop: 12 },
+  logo: { width: 220, height: 220 },
   appName: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 42, marginTop: 16 },
   tagline: { fontFamily: 'Montserrat-Medium', fontSize: 16, marginTop: 8, textAlign: 'center' },
   buttonContainer: { width: '100%', paddingHorizontal: 16 },
   button: { marginBottom: 16 },
+  forgotPasswordButton: { alignItems: 'center', paddingVertical: 8 },
   guestButton: { alignItems: 'center', paddingVertical: 16 },
   guestText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
   footer: { alignItems: 'center', marginBottom: 24 },

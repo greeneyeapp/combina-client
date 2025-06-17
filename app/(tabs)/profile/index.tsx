@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -17,56 +17,97 @@ import {
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
-import { useAuth } from '@/hooks/useAuth';
-import { clearAllData } from '@/utils/storage';
+import { useAuth } from '@/context/AuthContext';
+import useAlertStore from '@/store/alertStore';
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
-  const [notifications, setNotifications] = useState(true);
+  const { show: showAlert } = useAlertStore();
+
+  const languages = [
+    { code: 'ar', name: 'العربية' },
+    { code: 'bg', name: 'Български' },
+    { code: 'de', name: 'Deutsch' },
+    { code: 'el', name: 'Ελληνικά' },
+    { code: 'en', name: 'English' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'he', name: 'עברית' },
+    { code: 'hi', name: 'हिन्दी' },
+    { code: 'id', name: 'Bahasa Indonesia' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'ja', name: '日本語' },
+    { code: 'ko', name: '한국어' },
+    { code: 'pt', name: 'Português' },
+    { code: 'ru', name: 'Русский' },
+    { code: 'tl', name: 'Filipino' },
+    { code: 'tr', name: 'Türkçe' },
+    { code: 'zh', name: '中文' }
+  ];
+  
+  const getLanguageName = (code: string) =>
+    languages.find(l => l.code === code)?.name || code;
 
   const handleLanguagePress = () => {
     router.push('/(tabs)/profile/language');
   };
 
   const handleLogout = () => {
-    logout();
-    router.replace('/(auth)');
+    showAlert({
+      title: t('logout.alertTitle'),
+      message: t('logout.alertMessage'),
+      buttons: [
+        { text: t('common.cancel'), onPress: () => { } },
+        { text: t('common.continue'), onPress: doLogout }
+      ]
+    });
   };
 
+  function doLogout() {
+    logout();
+    router.replace('/(auth)');
+  }
+
   const handleClearData = () => {
-    Alert.alert(
-      t('profile.clearDataTitle'),
-      t('profile.clearDataMessage'),
-      [
+    showAlert({
+      title: t('profile.clearDataTitle'),
+      message: t('profile.clearDataMessage'),
+      buttons: [
+        { text: t('common.cancel'), onPress: () => { }, variant: 'outline' },
         {
-          text: t('common.cancel'),
-          style: 'cancel',
-        },
-        {
-          text: t('common.confirm'),
+          text: t('profile.continueToDelete'),
           onPress: () => {
-            clearAllData();
-            Alert.alert(
-              t('profile.dataCleared'),
-              t('profile.dataRestart'),
-              [
-                {
-                  text: t('common.ok'),
-                  onPress: () => {
-                    logout();
-                    router.replace('/(auth)');
-                  },
-                },
-              ]
-            );
+            Linking.openURL('https://greeneyeapp.com/data-deletion.html');
           },
-          style: 'destructive',
-        },
-      ],
-      { cancelable: true }
-    );
+          variant: 'destructive',
+        }
+      ]
+    });
+  };
+
+  const handleHelpPress = async () => {
+    const url = 'https://greeneyeapp.com/contact.html';
+
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        showAlert({
+          title: t('common.error'),
+          message: `${t('profile.cannotOpenLink')} ${url}`,
+          buttons: [{ text: t('common.ok'), onPress: () => { } }]
+        });
+      }
+    } catch (error) {
+      showAlert({
+        title: t('common.error'),
+        message: t('profile.cannotOpenLink'),
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
+      });
+    }
   };
 
   return (
@@ -78,7 +119,7 @@ export default function ProfileScreen() {
           <Avatar size={80} user={user} />
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, { color: theme.colors.text }]}>
-              {user?.name || t('profile.guest')}
+              {user?.displayName || t('profile.guest')}
             </Text>
             <Text
               style={[styles.profileEmail, { color: theme.colors.textLight }]}
@@ -87,7 +128,6 @@ export default function ProfileScreen() {
             >
               {user?.email || t('profile.guestSubtitle')}
             </Text>
-
           </View>
         </View>
 
@@ -97,33 +137,26 @@ export default function ProfileScreen() {
           </Text>
 
           <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
-            <View style={styles.settingRow}>
+            <TouchableOpacity style={styles.settingRow} onPress={handleLanguagePress}>
               <View style={styles.settingLabelContainer}>
                 <Globe color={theme.colors.text} size={20} />
                 <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
                   {t('profile.language')}
                 </Text>
               </View>
-              <TouchableOpacity
-                style={styles.settingAction}
-                onPress={handleLanguagePress}
-              >
+              <View style={styles.settingAction}>
                 <Text style={[styles.settingValue, { color: theme.colors.primary }]}>
-                  {i18n.language === 'en' ? 'English' : i18n.language === 'tr' ? 'Türkçe' : 'Deutsch'}
+                  {getLanguageName(i18n.language)}
                 </Text>
                 <ChevronRight color={theme.colors.textLight} size={16} />
-              </TouchableOpacity>
-            </View>
+              </View>
+            </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
             <View style={styles.settingRow}>
               <View style={styles.settingLabelContainer}>
-                {theme.mode === 'dark' ? (
-                  <Moon color={theme.colors.text} size={20} />
-                ) : (
-                  <Sun color={theme.colors.text} size={20} />
-                )}
+                {theme.mode === 'dark' ? <Moon color={theme.colors.text} size={20} /> : <Sun color={theme.colors.text} size={20} />}
                 <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
                   {t('profile.darkMode')}
                 </Text>
@@ -138,20 +171,6 @@ export default function ProfileScreen() {
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
-            <View style={styles.settingRow}>
-              <View style={styles.settingLabelContainer}>
-                <Bell color={theme.colors.text} size={20} />
-                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
-                  {t('profile.notifications')}
-                </Text>
-              </View>
-              <Switch
-                value={notifications}
-                onValueChange={setNotifications}
-                trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-                thumbColor={theme.colors.white}
-              />
-            </View>
           </View>
         </View>
 
@@ -161,25 +180,10 @@ export default function ProfileScreen() {
           </Text>
 
           <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
-            {!user?.isGuest && (
-              <>
-                <TouchableOpacity style={styles.settingRow}>
-                  <View style={styles.settingLabelContainer}>
-                    <UserCircle2 color={theme.colors.text} size={20} />
-                    <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
-                      {t('profile.editProfile')}
-                    </Text>
-                  </View>
-                  <View style={styles.settingAction}>
-                    <ChevronRight color={theme.colors.textLight} size={16} />
-                  </View>
-                </TouchableOpacity>
-
-                <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              </>
-            )}
-
-            <TouchableOpacity style={styles.settingRow}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={handleHelpPress}
+            >
               <View style={styles.settingLabelContainer}>
                 <HelpCircle color={theme.colors.text} size={20} />
                 <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
@@ -248,6 +252,7 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     marginLeft: 16,
+    flex: 1,
   },
   profileName: {
     fontFamily: 'Montserrat-Bold',
@@ -258,8 +263,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
     fontSize: 14,
     flexShrink: 1,
-    flexWrap: 'wrap',
-    maxWidth: 200,
   },
   settingsSection: {
     marginBottom: 24,

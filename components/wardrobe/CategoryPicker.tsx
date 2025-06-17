@@ -1,109 +1,52 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useTheme } from '@/context/ThemeContext';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import SelectionDropdown from '@/components/common/SelectionDropdown';
+import { CATEGORY_HIERARCHY } from '@/utils/constants';
 
 interface CategoryPickerProps {
-  selectedCategory?: string;
-  onSelectCategory?: (category: string) => void;
-  selectedCategories?: string[];
-  onSelectCategories?: (categories: string[]) => void;
-  multiSelect?: boolean;
+  selectedCategory: string; // Detaylı kategori (örn: 't-shirt')
+  onSelectCategory: (category: string) => void;
+  error?: string; // Hata mesajı prop'u
 }
 
-const categories = [
-  'top',
-  'bottom',
-  'outerwear',
-  'dress',
-  'shoes',
-  'accessory',
-];
-
-const CategoryPicker: React.FC<CategoryPickerProps> = ({
-  selectedCategory,
-  onSelectCategory,
-  selectedCategories = [],
-  onSelectCategories,
-  multiSelect = false,
-}) => {
-  const { theme } = useTheme();
+const CategoryPicker: React.FC<CategoryPickerProps> = ({ selectedCategory, onSelectCategory, error }) => {
   const { t } = useTranslation();
 
-  const handleSelect = (category: string) => {
-    if (multiSelect && onSelectCategories) {
-      if (selectedCategories.includes(category)) {
-        onSelectCategories(selectedCategories.filter(c => c !== category));
-      } else {
-        onSelectCategories([...selectedCategories, category]);
-      }
-    } else if (onSelectCategory) {
-      onSelectCategory(category);
-    }
-  };
+  // Tüm kategori seçeneklerini SelectionDropdown'a uygun formata dönüştür
+  const categoryOptions = useMemo(() => {
+    const options: { label: string; value: string; isGroupHeader?: boolean }[] = [];
 
-  const isSelected = (category: string) => {
-    if (multiSelect) {
-      return selectedCategories.includes(category);
-    }
-    return selectedCategory === category;
-  };
+    Object.keys(CATEGORY_HIERARCHY).forEach(mainCategory => {
+      // Ana kategori başlığını ekle
+      options.push({
+        label: t(`categories.${mainCategory}`),
+        value: mainCategory, // Ana kategorinin kendisi de bir değer olabilir
+        isGroupHeader: true,
+      });
+
+      // Alt kategorileri ekle
+      CATEGORY_HIERARCHY[mainCategory as keyof typeof CATEGORY_HIERARCHY].forEach(subCategory => {
+        options.push({
+          label: t(`categories.${subCategory}`),
+          value: subCategory,
+        });
+      });
+    });
+
+    return options;
+  }, [t]);
 
   return (
-    <ScrollView 
-      horizontal 
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
-      {categories.map(category => (
-        <TouchableOpacity
-          key={category}
-          style={[
-            styles.categoryItem,
-            {
-              backgroundColor: isSelected(category)
-                ? theme.colors.primary
-                : theme.colors.card,
-              borderColor: isSelected(category)
-                ? theme.colors.primary
-                : theme.colors.border,
-            },
-          ]}
-          onPress={() => handleSelect(category)}
-        >
-          <Text
-            style={[
-              styles.categoryText,
-              {
-                color: isSelected(category)
-                  ? theme.colors.white
-                  : theme.colors.text,
-              },
-            ]}
-          >
-            {t(`categories.${category}`)}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+    <SelectionDropdown
+      label={t('wardrobe.category')}
+      options={categoryOptions}
+      selectedValue={selectedCategory}
+      onSelect={onSelectCategory}
+      placeholder={t('wardrobe.selectCategoryPlaceholder')}
+      error={error}
+      searchable={true} // Kategori listesi uzun olabileceği için arama özelliğini açtık
+    />
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    paddingVertical: 8,
-  },
-  categoryItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    marginRight: 8,
-  },
-  categoryText: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
-  },
-});
 
 export default CategoryPicker;

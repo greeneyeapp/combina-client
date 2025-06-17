@@ -26,14 +26,14 @@ export const useClothingStore = create<ClothingState>()(
   persist(
     (set) => ({
       clothing: [],
-      addClothing: (item) => set((state) => ({ 
-        clothing: [...state.clothing, item] 
-      })),
-      removeClothing: (id) => set((state) => ({ 
-        clothing: state.clothing.filter((item) => item.id !== id) 
+      addClothing: (item) => set((state) => {
+        return { clothing: [...state.clothing, item] };
+      }),
+      removeClothing: (id) => set((state) => ({
+        clothing: state.clothing.filter((item) => item.id !== id)
       })),
       updateClothing: (id, updatedItem) => set((state) => ({
-        clothing: state.clothing.map((item) => 
+        clothing: state.clothing.map((item) =>
           item.id === id ? { ...item, ...updatedItem } : item
         ),
       })),

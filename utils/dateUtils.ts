@@ -35,48 +35,23 @@ export function formatRelativeTime(dateString: string): string {
 }
 
 export function groupOutfitsByDate(outfits: Outfit[]) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  
-  const thisWeekStart = new Date(today);
-  thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
-  
-  const lastWeekStart = new Date(thisWeekStart);
-  lastWeekStart.setDate(lastWeekStart.getDate() - 7);
-  
-  const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  
-  const groups = [
-    { title: 'Today', data: [] as Outfit[] },
-    { title: 'Yesterday', data: [] as Outfit[] },
-    { title: 'This Week', data: [] as Outfit[] },
-    { title: 'Last Week', data: [] as Outfit[] },
-    { title: 'This Month', data: [] as Outfit[] },
-    { title: 'Older', data: [] as Outfit[] },
-  ];
-  
+  const groups: { title: string; data: Outfit[] }[] = [];
+  const map = new Map<string, Outfit[]>();
+
   outfits.forEach(outfit => {
-    const outfitDate = new Date(outfit.date);
-    outfitDate.setHours(0, 0, 0, 0);
-    
-    if (outfitDate.getTime() === today.getTime()) {
-      groups[0].data.push(outfit);
-    } else if (outfitDate.getTime() === yesterday.getTime()) {
-      groups[1].data.push(outfit);
-    } else if (outfitDate >= thisWeekStart) {
-      groups[2].data.push(outfit);
-    } else if (outfitDate >= lastWeekStart) {
-      groups[3].data.push(outfit);
-    } else if (outfitDate >= thisMonthStart) {
-      groups[4].data.push(outfit);
-    } else {
-      groups[5].data.push(outfit);
+    const dateString = formatDate(outfit.date); // örn. "June 12, 2025"
+    if (!map.has(dateString)) {
+      map.set(dateString, []);
     }
+    map.get(dateString)!.push(outfit);
   });
-  
-  // Remove empty groups
-  return groups.filter(group => group.data.length > 0);
+
+  // Grupları oluştur, en yeni tarih yukarıda olacak şekilde sırala
+  Array.from(map.entries())
+    .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
+    .forEach(([title, data]) => {
+      groups.push({ title, data });
+    });
+
+  return groups;
 }

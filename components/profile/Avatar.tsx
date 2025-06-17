@@ -1,24 +1,22 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
+import { User } from 'firebase/auth';
 
 interface AvatarProps {
   size: number;
-  user: {
-    name: string | null;
-    isGuest: boolean;
-  } | null;
+  user: User | null;
 }
 
 const Avatar: React.FC<AvatarProps> = ({ size, user }) => {
   const { theme } = useTheme();
 
   const getInitials = () => {
-    if (!user || user.isGuest || !user.name) {
+    if (!user || user.isAnonymous || !user.displayName) {
       return 'G';
     }
 
-    return user.name
+    return user.displayName
       .split(' ')
       .map(part => part.charAt(0))
       .join('')
@@ -34,7 +32,7 @@ const Avatar: React.FC<AvatarProps> = ({ size, user }) => {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: user?.isGuest ? theme.colors.textLight : theme.colors.primary,
+          backgroundColor: user?.isAnonymous ? theme.colors.textLight : theme.colors.primary,
         },
       ]}
     >

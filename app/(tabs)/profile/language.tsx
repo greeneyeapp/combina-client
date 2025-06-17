@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,9 +9,24 @@ import Button from '@/components/common/Button';
 import HeaderBar from '@/components/common/HeaderBar';
 
 const languages = [
-  { code: 'en', name: 'English' },
-  { code: 'tr', name: 'Türkçe' },
+  { code: 'ar', name: 'العربية' },
+  { code: 'bg', name: 'Български' },
   { code: 'de', name: 'Deutsch' },
+  { code: 'el', name: 'Ελληνικά' },
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'he', name: 'עברית' },
+  { code: 'hi', name: 'हिन्दी' },
+  { code: 'id', name: 'Bahasa Indonesia' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'ja', name: '日本語' },
+  { code: 'ko', name: '한국어' },
+  { code: 'pt', name: 'Português' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'tl', name: 'Filipino' },
+  { code: 'tr', name: 'Türkçe' },
+  { code: 'zh', name: '中文' }
 ];
 
 export default function LanguageScreen() {
@@ -41,7 +56,12 @@ export default function LanguageScreen() {
           {t('language.subtitle')}
         </Text>
 
-        <View style={styles.languageList}>
+        {/* SCROLLVIEW BURADA */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.languageList}
+          showsVerticalScrollIndicator={false}
+        >
           {languages.map((language) => (
             <TouchableOpacity
               key={language.code}
@@ -69,7 +89,7 @@ export default function LanguageScreen() {
               )}
             </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
 
         <Button
           label={t('language.save')}
@@ -89,6 +109,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 24,
+    paddingBottom: 0,
   },
   subtitle: {
     fontFamily: 'Montserrat-Regular',
@@ -96,7 +117,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   languageList: {
+    paddingBottom: 32,
     gap: 16,
+    // minHeight: 100, // ekleyebilirsin ister
   },
   languageItem: {
     flexDirection: 'row',
@@ -113,5 +136,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     marginTop: 32,
+    marginBottom: 16,
   },
 });

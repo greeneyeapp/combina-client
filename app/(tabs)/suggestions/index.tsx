@@ -7,8 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Dimensions,
-  Image
+  Linking
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -17,7 +16,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { useOutfitStore, Outfit } from '@/store/outfitStore';
 import { useWeatherStore } from '@/store/weatherStore';
 import { useAuth } from '@/context/AuthContext';
-import { Cloud, Sun, RefreshCw } from 'lucide-react-native';
+import { Cloud, Sun, RefreshCw, ExternalLink } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import EmptyState from '@/components/common/EmptyState';
 import Button from '@/components/common/Button';
@@ -26,47 +25,15 @@ import OutfitSuggestion from '@/components/suggestions/OutfitSuggestion';
 import { getWeatherCondition } from '@/utils/weatherUtils';
 import { router } from 'expo-router';
 import { getOutfitSuggestion, OutfitSuggestionResponse } from '@/services/aiService';
-import { getInspirationByOccasion } from '@/services/pinterestService';
 import { CATEGORY_HIERARCHY } from '@/utils/constants';
 import Toast from 'react-native-toast-message';
 
-interface PinImage {
-  id: string;
-  pinUrl: string | null;
-  imageUrl: string | null;
-  aspectRatio: number;
+interface PinterestLink {
+  title: string;
+  url: string;
 }
 
 export default function SuggestionsScreen() {
-
-  const mockPinterestImages: PinImage[] = [
-    {
-      id: '1',
-      pinUrl: 'https://unsplash.com/photos/WLxQvbMyfas',
-      imageUrl: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=600',
-      aspectRatio: 1.4,
-    },
-    {
-      id: '2',
-      pinUrl: 'https://unsplash.com/photos/vC8wj_Kphak',
-      imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600',
-      aspectRatio: 1.6,
-    },
-    {
-      id: '3',
-      pinUrl: 'https://unsplash.com/photos/vC8wj_Kphak',
-      imageUrl: 'https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=600',
-      aspectRatio: 1.5,
-    },
-    {
-      id: '4',
-      pinUrl: 'https://unsplash.com/photos/6anudmpILw4',
-      imageUrl: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600',
-      aspectRatio: 1.2,
-    },
-  ];
-
-
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { clothing } = useClothingStore();
@@ -78,9 +45,7 @@ export default function SuggestionsScreen() {
   const [generating, setGenerating] = useState(false);
   const [suggestion, setSuggestion] = useState<OutfitSuggestionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pinterestImages, setPinterestImages] = useState<PinImage[]>([]);
-  const [pinterestLoading, setPinterestLoading] = useState(false);
-
+  const [pinterestLinks, setPinterestLinks] = useState<PinterestLink[]>([]);
   const [isLiked, setIsLiked] = useState(false);
 
   const isAlreadyLiked = useMemo(
@@ -103,13 +68,12 @@ export default function SuggestionsScreen() {
   }, [suggestion]);
 
   useEffect(() => {
-    if (!suggestion) return;
-    setPinterestLoading(true);
-    setTimeout(() => {
-      setPinterestImages(mockPinterestImages);
-      setPinterestLoading(false);
-    }, 500);
-  }, [suggestion, selectedOccasion]);
+    if (suggestion?.pinterest_links) {
+      setPinterestLinks(suggestion.pinterest_links);
+    } else {
+      setPinterestLinks([]);
+    }
+  }, [suggestion]);
 
   // Only require dresses for female users
   const isFemale = (user as any)?.gender === 'female';
@@ -182,15 +146,13 @@ export default function SuggestionsScreen() {
     });
   };
 
-
-
   const handleGenerateSuggestion = async () => {
     if (!wardrobeStatus.hasEnough || !weather) return;
 
     setGenerating(true);
     setError(null);
     setSuggestion(null);
-    setPinterestImages([]);
+    setPinterestLinks([]);
 
     try {
       const weatherCondition = getWeatherCondition(weather as any);
@@ -204,7 +166,6 @@ export default function SuggestionsScreen() {
       );
       if (result) {
         setSuggestion(result);
-
       } else {
         setError(t('suggestions.genericError'));
       }
@@ -216,6 +177,27 @@ export default function SuggestionsScreen() {
     }
   };
 
+  const handlePinterestLinkPress = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        // Fallback to webview if direct linking fails
+        router.push({ pathname: '/webview', params: { url } });
+      }
+    } catch (error) {
+      console.error('Error opening Pinterest link:', error);
+      Toast.show({
+        type: 'error',
+        text1: t('suggestions.linkError', 'Could not open link'),
+        position: 'top',
+        visibilityTime: 2000,
+        topOffset: 50,
+      });
+    }
+  };
+
   const getWeatherIcon = () => {
     if (!weather) return null;
     const cond = getWeatherCondition(weather);
@@ -224,27 +206,25 @@ export default function SuggestionsScreen() {
       : <Cloud color={theme.colors.accent} size={20} />;
   };
 
-  const renderPinterestItem = ({ item }: { item: PinImage }) => {
-    const numCol = 2;
-    const pad = 16;
-    const margin = 8;
-    const totalMargin = (numCol - 1) * margin;
-    const width = (Dimensions.get('window').width - pad * 2 - totalMargin) / numCol;
-    const ar = Math.max(item.aspectRatio || 1, 1.4);
-    const height = width * ar;
-
+  const renderPinterestItem = ({ item }: { item: PinterestLink }) => {
     return (
       <TouchableOpacity
         style={[
-          styles.cardContainer,
-          { width, height, backgroundColor: theme.colors.card, shadowColor: theme.colors.text }
+          styles.pinterestCard,
+          { 
+            backgroundColor: theme.colors.card, 
+            borderColor: theme.colors.border,
+            shadowColor: theme.colors.text 
+          }
         ]}
-        onPress={() =>
-          item.pinUrl && router.push({ pathname: '/webview', params: { url: item.pinUrl } })
-        }
-        disabled={!item.pinUrl}
+        onPress={() => handlePinterestLinkPress(item.url)}
       >
-        <Image source={{ uri: item.imageUrl || undefined }} style={styles.image} resizeMode="cover" />
+        <View style={styles.pinterestContent}>
+          <ExternalLink color={theme.colors.primary} size={20} />
+          <Text style={[styles.pinterestTitle, { color: theme.colors.text }]} numberOfLines={2}>
+            {item.title}
+          </Text>
+        </View>
       </TouchableOpacity>
     );
   };
@@ -309,8 +289,13 @@ export default function SuggestionsScreen() {
             liked={isLiked || isAlreadyLiked}
           />
         )}
-        {pinterestLoading && (
-          <ActivityIndicator style={{ marginVertical: 20 }} color={theme.colors.primary} />
+
+        {pinterestLinks.length > 0 && (
+          <View style={styles.inspirationSection}>
+            <Text style={[styles.inspirationTitle, { color: theme.colors.text }]}>
+              {t('suggestions.inspirationTitle', 'Style Inspiration')}
+            </Text>
+          </View>
         )}
       </>
     );
@@ -346,15 +331,14 @@ export default function SuggestionsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('suggestions.title')} />
       <FlatList
-        data={pinterestImages}
+        data={pinterestLinks}
         renderItem={renderPinterestItem}
-        keyExtractor={item => item.id}
-        numColumns={2}
+        keyExtractor={(item, index) => `pinterest-${index}`}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyState}
         style={styles.flatListContainer}
         contentContainerStyle={styles.contentContainer}
-        columnWrapperStyle={styles.columnWrapper}
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
@@ -374,17 +358,32 @@ const styles = StyleSheet.create({
   generateButton: { marginTop: 24, marginBottom: 16 },
   errorContainer: { padding: 16, borderRadius: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
-  columnWrapper: { justifyContent: 'space-between' },
-  cardContainer: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 16,
-    elevation: 4,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5
+  inspirationSection: { marginTop: 24, marginBottom: 16 },
+  inspirationTitle: { 
+    fontFamily: 'Montserrat-Bold', 
+    fontSize: 18, 
+    textAlign: 'center' 
   },
-  image: { width: '100%', height: '100%' },
+  pinterestCard: {
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 16,
+    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3
+  },
+  pinterestContent: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  pinterestTitle: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 14,
+    marginLeft: 12,
+    flex: 1
+  },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   missingItemsContainer: { marginTop: 24, padding: 16, borderRadius: 12, borderWidth: 1, alignSelf: 'stretch' },
   missingItemsTitle: { fontFamily: 'Montserrat-Bold', fontSize: 14, marginBottom: 8, textAlign: 'center' },

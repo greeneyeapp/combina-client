@@ -7,9 +7,11 @@ import { Heart } from 'lucide-react-native';
 
 interface OutfitSuggestionProps {
   outfit: OutfitSuggestionResponse;
+  onLike?: () => void;
+  liked?: boolean;
 }
 
-const OutfitSuggestion: React.FC<OutfitSuggestionProps & { onLike?: () => void, liked?: boolean }> = ({ outfit, onLike, liked }) => {
+const OutfitSuggestion: React.FC<OutfitSuggestionProps> = ({ outfit, onLike, liked }) => {
   const { theme } = useTheme();
   const { clothing } = useClothingStore();
 
@@ -81,7 +83,11 @@ const OutfitSuggestion: React.FC<OutfitSuggestionProps & { onLike?: () => void, 
 
       {onLike && (
         <TouchableOpacity style={styles.heartBtn} onPress={onLike}>
-          <Heart color={liked ? theme.colors.accent : theme.colors.textLight} fill={liked ? theme.colors.accent : "none"} size={28} />
+          <Heart 
+            color={liked ? theme.colors.accent : theme.colors.textLight} 
+            fill={liked ? theme.colors.accent : "none"} 
+            size={28} 
+          />
         </TouchableOpacity>
       )}
 

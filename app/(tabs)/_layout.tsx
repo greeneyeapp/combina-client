@@ -5,7 +5,6 @@ import { useTheme } from '@/context/ThemeContext';
 import {
   Shirt,
   LightbulbIcon,
-  Layout,
   History,
   UserCircle2
 } from 'lucide-react-native';
@@ -52,15 +51,6 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="inspiration/index"
-        options={{
-          title: t('tabs.inspiration'),
-          tabBarIcon: ({ color, size }) => (
-            <Layout color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="history/index"
         options={{
           title: t('tabs.history'),
@@ -83,6 +73,8 @@ export default function TabLayout() {
       <Tabs.Screen name="wardrobe/[id]" options={{ href: null }} />
       <Tabs.Screen name="wardrobe/edit/[id]" options={{ href: null }} />
       <Tabs.Screen name="inspiration/collections" options={{ href: null }} />
+      <Tabs.Screen name="inspiration" options={{ href: null }} />
+      <Tabs.Screen name="inspiration/index" options={{ href: null }} />
       <Tabs.Screen name="profile/language" options={{ href: null }} />
     </Tabs>
   );

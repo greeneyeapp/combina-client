@@ -12,12 +12,17 @@ export interface SuggestedItem {
   category: string;
 }
 
+export interface PinterestLink {
+  title: string;
+  url: string;
+}
+
 export interface OutfitSuggestionResponse {
   items: SuggestedItem[];
   description: string;
   suggestion_tip?: string;
+  pinterest_links: PinterestLink[];
 }
-
 
 export async function getOutfitSuggestion(
   language: string,

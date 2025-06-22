@@ -19,10 +19,11 @@ import StylePicker from '@/components/wardrobe/StylePicker';
 import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
+import Toast from 'react-native-toast-message';
 
 type FormData = {
   name: string;
-  category: string; // Bu artık detaylı kategori olacak
+  category: string;
   color: string;
   season: string[];
   style: string;
@@ -138,12 +139,23 @@ export default function AddClothingScreen() {
       imageUri: image,
       createdAt: new Date().toISOString(),
     };
+    
     addClothing(newItem);
-    showAlert({
-      title: t('common.success'),
-      message: t('wardrobe.itemAddedSuccessfully'),
-      buttons: [{ text: t('common.ok'), onPress: () => router.back() }]
+    
+    // Alert yerine Toast kullanma
+    Toast.show({
+      type: 'success',
+      text1: t('common.success'),
+      text2: t('wardrobe.itemAddedSuccessfully'),
+      position: 'top',
+      visibilityTime: 2500,
+      topOffset: 50,
     });
+    
+    // Kısa bir delay ile geri dönme
+    setTimeout(() => {
+      router.back();
+    }, 1000);
   };
 
   return (

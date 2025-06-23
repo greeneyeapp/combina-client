@@ -15,6 +15,7 @@ import CustomToast from '@/components/common/CustomToast';
 import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,6 +23,9 @@ function RootLayoutNav(): React.JSX.Element | null {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+
+  const shouldUseRevenueCat = user && !user.isAnonymous && Platform.OS === 'ios';
+  const revenueCatState = useRevenueCat();
 
   const [fontsLoaded, fontError] = useFonts({
     'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
@@ -49,14 +53,24 @@ function RootLayoutNav(): React.JSX.Element | null {
     }
   }, [user, segments, loading, fontsLoaded, fontError, navigationState?.key]);
 
+  useEffect(() => {
+    if (shouldUseRevenueCat && !revenueCatState.isLoading) {
+      console.log('RevenueCat Status:', {
+        isProUser: revenueCatState.isProUser,
+        currentPlan: revenueCatState.currentPlan,
+        activeEntitlements: Object.keys(revenueCatState.activeEntitlements),
+      });
+    }
+  }, [shouldUseRevenueCat, revenueCatState.isLoading, revenueCatState.currentPlan]);
+
   if (!fontsLoaded || fontError || loading) return null;
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen 
-        name="webview" 
+      <Stack.Screen
+        name="webview"
         options={{
           presentation: 'modal',
           animation: 'slide_from_bottom',
@@ -80,7 +94,7 @@ export default function RootLayout(): React.JSX.Element {
       try {
         // Önce kayıtlı dil tercihini kontrol et
         const savedLanguage = await AsyncStorage.getItem('app_language');
-        
+
         if (savedLanguage) {
           // Kullanıcı daha önce bir dil seçmişse onu kullan
           await i18n.changeLanguage(savedLanguage);
@@ -89,14 +103,14 @@ export default function RootLayout(): React.JSX.Element {
           // Kayıtlı dil yoksa telefon dilini kullan
           const deviceLanguage = Localization.locale;
           const languageCode = deviceLanguage.split('-')[0]; // 'tr-TR' -> 'tr'
-          
+
           // Desteklenen diller listesi (i18n konfigürasyonunuza göre güncelleyin)
           const supportedLanguages = ['en', 'tr']; // Bu listeyi desteklediğiniz dillere göre güncelleyin
-          
-          const finalLanguage = supportedLanguages.includes(languageCode) 
-            ? languageCode 
+
+          const finalLanguage = supportedLanguages.includes(languageCode)
+            ? languageCode
             : 'en'; // Varsayılan dil
-          
+
           await i18n.changeLanguage(finalLanguage);
           // İlk kez ayarlanan dili kaydet
           await AsyncStorage.setItem('app_language', finalLanguage);
@@ -123,21 +137,21 @@ export default function RootLayout(): React.JSX.Element {
         console.log("No RevenueCat API key found for this platform.");
         return;
       }
-      
+
       try {
         await Purchases.configure({ apiKey });
         console.log('RevenueCat initialized successfully');
       } catch (error) {
         if (Platform.OS === 'android') {
-            console.error('RevenueCat initialization failed on Android:', error);
+          console.error('RevenueCat initialization failed on Android:', error);
         } else if (Platform.OS === 'ios') {
-            console.error('RevenueCat initialization failed on iOS:', error);
+          console.error('RevenueCat initialization failed on iOS:', error);
         } else {
-            console.error('RevenueCat initialization failed:', error);
+          console.error('RevenueCat initialization failed:', error);
         }
       }
     };
-  
+
     initializePurchases();
   }, []);
 

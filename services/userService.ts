@@ -19,6 +19,12 @@ interface UserProfileResponse {
   created_at: any;
 }
 
+interface ProfileInitData {
+  fullname: string;
+  gender: string;
+  birthDate?: string;
+}
+
 // Get authenticated token helper
 const getAuthToken = async (): Promise<string> => {
   const storedJwt = useApiAuthStore.getState().jwt;
@@ -40,6 +46,28 @@ const getAuthToken = async (): Promise<string> => {
   // Update the store with new token
   useApiAuthStore.getState().setJwt(access_token);
   return access_token;
+};
+
+// Initialize user profile on first registration
+export const initializeProfile = async (profileData: ProfileInitData): Promise<void> => {
+  const token = await getAuthToken();
+  
+  const response = await fetch(`${API_URL}/api/users/init-profile`, {
+    method: 'POST',
+    headers: { 
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(profileData)
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.text();
+    throw new Error(`Failed to initialize profile: ${response.status} ${errorData}`);
+  }
+  
+  // After initialization, fetch the complete profile
+  await getUserProfile(true);
 };
 
 // Fetch user profile from API
@@ -106,7 +134,7 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   }
 };
 
-// Update user plan
+// Update user plan (for subscription changes)
 export const updateUserPlan = async (plan: 'free' | 'standard' | 'premium'): Promise<void> => {
   const token = await getAuthToken();
   
@@ -132,7 +160,7 @@ export const updateUserPlan = async (plan: 'free' | 'standard' | 'premium'): Pro
   await getUserProfile(true);
 };
 
-// Initialize user profile (call this on app start)
+// Initialize user profile (call this on app start/login)
 export const initializeUserProfile = async (): Promise<void> => {
   try {
     const user = auth.currentUser;
@@ -168,6 +196,26 @@ export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: 
     console.error('Error checking wardrobe limit:', error);
     // If we can't check, assume they can add (fail open)
     return { canAdd: true };
+  }
+};
+
+// Check usage for suggestions
+export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?: string }> => {
+  try {
+    const profile = await getUserProfile();
+    
+    if (profile.usage.remaining > 0) {
+      return { canSuggest: true };
+    }
+    
+    return { 
+      canSuggest: false, 
+      reason: `Daily suggestion limit reached (${profile.usage.current_usage}/${profile.usage.daily_limit})` 
+    };
+    
+  } catch (error) {
+    console.error('Error checking suggestion limit:', error);
+    return { canSuggest: false, reason: 'Unable to check usage limits' };
   }
 };
 

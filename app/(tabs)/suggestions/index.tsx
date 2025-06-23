@@ -1,4 +1,4 @@
-// screens/SuggestionsScreen.tsx
+// app/(tabs)/suggestions/index.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
@@ -17,17 +17,22 @@ import { useClothingStore } from '@/store/clothingStore';
 import { useOutfitStore, Outfit } from '@/store/outfitStore';
 import { useWeatherStore } from '@/store/weatherStore';
 import { useAuth } from '@/context/AuthContext';
+import { useUserPlanStore } from '@/store/userPlanStore';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
 import { Cloud, Sun, RefreshCw, ExternalLink } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import EmptyState from '@/components/common/EmptyState';
 import Button from '@/components/common/Button';
 import OccasionPicker from '@/components/suggestions/OccasionPicker';
 import OutfitSuggestion from '@/components/suggestions/OutfitSuggestion';
+import OutfitLoadingAnimation from '@/components/suggestions/OutfitLoadingAnimation';
 import { getWeatherCondition } from '@/utils/weatherUtils';
 import { router } from 'expo-router';
 import { getOutfitSuggestion, OutfitSuggestionResponse } from '@/services/aiService';
+import { canGetSuggestion, getUserProfile } from '@/services/userService';
 import { CATEGORY_HIERARCHY } from '@/utils/constants';
 import Toast from 'react-native-toast-message';
+import useAlertStore from '@/store/alertStore';
 
 interface PinterestLink {
   title: string;
@@ -41,6 +46,9 @@ export default function SuggestionsScreen() {
   const { outfits, addOutfit } = useOutfitStore();
   const { weather, loading: weatherLoading, fetchWeather, error: weatherError } = useWeatherStore();
   const { user } = useAuth();
+  const { userPlan } = useUserPlanStore();
+  const { currentPlan, isProUser } = useRevenueCat();
+  const { show: showAlert } = useAlertStore();
 
   const [selectedOccasion, setSelectedOccasion] = useState('casual');
   const [generating, setGenerating] = useState(false);
@@ -48,6 +56,7 @@ export default function SuggestionsScreen() {
   const [error, setError] = useState<string | null>(null);
   const [pinterestLinks, setPinterestLinks] = useState<PinterestLink[]>([]);
   const [isLiked, setIsLiked] = useState(false);
+  const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
 
   const isAlreadyLiked = useMemo(
     () =>
@@ -76,7 +85,7 @@ export default function SuggestionsScreen() {
     }
   }, [suggestion]);
 
-  // Only require dresses for female users
+  // Only require basic categories for outfit generation
   const isFemale = (user as any)?.gender === 'female';
 
   const wardrobeStatus = useMemo(() => {
@@ -150,7 +159,31 @@ export default function SuggestionsScreen() {
   const handleGenerateSuggestion = async () => {
     if (!wardrobeStatus.hasEnough || !weather) return;
 
+    // Usage limit kontrolü
+    try {
+      const usageCheck = await canGetSuggestion();
+      if (!usageCheck.canSuggest) {
+        showAlert({
+          title: t('suggestions.limitExceededTitle'),
+          message: usageCheck.reason || t('suggestions.limitExceededMessage'),
+          buttons: [
+            { text: t('common.cancel'), onPress: () => {}, variant: 'outline' },
+            { 
+              text: t('profile.upgrade'), 
+              onPress: () => router.push('/profile/subscription'),
+              variant: 'primary'
+            }
+          ]
+        });
+        return;
+      }
+    } catch (error) {
+      console.error('Usage check failed:', error);
+      // Continue with suggestion generation even if check fails
+    }
+
     setGenerating(true);
+    setShowLoadingAnimation(true);
     setError(null);
     setSuggestion(null);
     setPinterestLinks([]);
@@ -165,8 +198,12 @@ export default function SuggestionsScreen() {
         weatherCondition,
         selectedOccasion
       );
+      
       if (result) {
         setSuggestion(result);
+        
+        // Başarılı suggestion sonrası usage'ı refresh et
+        await getUserProfile(true);
       } else {
         setError(t('suggestions.genericError'));
       }
@@ -175,6 +212,10 @@ export default function SuggestionsScreen() {
       setError(t('suggestions.genericError'));
     } finally {
       setGenerating(false);
+      // Animation'ı kapatmak için kısa bir delay
+      setTimeout(() => {
+        setShowLoadingAnimation(false);
+      }, 500);
     }
   };
 
@@ -217,6 +258,50 @@ export default function SuggestionsScreen() {
       : <Cloud color={theme.colors.accent} size={20} />;
   };
 
+  // Usage display component
+  const renderUsageInfo = () => {
+    if (!userPlan) return null;
+
+    const usagePercentage = userPlan.usage.percentage_used;
+    const isNearLimit = usagePercentage > 80;
+
+    return (
+      <View style={[styles.usageContainer, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.usageHeader}>
+          <Text style={[styles.usageTitle, { color: theme.colors.text }]}>
+            {t('suggestions.dailyUsage')}
+          </Text>
+          {currentPlan !== 'premium' && (
+            <TouchableOpacity onPress={() => router.push('/profile/subscription')}>
+              <Text style={[styles.upgradeLink, { color: theme.colors.primary }]}>
+                {t('profile.upgrade')} ✨
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        
+        <Text style={[styles.usageText, { color: theme.colors.textLight }]}>
+          {t('suggestions.usageLimitInfo', {
+            used: userPlan.usage.current_usage,
+            total: userPlan.usage.daily_limit
+          })}
+        </Text>
+        
+        <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
+          <View
+            style={[
+              styles.progressFill,
+              {
+                backgroundColor: isNearLimit ? theme.colors.warning : theme.colors.primary,
+                width: `${Math.min(100, usagePercentage)}%`
+              }
+            ]}
+          />
+        </View>
+      </View>
+    );
+  };
+
   const renderPinterestItem = ({ item }: { item: PinterestLink }) => {
     return (
       <TouchableOpacity
@@ -246,6 +331,8 @@ export default function SuggestionsScreen() {
 
     return (
       <>
+        {renderUsageInfo()}
+
         <View style={styles.weatherSection}>
           {weatherLoading ? (
             <ActivityIndicator color={theme.colors.primary} />
@@ -348,6 +435,13 @@ export default function SuggestionsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('suggestions.title')} />
+      
+      {/* Loading Animation Modal */}
+      <OutfitLoadingAnimation 
+        isVisible={showLoadingAnimation} 
+        onComplete={() => setShowLoadingAnimation(false)}
+      />
+      
       <FlatList
         data={pinterestLinks}
         renderItem={renderPinterestItem}
@@ -370,6 +464,40 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   flatListContainer: { flex: 1 },
   contentContainer: { paddingHorizontal: 16, paddingBottom: 32 },
+  usageContainer: {
+    marginHorizontal: 0,
+    marginBottom: 16,
+    padding: 16,
+    borderRadius: 12,
+  },
+  usageHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  usageTitle: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 14,
+  },
+  upgradeLink: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 12,
+  },
+  usageText: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
   weatherSection: { marginBottom: 24, alignItems: 'center' },
   weatherInfo: { flexDirection: 'row', alignItems: 'center' },
   weatherText: { fontFamily: 'Montserrat-Medium', fontSize: 16, marginLeft: 8 },

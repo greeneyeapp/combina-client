@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking, ScrollView, Platform, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -24,6 +24,10 @@ import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
 import { getUserProfile } from '@/services/userService';
 
+import { restorePurchases } from '@/services/purchaseService';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { RefreshCw } from 'lucide-react-native';
+
 interface UserPlan {
   plan: string;
   daily_limit: number;
@@ -38,6 +42,8 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { show: showAlert } = useAlertStore();
   const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
+  const { refreshCustomerInfo } = useRevenueCat();
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const languages = [
     { code: 'ar', name: 'العربية' },
@@ -81,7 +87,60 @@ export default function ProfileScreen() {
     if (user && !user.isAnonymous) {
       fetchUserProfile();
     }
+
+    
   }, [user]);
+
+  const handleRestorePurchases = async () => {
+    if (Platform.OS !== 'ios') {
+      showAlert({
+        title: t('subscription.notAvailable'),
+        message: t('subscription.iosOnly'),
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
+      });
+      return;
+    }
+
+    setIsRestoring(true);
+    try {
+      const result = await restorePurchases();
+
+      if (result.success) {
+        if (result.restoredPlan && result.restoredPlan !== 'free') {
+          showAlert({
+            title: t('subscription.restoreSuccessTitle'),
+            message: t('subscription.restoreSuccessMessage', {
+              plan: t(`profile.plans.${result.restoredPlan}`)
+            }),
+            buttons: [{ text: t('common.ok'), onPress: () => { } }]
+          });
+        } else {
+          showAlert({
+            title: t('subscription.noRestoreTitle'),
+            message: t('subscription.noRestoreMessage'),
+            buttons: [{ text: t('common.ok'), onPress: () => { } }]
+          });
+        }
+
+        // Refresh both RevenueCat and profile data
+        refreshCustomerInfo();
+      } else {
+        showAlert({
+          title: t('subscription.restoreFailTitle'),
+          message: result.error || t('subscription.restoreFailMessage'),
+          buttons: [{ text: t('common.ok'), onPress: () => { } }]
+        });
+      }
+    } catch (error) {
+      showAlert({
+        title: t('common.error'),
+        message: t('subscription.unexpectedError'),
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
+      });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
 
   const getPlanIcon = (plan: string) => {
     switch (plan) {
@@ -176,7 +235,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('profile.title')} />
 
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -291,6 +350,31 @@ export default function ProfileScreen() {
           <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>
             {t('profile.account')}
           </Text>
+
+          <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
+            {Platform.OS === 'ios' && (
+              <>
+                <TouchableOpacity
+                  style={styles.settingRow}
+                  onPress={handleRestorePurchases}
+                  disabled={isRestoring}
+                >
+                  <View style={styles.settingLabelContainer}>
+                    <RefreshCw color={theme.colors.text} size={20} />
+                    <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
+                      {t('subscription.restorePurchases')}
+                    </Text>
+                  </View>
+                  <View style={styles.settingAction}>
+                    {isRestoring && <ActivityIndicator size="small" color={theme.colors.primary} />}
+                    <ChevronRight color={theme.colors.textLight} size={16} />
+                  </View>
+                </TouchableOpacity>
+
+                <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              </>
+            )}
+          </View>
 
           <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
             <TouchableOpacity

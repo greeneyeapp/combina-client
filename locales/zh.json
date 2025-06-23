@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "创建账号",
+    "birthDate": "出生日期",
     "subtitle": "填写以下信息创建您的账号。",
     "name": "姓名",
     "namePlaceholder": "请输入您的姓名",
@@ -202,6 +203,9 @@
   },
   "suggestions": {
     "title": "穿搭建议",
+    "generating": "生成中...",
+    "inspirationTitle": "风格灵感",
+    "linkError": "无法打开链接",
     "weatherError": "天气数据不可用。点击重试。",
     "selectOccasion": "什么场合？",
     "generateOutfit": "生成穿搭",

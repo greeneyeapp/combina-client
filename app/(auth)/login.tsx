@@ -17,9 +17,11 @@ export default function LoginScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
+  
   const { control, handleSubmit, formState: { errors } } = useForm({
     defaultValues: { email: '', password: '' },
   });
+  
   const { show: showAlert } = useAlertStore();
 
   const onEmailLogin = async (data: { email: string; password: string }) => {
@@ -83,6 +85,10 @@ export default function LoginScreen() {
                     error={errors.email?.message}
                     keyboardType="email-address"
                     autoCapitalize="none"
+                    textContentType="emailAddress"
+                    autoComplete="email"
+                    autoCorrect={false}
+                    spellCheck={false}
                   />
                 )}
                 name="email"
@@ -99,6 +105,10 @@ export default function LoginScreen() {
                     value={value}
                     error={errors.password?.message}
                     secureTextEntry
+                    textContentType="password"
+                    autoComplete="password"
+                    autoCorrect={false}
+                    spellCheck={false}
                   />
                 )}
                 name="password"

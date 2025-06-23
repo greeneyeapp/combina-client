@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "खाता बनाएं",
+    "birthDate": "जन्म तिथि",
     "subtitle": "अपना खाता बनाने के लिए नीचे विवरण भरें।",
     "name": "पूरा नाम",
     "namePlaceholder": "अपना पूरा नाम दर्ज करें",
@@ -202,6 +203,9 @@
   },
   "suggestions": {
     "title": "आउटफिट सुझाव",
+    "generating": "तैयार कर रहे हैं...",
+    "inspirationTitle": "स्टाइल प्रेरणा",
+    "linkError": "लिंक नहीं खोला जा सका",
     "weatherError": "मौसम डेटा उपलब्ध नहीं है। फिर से प्रयास करने के लिए टैप करें।",
     "selectOccasion": "अवसर क्या है?",
     "generateOutfit": "आउटफिट बनाएं",

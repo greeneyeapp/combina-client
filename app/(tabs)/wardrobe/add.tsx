@@ -35,6 +35,7 @@ export default function AddClothingScreen() {
   const { theme } = useTheme();
   const { addClothing } = useClothingStore();
   const [image, setImage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const { show: showAlert } = useAlertStore();
 
@@ -69,6 +70,7 @@ export default function AddClothingScreen() {
         notes: '',
       });
       setImage(null);
+      setIsLoading(false);
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
   );
@@ -118,44 +120,57 @@ export default function AddClothingScreen() {
     setImage(null);
   };
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     if (!image) {
       showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
       return;
     }
-    if (!data.category) { // Kategori seçimi kontrolü
+    if (!data.category) {
       showAlert({ title: t('common.error'), message: t('wardrobe.categoryRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
       return;
     }
 
-    const newItem = {
-      id: generateUniqueId(),
-      name: data.name,
-      category: data.category, // Seçilen detaylı kategori
-      color: data.color,
-      season: data.season,
-      style: data.style,
-      notes: data.notes,
-      imageUri: image,
-      createdAt: new Date().toISOString(),
-    };
-    
-    addClothing(newItem);
-    
-    // Alert yerine Toast kullanma
-    Toast.show({
-      type: 'success',
-      text1: t('common.success'),
-      text2: t('wardrobe.itemAddedSuccessfully'),
-      position: 'top',
-      visibilityTime: 2500,
-      topOffset: 50,
-    });
-    
-    // Kısa bir delay ile geri dönme
-    setTimeout(() => {
+    setIsLoading(true);
+
+    try {
+      const newItem = {
+        id: generateUniqueId(),
+        name: data.name,
+        category: data.category,
+        color: data.color,
+        season: data.season,
+        style: data.style,
+        notes: data.notes,
+        imageUri: image,
+        createdAt: new Date().toISOString(),
+      };
+
+      // Senkron olarak item'ı ekle
+      await addClothing(newItem);
+
+      // Başarı toast'ını göster
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('wardrobe.itemAddedSuccessfully'),
+        position: 'top',
+        visibilityTime: 2000,
+        topOffset: 50,
+      });
+
+      // İşlem tamamlandıktan sonra geri dön
       router.back();
-    }, 1000);
+
+    } catch (error) {
+      console.error('Error adding clothing item:', error);
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.errorAddingItem'), 
+        buttons: [{ text: t('common.ok'), onPress: () => { } }] 
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -202,6 +217,7 @@ export default function AddClothingScreen() {
                 onPress={takePicture}
                 variant="outline"
                 style={styles.imageButton}
+                disabled={isLoading}
               />
               <Button
                 icon={<ImageIcon color={theme.colors.text} size={20} />}
@@ -209,6 +225,7 @@ export default function AddClothingScreen() {
                 onPress={pickImage}
                 variant="outline"
                 style={styles.imageButton}
+                disabled={isLoading}
               />
             </View>
           </View>
@@ -226,6 +243,7 @@ export default function AddClothingScreen() {
                   onChangeText={onChange}
                   value={value}
                   error={errors.name?.message}
+                  editable={!isLoading}
                 />
               )}
             />
@@ -245,7 +263,6 @@ export default function AddClothingScreen() {
               />
             </View>
 
-            {/* Diğer alanlar (Color, Season, Style, Notes) değişiklik olmadan kalabilir */}
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.color')}</Text>
               <Controller
@@ -253,7 +270,10 @@ export default function AddClothingScreen() {
                 name="color"
                 rules={{ required: t('wardrobe.colorRequired') as string }}
                 render={({ field: { onChange, value } }) => (
-                  <ColorPicker selectedColor={value} onSelectColor={onChange} />
+                  <ColorPicker 
+                    selectedColor={value} 
+                    onSelectColor={onChange} 
+                  />
                 )}
               />
               {errors.color && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.color.message}</Text>}
@@ -266,7 +286,10 @@ export default function AddClothingScreen() {
                 name="season"
                 rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }}
                 render={({ field: { onChange, value } }) => (
-                  <SeasonPicker selectedSeasons={value} onSelectSeason={onChange} />
+                  <SeasonPicker 
+                    selectedSeasons={value} 
+                    onSelectSeason={onChange} 
+                  />
                 )}
               />
               {errors.season && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>}
@@ -279,7 +302,10 @@ export default function AddClothingScreen() {
                 name="style"
                 rules={{ required: t('wardrobe.styleRequired') as string }}
                 render={({ field: { onChange, value } }) => (
-                  <StylePicker selectedStyle={value} onSelectStyle={onChange} />
+                  <StylePicker 
+                    selectedStyle={value} 
+                    onSelectStyle={onChange} 
+                  />
                 )}
               />
               {errors.style && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>}
@@ -298,15 +324,17 @@ export default function AddClothingScreen() {
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
+                  editable={!isLoading}
                 />
               )}
             />
 
             <Button
-              label={t('wardrobe.saveItem')}
+              label={isLoading ? t('common.saving') : t('wardrobe.saveItem')}
               onPress={handleSubmit(onSubmit)}
               variant="primary"
               style={styles.saveButton}
+              disabled={isLoading}
             />
           </View>
         </ScrollView>

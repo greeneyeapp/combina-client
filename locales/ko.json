@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "계정 생성",
+    "birthDate": "생년월일",
     "subtitle": "아래 정보를 입력해 계정을 만들어주세요.",
     "name": "이름",
     "namePlaceholder": "이름을 입력하세요",
@@ -202,6 +203,9 @@
   },
   "suggestions": {
     "title": "코디 제안",
+    "generating": "생성 중...",
+    "inspirationTitle": "스타일 영감",
+    "linkError": "링크를 열 수 없습니다",
     "weatherError": "날씨 데이터를 불러올 수 없습니다. 다시 시도하려면 탭하세요.",
     "selectOccasion": "용도는 무엇인가요?",
     "generateOutfit": "코디 생성",

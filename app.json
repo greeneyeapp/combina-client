@@ -2,7 +2,7 @@
   "expo": {
     "name": "Combina",
     "slug": "combina-client",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "combina-client",
@@ -13,7 +13,9 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "This app uses camera to take photos of clothing items for your wardrobe.",
-        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select clothing photos."
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select clothing photos.",
+        "NSLocationWhenInUseUsageDescription": "This app uses location to provide weather-based outfit suggestions.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to provide weather-based outfit suggestions."
       }
     },
     "android": {
@@ -46,7 +48,8 @@
             "kotlinVersion": "2.1.0"
           }
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

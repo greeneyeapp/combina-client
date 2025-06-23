@@ -13,7 +13,9 @@
     "searchPlaceholder": "Search...",
     "apply": "Apply",
     "goBack": "Go Back",
-    "error": "An unexpected error occurred."
+    "error": "An unexpected error occurred.",
+    "tryAgain": "Please try again",
+    "saving": "Saving..."
   },
   "login": {
     "title": "Login",
@@ -49,6 +51,7 @@
     "genericError": "An error occurred. Please try again."
   },
   "register": {
+    "birthDate": "Birth Date",
     "title": "Create Account",
     "subtitle": "Fill in the details below to create your account.",
     "name": "Full Name",
@@ -90,7 +93,6 @@
   "tabs": {
     "wardrobe": "Wardrobe",
     "suggestions": "Outfits",
-    "inspiration": "Inspire",
     "history": "History",
     "profile": "Profile"
   },
@@ -98,6 +100,8 @@
     "title": "My Wardrobe",
     "addItem": "Add New Item",
     "editItem": "Edit Item",
+    "limit": "Limit",
+    "errorAddingItem": "Error adding item. Please try again.",
     "itemDetails": "Item Details",
     "searchPlaceholder": "Search clothing...",
     "addPhoto": "Add Photo",
@@ -202,6 +206,9 @@
   },
   "suggestions": {
     "title": "Outfit Suggestions",
+    "generating": "Generating...",
+    "inspirationTitle": "Style Inspiration",
+    "linkError": "Could not open link",
     "weatherError": "Weather data unavailable. Tap to retry.",
     "selectOccasion": "What's the occasion?",
     "generateOutfit": "Generate Outfit",
@@ -293,35 +300,9 @@
     "cool": "Cool",
     "cold": "Cold"
   },
-  "inspiration": {
-    "save": "Save",
-    "browse": "Browse Pinterest",
-    "saveErrorTitle": "Cannot Save Pin",
-    "saveErrorMessage": "This pin could not be saved. Please make sure you are on a valid Pinterest pin page.",
-    "title": "Inspiration",
-    "searchPlaceholder": "Search...",
-    "emptyTitle": "No saved inspirations",
-    "emptyMessage": "Browse Pinterest and save looks you love.",
-    "saveWithNote": "Save with Note",
-    "notePlaceholder": "Add a note about this inspiration...",
-    "saveButton": "Save",
-    "deleteTitle": "Delete Inspiration",
-    "deleteMessage": "Are you sure you want to delete this inspiration?",
-    "noCollection": "No Collection",
-    "selectCollection": "Select Collection",
-    "createNewCollection": "Create New Collection",
-    "collectionsTitle": "Collections",
-    "newCollection": "New collection...",
-    "noCollections": "Couldn't find collection",
-    "defaultCollection": "All Inspirations",
-    "noItems": "Add some inspirations",
-    "saveSuccessTitle": "Saved!",
-    "saveSuccessMessage": "Inspiration saved to your collection.",
-    "deleteCollectionMessage": "Are you sure you want to delete this collection?"
-  },
   "logout": {
     "alertTitle": "Are you sure?",
-    "alertMessage": "If you sign in with a different account, all your wardrobe, outfit history, and inspirations saved on this device will be lost. Are you sure you want to continue?"
+    "alertMessage": "If you sign in with a different account, all your wardrobe and outfit history saved on this device will be lost. Are you sure you want to continue?"
   },
   "history": {
     "title": "Outfit History",
@@ -336,6 +317,14 @@
     "deleteMessage": "Are you sure you want to delete this outfit from your history?"
   },
   "profile": {
+    "subscription": "Subscription",
+    "dailyUsage": "{{used}}/{{total}} daily suggestions used",
+    "upgradeForMore": "Tap to upgrade for more suggestions",
+    "plans": {
+      "free": "Free",
+      "standard": "Standard",
+      "premium": "Premium"
+    },
     "title": "Profile",
     "guest": "Guest User",
     "guestSubtitle": "Sign in to access all features",
@@ -351,7 +340,7 @@
     "logout": "Logout",
     "clearDataTitle": "Clear All Data",
     "continueToDelete": "Continue",
-    "clearDataMessage": "This will permanently delete all your clothing items, outfit history, and saved inspirations. This action cannot be undone."
+    "clearDataMessage": "This will permanently delete all your clothing items and outfit history. This action cannot be undone."
   },
   "permissions": {
     "cameraRequired": "Camera permission is required to take photos.",
@@ -359,5 +348,41 @@
     "locationRequiredTitle": "Location Permission Required",
     "locationRequiredMessage": "This feature requires your location to provide weather-based suggestions. Please enable location services for this app in your device settings.",
     "openSettings": "Open Settings"
+  },
+  "subscription": {
+    "title": "Subscription",
+    "notAvailable": "Subscriptions not available",
+    "iosOnly": "Currently only available on iOS",
+    "loadError": "Failed to load subscription plans",
+    "purchaseNotAvailable": "Purchase not available",
+    "purchaseSuccessTitle": "Purchase successful!",
+    "purchaseSuccessMessage": "Your plan has been activated",
+    "purchaseFailTitle": "Purchase failed",
+    "mostPopular": "Most Popular",
+    "processing": "Processing...",
+    "upgrade": "Upgrade",
+    "comingSoon": "Coming Soon",
+    "androidComingSoon": "Subscriptions are currently available only on iOS. Android support is coming soon!",
+    "loadingPlans": "Loading subscription plans...",
+    "heroTitle": "Unlock Your Style Potential",
+    "heroSubtitle": "Expand your wardrobe, get unlimited suggestions, and enjoy an ad-free experience",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "month": "month",
+    "year": "year",
+    "savePercent": "Save {{percent}}%",
+    "plans": {
+      "standard": "Standard",
+      "premium": "Premium"
+    },
+    "features": {
+      "wardrobeItems": "{{count}} wardrobe items",
+      "unlimitedItems": "Unlimited wardrobe items",
+      "dailySuggestions": "{{count}} daily suggestions",
+      "noAds": "No advertisements",
+      "advancedTips": "Advanced style tips",
+      "pinterestInspiration": "Pinterest inspiration",
+      "prioritySupport": "Priority support"
+    }
   }
 }

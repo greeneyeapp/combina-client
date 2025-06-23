@@ -72,10 +72,9 @@ export default function TabLayout() {
       <Tabs.Screen name="wardrobe/add" options={{ href: null }} />
       <Tabs.Screen name="wardrobe/[id]" options={{ href: null }} />
       <Tabs.Screen name="wardrobe/edit/[id]" options={{ href: null }} />
-      <Tabs.Screen name="inspiration/collections" options={{ href: null }} />
-      <Tabs.Screen name="inspiration" options={{ href: null }} />
-      <Tabs.Screen name="inspiration/index" options={{ href: null }} />
       <Tabs.Screen name="profile/language" options={{ href: null }} />
+      <Tabs.Screen name="profile/subscription" options={{ href: null }} />
+
     </Tabs>
   );
 }

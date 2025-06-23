@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "צור חשבון",
+    "birthDate": "תאריך לידה",
     "subtitle": "מלא את הפרטים ליצירת חשבונך.",
     "name": "שם מלא",
     "namePlaceholder": "הזן שם מלא",
@@ -202,6 +203,9 @@
   },
   "suggestions": {
     "title": "הצעות להופעות",
+    "generating": "יוצר...",
+    "inspirationTitle": "השראת סטייל",
+    "linkError": "לא ניתן לפתוח את הקישור",
     "weatherError": "נתוני מזג אוויר אינם זמינים. הקש כדי לנסות שוב.",
     "selectOccasion": "מהי ההזדמנות?",
     "generateOutfit": "צור הופעה",

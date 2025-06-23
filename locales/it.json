@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "Buat Akun",
+    "birthDate": "Data di Nascita",
     "subtitle": "Isi detail di bawah ini untuk membuat akun Anda.",
     "name": "Nama Lengkap",
     "namePlaceholder": "Masukkan nama lengkap Anda",
@@ -202,6 +203,9 @@
   },
   "suggestions": {
     "title": "Saran Outfit",
+    "generating": "Generando...",
+    "inspirationTitle": "Ispirazione di Stile",
+    "linkError": "Impossibile aprire il link",
     "weatherError": "Data cuaca tidak tersedia. Ketuk untuk mencoba lagi.",
     "selectOccasion": "Untuk acara apa?",
     "generateOutfit": "Buat Outfit",

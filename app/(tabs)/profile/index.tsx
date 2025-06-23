@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Linking, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -13,18 +13,31 @@ import {
   UserCircle2,
   HelpCircle,
   Bell,
-  Trash2
+  Trash2,
+  Crown,
+  Star,
+  Zap
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
 import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
+import { getUserProfile } from '@/services/userService';
+
+interface UserPlan {
+  plan: string;
+  daily_limit: number;
+  current_usage: number;
+  remaining: number;
+  percentage_used: number;
+}
 
 export default function ProfileScreen() {
   const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const { show: showAlert } = useAlertStore();
+  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
 
   const languages = [
     { code: 'ar', name: 'العربية' },
@@ -46,12 +59,61 @@ export default function ProfileScreen() {
     { code: 'tr', name: 'Türkçe' },
     { code: 'zh', name: '中文' }
   ];
-  
+
+  // ProfileScreen.tsx'de useEffect'i güncelleyin
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const profile = await getUserProfile();
+        setUserPlan({
+          plan: profile.plan,
+          daily_limit: profile.usage.daily_limit,
+          current_usage: profile.usage.current_usage,
+          remaining: profile.usage.remaining,
+          percentage_used: profile.usage.percentage_used
+        });
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+        // Fallback data veya error handling
+      }
+    };
+
+    if (user && !user.isAnonymous) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  const getPlanIcon = (plan: string) => {
+    switch (plan) {
+      case 'standard':
+        return <Star color={theme.colors.primary} size={20} />;
+      case 'premium':
+        return <Crown color="#FFD700" size={20} />;
+      default:
+        return <Zap color={theme.colors.textLight} size={20} />;
+    }
+  };
+
+  const getPlanColor = (plan: string) => {
+    switch (plan) {
+      case 'standard':
+        return theme.colors.primary;
+      case 'premium':
+        return '#FFD700';
+      default:
+        return theme.colors.textLight;
+    }
+  };
+
   const getLanguageName = (code: string) =>
     languages.find(l => l.code === code)?.name || code;
 
   const handleLanguagePress = () => {
     router.push('/(tabs)/profile/language');
+  };
+
+  const handleSubscriptionPress = () => {
+    router.push('/profile/subscription' as any);
   };
 
   const handleLogout = () => {
@@ -114,7 +176,11 @@ export default function ProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('profile.title')} />
 
-      <View style={styles.content}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={[styles.profileCard, { backgroundColor: theme.colors.card }]}>
           <Avatar size={80} user={user} />
           <View style={styles.profileInfo}>
@@ -130,6 +196,56 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Subscription Section */}
+        {userPlan && (
+          <View style={styles.settingsSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>
+              {t('profile.subscription')}
+            </Text>
+
+            <TouchableOpacity
+              style={[styles.subscriptionCard, { backgroundColor: theme.colors.card }]}
+              onPress={handleSubscriptionPress}
+            >
+              <View style={styles.subscriptionHeader}>
+                <View style={styles.planInfo}>
+                  {getPlanIcon(userPlan.plan)}
+                  <Text style={[styles.planName, { color: getPlanColor(userPlan.plan) }]}>
+                    {t(`profile.plans.${userPlan.plan}`)}
+                  </Text>
+                </View>
+                <ChevronRight color={theme.colors.textLight} size={16} />
+              </View>
+
+              <View style={styles.usageInfo}>
+                <Text style={[styles.usageText, { color: theme.colors.text }]}>
+                  {t('profile.dailyUsage', {
+                    used: userPlan.current_usage,
+                    total: userPlan.daily_limit
+                  })}
+                </Text>
+                <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        backgroundColor: getPlanColor(userPlan.plan),
+                        width: `${userPlan.percentage_used}%`
+                      }
+                    ]}
+                  />
+                </View>
+              </View>
+
+              {userPlan.plan === 'free' && (
+                <Text style={[styles.upgradeText, { color: theme.colors.primary }]}>
+                  {t('profile.upgradeForMore')}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.settingsSection}>
           <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>
@@ -168,9 +284,6 @@ export default function ProfileScreen() {
                 thumbColor={theme.colors.white}
               />
             </View>
-
-            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
           </View>
         </View>
 
@@ -230,7 +343,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -239,9 +352,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 32,
   },
   profileCard: {
     flexDirection: 'row',
@@ -275,6 +391,48 @@ const styles = StyleSheet.create({
   },
   settingsCard: {
     borderRadius: 16,
+  },
+  subscriptionCard: {
+    padding: 16,
+    borderRadius: 16,
+  },
+  subscriptionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  planInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  planName: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
+    marginLeft: 8,
+    textTransform: 'capitalize',
+  },
+  usageInfo: {
+    marginBottom: 8,
+  },
+  usageText: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  upgradeText: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 12,
+    marginTop: 4,
   },
   settingRow: {
     flexDirection: 'row',

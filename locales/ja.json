@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "アカウント作成",
+    "birthDate": "生年月日",
     "subtitle": "以下の詳細を入力してアカウントを作成してください。",
     "name": "氏名",
     "namePlaceholder": "氏名を入力してください",
@@ -202,6 +203,9 @@
   },
   "suggestions": {
     "title": "コーディネート提案",
+    "generating": "生成中...",
+    "inspirationTitle": "スタイルインスピレーション",
+    "linkError": "リンクを開けませんでした",
     "weatherError": "天気データが利用できません。タップして再試行してください。",
     "selectOccasion": "用途は何ですか？",
     "generateOutfit": "コーデを生成",

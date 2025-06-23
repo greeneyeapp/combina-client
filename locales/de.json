@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "Konto erstellen",
+    "birthDate": "Geburtsdatum",
     "subtitle": "Füllen Sie die untenstehenden Angaben aus, um Ihr Konto zu erstellen.",
     "name": "Vollständiger Name",
     "namePlaceholder": "Geben Sie Ihren vollständigen Namen ein",
@@ -202,6 +203,9 @@
   },
   "suggestions": {
     "title": "Outfit-Vorschläge",
+    "generating": "Erstelle...",
+    "inspirationTitle": "Stil-Inspiration",
+    "linkError": "Link konnte nicht geöffnet werden",
     "weatherError": "Wetterdaten nicht verfügbar. Tippen zum Wiederholen.",
     "selectOccasion": "Für welchen Anlass?",
     "generateOutfit": "Outfit generieren",

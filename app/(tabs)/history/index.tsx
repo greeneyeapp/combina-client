@@ -24,7 +24,7 @@ interface Section {
 }
 
 export default function HistoryScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { outfits } = useOutfitStore();
 
@@ -39,12 +39,12 @@ export default function HistoryScreen() {
   // limitli liste ve section oluştur
   const limited = useMemo(() => outfits.slice(0, limit), [outfits, limit]);
   const sections: Section[] = useMemo(
-    () => groupOutfitsByDate(limited),
-    [limited]
+    () => groupOutfitsByDate(limited, i18n.language, t),
+    [limited, i18n.language, t]
   );
 
-  // Bugünün tarihi (örn. "June 12, 2025")
-  const todayString = formatDate(new Date().toISOString());
+  // Bugünün tarihi (localized)
+  const todayString = formatDate(new Date().toISOString(), i18n.language);
 
   if (outfits.length === 0) {
     return (
@@ -66,15 +66,14 @@ export default function HistoryScreen() {
       <HeaderBar title={t('history.title')} />
 
       {/* Sabit "Today" etiketi (veya başka bir başlık) */}
-      <View style={{
-        backgroundColor: theme.colors.card,
-        borderRadius: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        marginTop: 12,
-        marginBottom: 0,
-      }}>
-        <Text style={{ color: theme.colors.textLight, fontFamily: 'Montserrat-Bold', fontSize: 14 }}>
+      <View style={[
+        styles.todayHeader,
+        { backgroundColor: theme.colors.card }
+      ]}>
+        <Text style={[
+          styles.todayHeaderText,
+          { color: theme.colors.textLight }
+        ]}>
           {t('history.today')}
         </Text>
       </View>
@@ -115,6 +114,18 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   list: { paddingHorizontal: 16, paddingBottom: 32 },
+  todayHeader: {
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 0,
+    marginHorizontal: 16,
+  },
+  todayHeaderText: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 14,
+  },
   sectionHeader: {
     paddingVertical: 8,
     paddingHorizontal: 16,

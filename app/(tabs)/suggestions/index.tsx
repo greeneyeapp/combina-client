@@ -7,7 +7,8 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  Linking
+  Linking,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -179,18 +180,28 @@ export default function SuggestionsScreen() {
 
   const handlePinterestLinkPress = async (url: string) => {
     try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
+      if (Platform.OS === 'ios') {
+        // iOS için direkt Linking kullan
         await Linking.openURL(url);
       } else {
-        // Fallback to webview if direct linking fails
-        router.push({ pathname: '/webview', params: { url } });
+        // Android için önce kontrol et
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+        } else {
+          // Fallback to webview
+          try {
+            router.push({ pathname: '/webview' as any, params: { url } });
+          } catch (routerError) {
+            console.error('Router error:', routerError);
+          }
+        }
       }
     } catch (error) {
       console.error('Error opening Pinterest link:', error);
       Toast.show({
         type: 'error',
-        text1: t('suggestions.linkError', 'Could not open link'),
+        text1: t('suggestions.linkError') || 'Could not open link',
         position: 'top',
         visibilityTime: 2000,
         topOffset: 50,
@@ -218,6 +229,7 @@ export default function SuggestionsScreen() {
           }
         ]}
         onPress={() => handlePinterestLinkPress(item.url)}
+        activeOpacity={0.7}
       >
         <View style={styles.pinterestContent}>
           <ExternalLink color={theme.colors.primary} size={20} />
@@ -293,7 +305,7 @@ export default function SuggestionsScreen() {
         {pinterestLinks.length > 0 && (
           <View style={styles.inspirationSection}>
             <Text style={[styles.inspirationTitle, { color: theme.colors.text }]}>
-              {t('suggestions.inspirationTitle', 'Style Inspiration')}
+              {t('suggestions.inspirationTitle') || 'Style Inspiration'}
             </Text>
           </View>
         )}
@@ -310,7 +322,13 @@ export default function SuggestionsScreen() {
           title={t('suggestions.notEnoughItemsTitle')}
           message={t('suggestions.notEnoughItemsMessage')}
           buttonText={t('suggestions.addMoreItems')}
-          onButtonPress={() => router.push('/wardrobe/add')}
+          onButtonPress={() => {
+            try {
+              router.push('/wardrobe/add' as any);
+            } catch (error) {
+              console.error('Router navigation error:', error);
+            }
+          }}
         >
           <View style={[styles.missingItemsContainer, { borderColor: theme.colors.border }]}>
             <Text style={[styles.missingItemsTitle, { color: theme.colors.textLight }]}>
@@ -339,6 +357,10 @@ export default function SuggestionsScreen() {
         style={styles.flatListContainer}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        removeClippedSubviews={Platform.OS === 'android'}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={10}
       />
     </SafeAreaView>
   );

@@ -50,6 +50,7 @@
   },
   "register": {
     "title": "إنشاء حساب",
+    "birthDate": "تاريخ الميلاد",
     "subtitle": "املأ التفاصيل أدناه لإنشاء حسابك.",
     "name": "الاسم الكامل",
     "namePlaceholder": "أدخل اسمك الكامل",
@@ -201,6 +202,9 @@
     "beachwear": "ملابس بحر"
   },
   "suggestions": {
+    "generating": "جاري الإنشاء...",
+    "inspirationTitle": "إلهام الأناقة",
+    "linkError": "لا يمكن فتح الرابط",
     "title": "اقتراحات الإطلالات",
     "weatherError": "بيانات الطقس غير متوفرة. اضغط لإعادة المحاولة.",
     "selectOccasion": "ما المناسبة؟",

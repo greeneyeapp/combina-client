@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { ArrowLeft, Check } from 'lucide-react-native';
 import Button from '@/components/common/Button';
 import HeaderBar from '@/components/common/HeaderBar';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const languages = [
   { code: 'ar', name: 'العربية' },
@@ -38,9 +39,21 @@ export default function LanguageScreen() {
     setSelectedLanguage(languageCode);
   };
 
-  const saveLanguage = () => {
-    i18n.changeLanguage(selectedLanguage);
-    router.back();
+  const saveLanguage = async () => {
+    try {
+      // i18n dilini değiştir
+      await i18n.changeLanguage(selectedLanguage);
+      
+      // AsyncStorage'a kaydet (kalıcı olması için)
+      await AsyncStorage.setItem('app_language', selectedLanguage);
+      
+      console.log('Language saved:', selectedLanguage);
+      router.back();
+    } catch (error) {
+      console.error('Error saving language:', error);
+      // Hata durumunda yine de geri dön
+      router.back();
+    }
   };
 
   return (

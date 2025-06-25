@@ -25,7 +25,7 @@ const StylePicker: React.FC<StylePickerProps> = ({
   onSelectStyle,
   selectedStyles = [],
   onSelectStyles,
-  multiSelect = false,
+  multiSelect = true, // Varsayılan olarak true yapıldı
 }) => {
   const { theme } = useTheme();
   const { t } = useTranslation();
@@ -50,42 +50,46 @@ const StylePicker: React.FC<StylePickerProps> = ({
   };
 
   return (
-    <ScrollView 
-      horizontal 
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={customStyles.container}
-    >
-      {styles.map(style => (
-        <TouchableOpacity
-          key={style}
-          style={[
-            customStyles.styleItem,
-            {
-              backgroundColor: isSelected(style)
-                ? theme.colors.secondary
-                : theme.colors.card,
-              borderColor: isSelected(style)
-                ? theme.colors.secondary
-                : theme.colors.border,
-            },
-          ]}
-          onPress={() => handleSelect(style)}
-        >
-          <Text
+    <View style={customStyles.container}>
+      <View style={customStyles.styleGrid}>
+        {styles.map(style => (
+          <TouchableOpacity
+            key={style}
             style={[
-              customStyles.styleText,
+              customStyles.styleItem,
               {
-                color: isSelected(style)
-                  ? theme.colors.white
-                  : theme.colors.text,
+                backgroundColor: isSelected(style)
+                  ? theme.colors.secondary
+                  : theme.colors.card,
+                borderColor: isSelected(style)
+                  ? theme.colors.secondary
+                  : theme.colors.border,
               },
             ]}
+            onPress={() => handleSelect(style)}
           >
-            {t(`styles.${style}`)}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+            <Text
+              style={[
+                customStyles.styleText,
+                {
+                  color: isSelected(style)
+                    ? theme.colors.white
+                    : theme.colors.text,
+                },
+              ]}
+            >
+              {t(`styles.${style}`)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      
+      {multiSelect && selectedStyles.length > 0 && (
+        <Text style={[customStyles.selectionInfo, { color: theme.colors.textLight }]}>
+          {t('wardrobe.selectedCount', { count: selectedStyles.length })} {/* Bu çeviri eklenmeli */}
+        </Text>
+      )}
+    </View>
   );
 };
 
@@ -93,16 +97,29 @@ const customStyles = StyleSheet.create({
   container: {
     paddingVertical: 8,
   },
+  styleGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
   styleItem: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderRadius: 16,
     borderWidth: 1,
-    marginRight: 8,
+    minWidth: '30%',
+    alignItems: 'center',
   },
   styleText: {
     fontFamily: 'Montserrat-Medium',
     fontSize: 14,
+    textAlign: 'center',
+  },
+  selectionInfo: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

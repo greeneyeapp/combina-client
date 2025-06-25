@@ -2,6 +2,22 @@ import { Outfit } from '@/store/outfitStore';
 
 export function formatDate(dateString: string, locale: string = 'en-US'): string {
   const date = new Date(dateString);
+  
+  // Türkçe locale için özel aylar dizisi
+  if (locale === 'tr' || locale === 'tr-TR') {
+    const months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const year = date.getFullYear();
+    
+    return `${day} ${month} ${year}`;
+  }
+  
+  // Diğer diller için standart format
   return date.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'long',
@@ -73,7 +89,7 @@ export function groupOutfitsByDate(outfits: Outfit[], locale: string = 'en-US', 
       } else if (isYesterday(originalDate)) {
         title = t('common.yesterday');
       } else {
-        // Localized tarih formatı
+        // Localized tarih formatı - burada locale parametresini geçiyoruz
         title = formatDate(originalDate, locale);
       }
 

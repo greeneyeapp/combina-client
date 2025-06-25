@@ -38,7 +38,7 @@ export default function RegisterScreen() {
       password: '', 
       confirmPassword: '', 
       gender: '',
-      birthDate: new Date()
+      birthDate: new Date(1970, 0, 1) // GÜNCELLENDİ: Varsayılan tarih 1 Ocak 1970
     }
   });
   
@@ -104,22 +104,29 @@ export default function RegisterScreen() {
   };
 
   const onDateChange = (event: any, selectedDate?: Date) => {
-    // iOS için her zaman picker'ı kapat
-    if (Platform.OS === 'ios') {
+    const currentDate = selectedDate || birthDate;
+
+    // Sadece Android için seçiciyi otomatik kapat
+    if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
     
-    // Android için sadece OK/Cancel tıklandığında kapat
-    if (Platform.OS === 'android' && event.type === 'dismissed') {
-      setShowDatePicker(false);
-    } else if (Platform.OS === 'android' && event.type === 'set') {
-      setShowDatePicker(false);
-    }
-    
-    if (selectedDate) {
-      setValue('birthDate', selectedDate);
+    // Değeri her zaman güncelle
+    if (currentDate) {
+      setValue('birthDate', currentDate);
     }
   };
+
+  // iOS'ta DatePicker'ı kapatmak için bir buton
+  const renderDoneButton = () => (
+    <View style={styles.datePickerDoneButtonContainer}>
+      <Button
+        label="Bitti"
+        onPress={() => setShowDatePicker(false)}
+        variant="primary"
+      />
+    </View>
+  );
 
   return (
     <LinearGradient colors={[theme.colors.background, theme.colors.secondary]} style={styles.gradient}>
@@ -257,14 +264,17 @@ export default function RegisterScreen() {
               </View>
 
               {showDatePicker && (
-                <DateTimePicker
-                  value={birthDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={onDateChange}
-                  maximumDate={new Date()}
-                  minimumDate={new Date(1900, 0, 1)}
-                />
+                 <View>
+                  <DateTimePicker
+                    value={birthDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={onDateChange}
+                    maximumDate={new Date()}
+                    minimumDate={new Date(1900, 0, 1)}
+                  />
+                  {Platform.OS === 'ios' && renderDoneButton()}
+                </View>
               )}
 
               <Controller
@@ -376,4 +386,7 @@ const styles = StyleSheet.create({
   },
   errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },
   button: { marginTop: 8 },
+  datePickerDoneButtonContainer: { // iOS için "Bitti" butonu stili
+    padding: 16,
+  },
 });

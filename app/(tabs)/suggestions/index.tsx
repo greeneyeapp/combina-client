@@ -1,14 +1,15 @@
-// app/(tabs)/suggestions/index.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+// Dosya: kodlar/app/(tabs)/suggestions/index.tsx
+
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   Linking,
-  Platform
+  ScrollView,
+  LayoutChangeEvent
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +19,6 @@ import { useOutfitStore, Outfit } from '@/store/outfitStore';
 import { useWeatherStore } from '@/store/weatherStore';
 import { useAuth } from '@/context/AuthContext';
 import { useUserPlanStore } from '@/store/userPlanStore';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
 import { Cloud, Sun, RefreshCw, ExternalLink } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import EmptyState from '@/components/common/EmptyState';
@@ -47,12 +47,14 @@ export default function SuggestionsScreen() {
   const { weather, loading: weatherLoading, fetchWeather, error: weatherError } = useWeatherStore();
   const { user } = useAuth();
   const { userPlan } = useUserPlanStore();
-  const { currentPlan, isProUser } = useRevenueCat();
   const { show: showAlert } = useAlertStore();
 
-  const [selectedOccasion, setSelectedOccasion] = useState('casual');
-  const [generating, setGenerating] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   const [suggestion, setSuggestion] = useState<OutfitSuggestionResponse | null>(null);
+  const [suggestionLayoutY, setSuggestionLayoutY] = useState<number>(0);
+
+  const [selectedOccasion, setSelectedOccasion] = useState('running-errands');
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pinterestLinks, setPinterestLinks] = useState<PinterestLink[]>([]);
   const [isLiked, setIsLiked] = useState(false);
@@ -85,8 +87,15 @@ export default function SuggestionsScreen() {
     }
   }, [suggestion]);
 
-  // Only require basic categories for outfit generation
-  const isFemale = (user as any)?.gender === 'female';
+  useEffect(() => {
+    if (suggestion && suggestionLayoutY > 0) {
+      const timer = setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ y: suggestionLayoutY, animated: true });
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [suggestionLayoutY, suggestion]);
 
   const wardrobeStatus = useMemo(() => {
     const required: Record<string, number> = {
@@ -117,19 +126,13 @@ export default function SuggestionsScreen() {
       hasEnough: missing.length === 0,
       missing,
     };
-  }, [clothing, isFemale, t]);
+  }, [clothing, t]);
 
   const handleLike = () => {
     if (!suggestion) return;
 
     if (isAlreadyLiked) {
-      Toast.show({
-        type: 'info',
-        text1: t('suggestions.alreadyLiked'),
-        position: 'top',
-        visibilityTime: 2000,
-        topOffset: 50,
-      });
+      Toast.show({ type: 'info', text1: t('suggestions.alreadyLiked'), position: 'top', visibilityTime: 2000, topOffset: 50 });
       return;
     }
 
@@ -146,20 +149,14 @@ export default function SuggestionsScreen() {
     addOutfit(newOutfit);
     setIsLiked(true);
 
-    Toast.show({
-      type: 'success',
-      text1: t('suggestions.likeSuccess'),
-      text2: t('suggestions.likeInfo'),
-      position: 'top',
-      visibilityTime: 2500,
-      topOffset: 50,
-    });
+    Toast.show({ type: 'success', text1: t('suggestions.likeSuccess'), text2: t('suggestions.likeInfo'), position: 'top', visibilityTime: 2500, topOffset: 50 });
   };
 
   const handleGenerateSuggestion = async () => {
     if (!wardrobeStatus.hasEnough || !weather) return;
 
-    // Usage limit kontrolü
+    setSuggestionLayoutY(0);
+
     try {
       const usageCheck = await canGetSuggestion();
       if (!usageCheck.canSuggest) {
@@ -167,20 +164,13 @@ export default function SuggestionsScreen() {
           title: t('suggestions.limitExceededTitle'),
           message: usageCheck.reason || t('suggestions.limitExceededMessage'),
           buttons: [
-            { text: t('common.cancel'), onPress: () => {}, variant: 'outline' },
-            { 
-              text: t('profile.upgrade'), 
-              onPress: () => router.push('/profile/subscription'),
-              variant: 'primary'
-            }
+            { text: t('common.cancel'), onPress: () => { }, variant: 'outline' },
+            { text: t('profile.upgrade'), onPress: () => router.push('/profile/subscription'), variant: 'primary' }
           ]
         });
         return;
       }
-    } catch (error) {
-      console.error('Usage check failed:', error);
-      // Continue with suggestion generation even if check fails
-    }
+    } catch (error) { console.error('Usage check failed:', error); }
 
     setGenerating(true);
     setShowLoadingAnimation(true);
@@ -191,18 +181,19 @@ export default function SuggestionsScreen() {
     try {
       const weatherCondition = getWeatherCondition(weather as any);
       const last5 = outfits.slice(0, 5);
+
+      // --- API ÇAĞRISI GÜNCELLENDİ ---
       const result = await getOutfitSuggestion(
         i18n.language,
+        userPlan?.gender as 'female' | 'male' | undefined, // Cinsiyet bilgisi burada gönderiliyor
         clothing,
         last5,
         weatherCondition,
         selectedOccasion
       );
-      
+
       if (result) {
         setSuggestion(result);
-        
-        // Başarılı suggestion sonrası usage'ı refresh et
         await getUserProfile(true);
       } else {
         setError(t('suggestions.genericError'));
@@ -212,7 +203,6 @@ export default function SuggestionsScreen() {
       setError(t('suggestions.genericError'));
     } finally {
       setGenerating(false);
-      // Animation'ı kapatmak için kısa bir delay
       setTimeout(() => {
         setShowLoadingAnimation(false);
       }, 500);
@@ -221,32 +211,15 @@ export default function SuggestionsScreen() {
 
   const handlePinterestLinkPress = async (url: string) => {
     try {
-      if (Platform.OS === 'ios') {
-        // iOS için direkt Linking kullan
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
         await Linking.openURL(url);
       } else {
-        // Android için önce kontrol et
-        const supported = await Linking.canOpenURL(url);
-        if (supported) {
-          await Linking.openURL(url);
-        } else {
-          // Fallback to webview
-          try {
-            router.push({ pathname: '/webview' as any, params: { url } });
-          } catch (routerError) {
-            console.error('Router error:', routerError);
-          }
-        }
+        router.push({ pathname: '/webview' as any, params: { url } });
       }
     } catch (error) {
       console.error('Error opening Pinterest link:', error);
-      Toast.show({
-        type: 'error',
-        text1: t('suggestions.linkError') || 'Could not open link',
-        position: 'top',
-        visibilityTime: 2000,
-        topOffset: 50,
-      });
+      Toast.show({ type: 'error', text1: t('suggestions.linkError') || 'Could not open link', position: 'top', visibilityTime: 2000, topOffset: 50 });
     }
   };
 
@@ -258,7 +231,6 @@ export default function SuggestionsScreen() {
       : <Cloud color={theme.colors.accent} size={20} />;
   };
 
-  // Usage display component
   const renderUsageInfo = () => {
     if (!userPlan) return null;
 
@@ -268,69 +240,65 @@ export default function SuggestionsScreen() {
     return (
       <View style={[styles.usageContainer, { backgroundColor: theme.colors.card }]}>
         <View style={styles.usageHeader}>
-          <Text style={[styles.usageTitle, { color: theme.colors.text }]}>
-            {t('suggestions.dailyUsage')}
-          </Text>
-          {currentPlan !== 'premium' && (
+          <Text style={[styles.usageTitle, { color: theme.colors.text }]}>{t('suggestions.dailyUsage')}</Text>
+          {userPlan.plan !== 'premium' && (
             <TouchableOpacity onPress={() => router.push('/profile/subscription')}>
-              <Text style={[styles.upgradeLink, { color: theme.colors.primary }]}>
-                {t('profile.upgrade')} ✨
-              </Text>
+              <Text style={[styles.upgradeLink, { color: theme.colors.primary }]}>{t('profile.upgrade')} ✨</Text>
             </TouchableOpacity>
           )}
         </View>
-        
         <Text style={[styles.usageText, { color: theme.colors.textLight }]}>
-          {t('suggestions.usageLimitInfo', {
-            used: userPlan.usage.current_usage,
-            total: userPlan.usage.daily_limit
-          })}
+          {t('suggestions.usageLimitInfo', { used: userPlan.usage.current_usage, total: userPlan.usage.daily_limit })}
         </Text>
-        
         <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                backgroundColor: isNearLimit ? theme.colors.warning : theme.colors.primary,
-                width: `${Math.min(100, usagePercentage)}%`
-              }
-            ]}
-          />
+          <View style={[styles.progressFill, { backgroundColor: isNearLimit ? theme.colors.warning : theme.colors.primary, width: `${Math.min(100, usagePercentage)}%` }]} />
         </View>
       </View>
     );
   };
 
-  const renderPinterestItem = ({ item }: { item: PinterestLink }) => {
+  if (!wardrobeStatus.hasEnough) {
     return (
-      <TouchableOpacity
-        style={[
-          styles.pinterestCard,
-          { 
-            backgroundColor: theme.colors.card, 
-            borderColor: theme.colors.border,
-            shadowColor: theme.colors.text 
-          }
-        ]}
-        onPress={() => handlePinterestLinkPress(item.url)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.pinterestContent}>
-          <ExternalLink color={theme.colors.primary} size={20} />
-          <Text style={[styles.pinterestTitle, { color: theme.colors.text }]} numberOfLines={2}>
-            {item.title}
-          </Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <HeaderBar title={t('suggestions.title')} />
+        <View style={styles.centered}>
+          <EmptyState
+            icon="shirt"
+            title={t('suggestions.notEnoughItemsTitle')}
+            message={t('suggestions.notEnoughItemsMessage')}
+            buttonText={t('suggestions.addMoreItems')}
+            onButtonPress={() => {
+              try { router.push('/wardrobe/add' as any); }
+              catch (error) { console.error('Router navigation error:', error); }
+            }}
+          >
+            <View style={[styles.missingItemsContainer, { borderColor: theme.colors.border }]}>
+              <Text style={[styles.missingItemsTitle, { color: theme.colors.textLight }]}>{t('suggestions.youNeed')}</Text>
+              {wardrobeStatus.missing.map(item => (
+                <Text key={item.category} style={[styles.missingItemText, { color: theme.colors.text }]}>
+                  • {t('suggestions.moreItems', { count: item.needed, category: item.category })}
+                </Text>
+              ))}
+            </View>
+          </EmptyState>
         </View>
-      </TouchableOpacity>
+      </SafeAreaView>
     );
-  };
+  }
 
-  const renderHeader = () => {
-    if (!wardrobeStatus.hasEnough) return null;
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <HeaderBar title={t('suggestions.title')} />
 
-    return (
-      <>
+      <OutfitLoadingAnimation isVisible={showLoadingAnimation} onComplete={() => setShowLoadingAnimation(false)} />
+
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.scrollContainer}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {renderUsageInfo()}
 
         <View style={styles.weatherSection}>
@@ -349,22 +317,15 @@ export default function SuggestionsScreen() {
           ) : (
             <TouchableOpacity style={styles.weatherError} onPress={fetchWeather}>
               <Text style={[styles.weatherErrorText, { color: theme.colors.error }]}>
-                {weatherError === 'Location permission denied'
-                  ? t('permissions.locationRequiredTitle')
-                  : t('suggestions.weatherError')}
+                {weatherError === 'Location permission denied' ? t('permissions.locationRequiredTitle') : t('suggestions.weatherError')}
               </Text>
               <RefreshCw color={theme.colors.error} size={16} />
             </TouchableOpacity>
           )}
         </View>
 
-        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-          {t('suggestions.selectOccasion')}
-        </Text>
-        <OccasionPicker
-          selectedOccasion={selectedOccasion}
-          onSelectOccasion={setSelectedOccasion}
-        />
+        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('suggestions.selectOccasion')}</Text>
+        <OccasionPicker selectedOccasion={selectedOccasion} onSelectOccasion={setSelectedOccasion} />
 
         <Button
           label={generating ? t('suggestions.generating') : t('suggestions.generateOutfit')}
@@ -372,7 +333,7 @@ export default function SuggestionsScreen() {
           variant="primary"
           loading={generating}
           style={styles.generateButton}
-          disabled={generating || !wardrobeStatus.hasEnough || !weather}
+          disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion}
         />
 
         {!!error && (
@@ -381,88 +342,48 @@ export default function SuggestionsScreen() {
           </View>
         )}
 
-        {suggestion && (
-          <OutfitSuggestion
-            outfit={suggestion}
-            onLike={handleLike}
-            liked={isLiked || isAlreadyLiked}
-          />
-        )}
+        <View onLayout={(event: LayoutChangeEvent) => {
+          if (event.nativeEvent.layout.y > 0 && suggestionLayoutY === 0) {
+            setSuggestionLayoutY(event.nativeEvent.layout.y);
+          }
+        }}>
+          {suggestion && (
+            <OutfitSuggestion
+              outfit={suggestion}
+              onLike={handleLike}
+              liked={isLiked || isAlreadyLiked}
+            />
+          )}
 
-        {pinterestLinks.length > 0 && (
-          <View style={styles.inspirationSection}>
-            <Text style={[styles.inspirationTitle, { color: theme.colors.text }]}>
-              {t('suggestions.inspirationTitle') || 'Style Inspiration'}
-            </Text>
-          </View>
-        )}
-      </>
-    );
-  };
-
-  const renderEmptyState = () => {
-    if (wardrobeStatus.hasEnough || generating || suggestion) return null;
-    return (
-      <View style={styles.centered}>
-        <EmptyState
-          icon="shirt"
-          title={t('suggestions.notEnoughItemsTitle')}
-          message={t('suggestions.notEnoughItemsMessage')}
-          buttonText={t('suggestions.addMoreItems')}
-          onButtonPress={() => {
-            try {
-              router.push('/wardrobe/add' as any);
-            } catch (error) {
-              console.error('Router navigation error:', error);
-            }
-          }}
-        >
-          <View style={[styles.missingItemsContainer, { borderColor: theme.colors.border }]}>
-            <Text style={[styles.missingItemsTitle, { color: theme.colors.textLight }]}>
-              {t('suggestions.youNeed')}
-            </Text>
-            {wardrobeStatus.missing.map(item => (
-              <Text key={item.category} style={[styles.missingItemText, { color: theme.colors.text }]}>
-                • {t('suggestions.moreItems', { count: item.needed, category: item.category })}
+          {pinterestLinks.length > 0 && (
+            <View style={styles.inspirationSection}>
+              <Text style={[styles.inspirationTitle, { color: theme.colors.text }]}>
+                {t('suggestions.inspirationTitle') || 'Style Inspiration'}
               </Text>
-            ))}
-          </View>
-        </EmptyState>
-      </View>
-    );
-  };
-
-  return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <HeaderBar title={t('suggestions.title')} />
-      
-      {/* Loading Animation Modal */}
-      <OutfitLoadingAnimation 
-        isVisible={showLoadingAnimation} 
-        onComplete={() => setShowLoadingAnimation(false)}
-      />
-      
-      <FlatList
-        data={pinterestLinks}
-        renderItem={renderPinterestItem}
-        keyExtractor={(item, index) => `pinterest-${index}`}
-        ListHeaderComponent={renderHeader}
-        ListEmptyComponent={renderEmptyState}
-        style={styles.flatListContainer}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-        removeClippedSubviews={Platform.OS === 'android'}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-      />
+              {pinterestLinks.map((item, index) => (
+                <TouchableOpacity
+                  key={`pinterest-${index}`}
+                  style={[styles.pinterestCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border, shadowColor: theme.colors.text }]}
+                  onPress={() => handlePinterestLinkPress(item.url)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.pinterestContent}>
+                    <ExternalLink color={theme.colors.primary} size={20} />
+                    <Text style={[styles.pinterestTitle, { color: theme.colors.text }]} numberOfLines={2}>{item.title}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  flatListContainer: { flex: 1 },
+  scrollContainer: { flex: 1 },
   contentContainer: { paddingHorizontal: 16, paddingBottom: 32 },
   usageContainer: {
     marginHorizontal: 0,
@@ -498,21 +419,27 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 2,
   },
-  weatherSection: { marginBottom: 24, alignItems: 'center' },
+  weatherSection: { alignItems: 'center' },
   weatherInfo: { flexDirection: 'row', alignItems: 'center' },
   weatherText: { fontFamily: 'Montserrat-Medium', fontSize: 16, marginLeft: 8 },
   refreshButton: { padding: 8, marginLeft: 8 },
   weatherError: { flexDirection: 'row', alignItems: 'center' },
   weatherErrorText: { fontFamily: 'Montserrat-Medium', fontSize: 14, marginRight: 8 },
-  sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 16 },
-  generateButton: { marginTop: 24, marginBottom: 16 },
+  sectionTitle: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
+    marginBottom: 0,
+    marginTop: 24,
+  },
+  generateButton: { marginTop: 16, marginBottom: 16 },
   errorContainer: { padding: 16, borderRadius: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
   inspirationSection: { marginTop: 24, marginBottom: 16 },
-  inspirationTitle: { 
-    fontFamily: 'Montserrat-Bold', 
-    fontSize: 18, 
-    textAlign: 'center' 
+  inspirationTitle: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 18,
+    textAlign: 'center',
+    marginBottom: 16,
   },
   pinterestCard: {
     borderRadius: 12,

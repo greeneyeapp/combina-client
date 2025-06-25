@@ -1,20 +1,22 @@
+// Dosya: kodlar/app/(tabs)/wardrobe/index.tsx (TAM KOD)
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
-import { useClothingStore } from '@/store/clothingStore';
-import { PlusCircle, Search, SlidersHorizontal, Star } from 'lucide-react-native';
+import { useClothingStore, ClothingItem as TClothingItem } from '@/store/clothingStore';
+import { useUserPlanStore } from '@/store/userPlanStore';
+import { PlusCircle, Search, SlidersHorizontal } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import FilterModal from '@/components/wardrobe/FilterModal';
 import Input from '@/components/common/Input';
 import EmptyState from '@/components/common/EmptyState';
 import ClothingItem from '@/components/wardrobe/ClothingItem';
-import { ClothingItem as TClothingItem } from '@/store/clothingStore';
-import { Dimensions } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { getUserProfile } from '@/services/userService';
+import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 
 interface SectionData {
   title: string;
@@ -28,7 +30,6 @@ const gridColumns = 3;
 const sidePadding = 16;
 const gridItemWidth = (width - sidePadding * 2 - gridSpacing * (gridColumns - 1)) / gridColumns;
 
-// Plan limits based on your provided structure
 const WARDROBE_LIMITS: { [key: string]: number } = {
   free: 30,
   standard: 100,
@@ -40,6 +41,7 @@ export default function WardrobeScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const { user } = useAuth();
+  const { userPlan: storedUserPlan } = useUserPlanStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -65,12 +67,11 @@ export default function WardrobeScreen() {
           setUserPlan(profile.plan);
         } catch (error) {
           console.error('Failed to fetch user plan:', error);
-          setUserPlan('free'); // Fallback to free plan on error
+          setUserPlan('free');
         } finally {
           setIsLoadingPlan(false);
         }
       } else {
-        // For guest users
         setUserPlan('free');
         setIsLoadingPlan(false);
       }
@@ -80,7 +81,7 @@ export default function WardrobeScreen() {
 
   const limit = userPlan ? WARDROBE_LIMITS[userPlan] : 0;
   const limitReached = limit !== Infinity && currentItemCount >= limit;
-
+  
   const getUsageColor = () => {
     if (limit === Infinity) return theme.colors.success;
     const percentage = (currentItemCount / limit) * 100;
@@ -104,15 +105,15 @@ export default function WardrobeScreen() {
         const name = item.name.toLowerCase();
         const cat = t(`categories.${item.category}`).toLowerCase();
         const col = t(`colors.${item.color}`).toLowerCase();
-        const seasons = item.season.map(s => t(`seasons.${s}`).toLowerCase()).join(' ');
-        const style = t(`styles.${item.style}`).toLowerCase();
+        const seasons = item.season.map(s => t(`seasons.${s}`)).join(' ').toLowerCase();
+        const style = item.style.split(',').map(s => t(`styles.${s}`)).join(' ').toLowerCase();
         const notes = item.notes?.toLowerCase() || '';
 
         const matchesSearch = !q || name.includes(q) || cat.includes(q) || col.includes(q) || seasons.includes(q) || style.includes(q) || notes.includes(q);
         const matchesCategory = activeFilters.categories.length === 0 || activeFilters.categories.includes(item.category);
         const matchesColor = activeFilters.colors.length === 0 || activeFilters.colors.includes(item.color);
         const matchesSeason = activeFilters.seasons.length === 0 || item.season.some(s => activeFilters.seasons.includes(s));
-        const matchesStyle = activeFilters.styles.length === 0 || activeFilters.styles.includes(item.style);
+        const matchesStyle = activeFilters.styles.length === 0 || item.style.split(',').some(s => activeFilters.styles.includes(s));
 
         return matchesSearch && matchesCategory && matchesColor && matchesSeason && matchesStyle;
       })
@@ -120,19 +121,32 @@ export default function WardrobeScreen() {
   }, [clothing, searchQuery, activeFilters, t]);
 
   const sections = useMemo<SectionData[]>(() => {
-    const grouped: { [subcat: string]: TClothingItem[] } = {};
+    const grouped: { [key: string]: TClothingItem[] } = {};
+    const gender = storedUserPlan?.gender || 'female';
+    const hierarchy = gender === 'male' ? GENDERED_CATEGORY_HIERARCHY.male : GENDERED_CATEGORY_HIERARCHY.female;
+
     filteredClothing.forEach(item => {
-      const subcat = item.category;
-      if (!grouped[subcat]) grouped[subcat] = [];
-      grouped[subcat].push(item);
+      // Find which main category the item's subcategory belongs to
+      let mainCategory = '';
+      for (const [mainCat, subCats] of Object.entries(hierarchy)) {
+        if ((subCats as string[]).includes(item.category)) {
+          mainCategory = mainCat;
+          break;
+        }
+      }
+      if (mainCategory) {
+        if (!grouped[mainCategory]) grouped[mainCategory] = [];
+        grouped[mainCategory].push(item);
+      }
     });
-    const sortedSubcats = Object.keys(grouped).sort((a, b) => t(`categories.${a}`).localeCompare(t(`categories.${b}`)));
-    return sortedSubcats.map(subcat => ({
-      title: t(`categories.${subcat}`).toUpperCase(),
-      data: chunkArray(grouped[subcat], 3),
-      id: subcat,
+
+    return Object.keys(grouped).map(mainCat => ({
+      title: t(`categories.${mainCat}`).toUpperCase(),
+      data: chunkArray(grouped[mainCat], 3),
+      id: mainCat,
     }));
-  }, [filteredClothing, t]);
+  }, [filteredClothing, t, storedUserPlan?.gender]);
+
 
   const handleAddItem = () => router.push('/wardrobe/add');
   const handleItemPress = (id: string) => router.push(`/wardrobe/${id}`);
@@ -154,11 +168,11 @@ export default function WardrobeScreen() {
   const renderItem = ({ item: row }: { item: TClothingItem[] }) => (
     <View style={styles.row}>
       {row.map((clothingItem, idx) => (
-        <View style={[styles.itemWrapper, idx === 2 && styles.lastItemWrapper]} key={clothingItem.id}>
+        <View style={[styles.itemWrapper, idx === gridColumns - 1 && styles.lastItemWrapper]} key={clothingItem.id}>
           <ClothingItem item={clothingItem} onPress={() => handleItemPress(clothingItem.id)} onEdit={() => handleEditPress(clothingItem.id)} />
         </View>
       ))}
-      {Array.from({ length: 3 - row.length }).map((_, idx) => (
+      {Array.from({ length: gridColumns - row.length }).map((_, idx) => (
         <View style={[styles.itemWrapper, styles.lastItemWrapper]} key={`empty-${idx}`} />
       ))}
     </View>
@@ -172,7 +186,7 @@ export default function WardrobeScreen() {
         {isLoadingPlan ? (
           <ActivityIndicator size="small" color={theme.colors.textLight} />
         ) : (
-          <TouchableOpacity onPress={() => router.push('/profile/subscription')}>
+          <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
             <Text style={[styles.usageText, { color: getUsageColor() }]}>
               {t('wardrobe.limit')}: {currentItemCount} / {limit === Infinity ? '∞' : limit}
               {userPlan !== 'premium' && <Text> ✨</Text>}
@@ -208,6 +222,7 @@ export default function WardrobeScreen() {
           keyExtractor={(row, idx) => row.map(i => i.id).join('-') + '-' + idx}
           renderSectionHeader={renderSectionHeader}
           renderItem={renderItem}
+          stickySectionHeadersEnabled={false}
         />
       ) : (
         <EmptyState
@@ -233,6 +248,7 @@ export default function WardrobeScreen() {
         onClose={() => setIsFilterModalVisible(false)}
         onApply={handleApplyFilters}
         initialFilters={activeFilters}
+        gender={storedUserPlan?.gender as 'female' | 'male' | undefined}
       />
     </SafeAreaView>
   );
@@ -240,73 +256,17 @@ export default function WardrobeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  usageContainer: {
-    alignItems: 'center',
-    paddingBottom: 8,
-    paddingTop: 0,
-  },
-  usageText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 14,
-  },
+  usageContainer: { alignItems: 'center', paddingBottom: 8, paddingTop: 0 },
+  usageText: { fontFamily: 'Montserrat-Bold', fontSize: 14 },
   searchContainer: { flexDirection: 'row', padding: 16, paddingTop: 0, alignItems: 'center' },
   searchInput: { flex: 1, marginBottom: 0 },
-  filterButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-  },
-  row: {
-    flexDirection: 'row',
-    marginBottom: gridSpacing,
-    marginHorizontal: 8,
-  },
-  itemWrapper: {
-    width: gridItemWidth,
-    marginRight: gridSpacing,
-    height: 140,   
-  },
-  lastItemWrapper: {
-    marginRight: 0,
-  },
-  filterBadgeText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 10,
-    color: 'white',
-  },
-  addButton: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-  },
-  categoryHeaderContainer: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    marginTop: 15,
-    marginBottom: 5,
-  },
-  categoryHeaderText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 16,
-  },
+  filterButton: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
+  filterBadge: { position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5 },
+  filterBadgeText: { fontFamily: 'Montserrat-Bold', fontSize: 10, color: 'white' },
+  row: { flexDirection: 'row', marginBottom: gridSpacing, marginHorizontal: gridSpacing },
+  itemWrapper: { width: gridItemWidth, marginRight: gridSpacing },
+  lastItemWrapper: { marginRight: 0 },
+  addButton: { position: 'absolute', bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5 },
+  categoryHeaderContainer: { paddingVertical: 10, paddingHorizontal: 16, marginTop: 15, marginBottom: 5 },
+  categoryHeaderText: { fontFamily: 'Montserrat-Bold', fontSize: 16 },
 });

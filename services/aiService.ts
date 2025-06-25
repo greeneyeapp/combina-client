@@ -14,7 +14,7 @@ export interface SuggestedItem {
 
 export interface PinterestLink {
   title: string;
-  url: string;
+  url:string;
 }
 
 export interface OutfitSuggestionResponse {
@@ -26,6 +26,7 @@ export interface OutfitSuggestionResponse {
 
 export async function getOutfitSuggestion(
   language: string,
+  gender: 'female' | 'male' | undefined,
   wardrobe: ClothingItem[],
   last5Outfits: Outfit[],
   weatherCondition: string,
@@ -39,6 +40,7 @@ export async function getOutfitSuggestion(
       `${API_URL}/api/suggest-outfit`,
       {
         language,
+        gender,
         wardrobe,
         last_5_outfits: last5Outfits,
         weather_condition: weatherCondition,
@@ -53,7 +55,7 @@ export async function getOutfitSuggestion(
     return response.data;
   } catch (error: any) {
     const { show: showAlert } = useAlertStore.getState();
-    const t = i18n.t; // Çeviri fonksiyonunu doğrudan kullan
+    const t = i18n.t;
 
     if (error.response?.status === 429) {
       showAlert({

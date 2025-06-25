@@ -1,4 +1,5 @@
-// wardrobe/edit/[id].tsx
+// Dosya: kodlar/app/(tabs)/wardrobe/edit/[id].tsx (TAM KOD)
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,8 +7,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
+import { useUserPlanStore } from '@/store/userPlanStore';
 import { Camera, Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker'; // ImagePicker ekledik
+import * as ImagePicker from 'expo-image-picker';
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
@@ -17,14 +19,14 @@ import ColorPicker from '@/components/wardrobe/ColorPicker';
 import SeasonPicker from '@/components/wardrobe/SeasonPicker';
 import StylePicker from '@/components/wardrobe/StylePicker';
 import useAlertStore from '@/store/alertStore';
-import { CATEGORY_HIERARCHY } from '@/utils/constants'; // CATEGORY_HIERARCHY import edildi
+import Toast from 'react-native-toast-message';
 
 type FormData = {
   name: string;
-  category: string; // Bu artık detaylı kategori olacak
+  category: string;
   color: string;
   season: string[];
-  style: string;
+  style: string[];
   notes: string;
 };
 
@@ -33,113 +35,102 @@ export default function EditClothingScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { clothing, updateClothing } = useClothingStore();
+  const { userPlan } = useUserPlanStore();
   const { show: showAlert } = useAlertStore();
 
-  const [itemToEdit] = useState(() => clothing.find(item => item.id === id));
+  const itemToEdit = clothing.find(item => item.id === id);
   const [image, setImage] = useState<string | null>(itemToEdit?.imageUri || null);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
-    reset, // reset eklendi
-    watch, // watch eklendi
+    reset,
   } = useForm<FormData>({
     defaultValues: {
-      name: itemToEdit?.name || '',
-      category: itemToEdit?.category || '',
-      color: itemToEdit?.color || '',
-      season: itemToEdit?.season || [],
-      style: itemToEdit?.style || '',
-      notes: itemToEdit?.notes || '',
+      name: '',
+      category: '',
+      color: '',
+      season: [],
+      style: [],
+      notes: '',
     },
   });
 
-  const selectedCategory = watch('category'); // Form'daki kategori değerini izle
-
   useEffect(() => {
-    if (!itemToEdit) {
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.itemNotFound'),
-        buttons: [{ text: t('common.ok'), onPress: () => router.back() }]
-      });
-    } else {
-      // itemToEdit mevcutsa, form alanlarını sıfırla/doldur
+    if (itemToEdit) {
       reset({
         name: itemToEdit.name || '',
         category: itemToEdit.category || '',
         color: itemToEdit.color || '',
         season: itemToEdit.season || [],
-        style: itemToEdit.style || '',
+        style: itemToEdit.style ? itemToEdit.style.split(',') : [],
         notes: itemToEdit.notes || '',
       });
       setImage(itemToEdit.imageUri || null);
+    } else {
+      showAlert({
+        title: t('common.error'),
+        message: t('wardrobe.itemNotFound'),
+        buttons: [{ text: t('common.ok'), onPress: () => router.back() }]
+      });
     }
   }, [itemToEdit, reset]);
 
   const takePicture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      showAlert({ title: t('common.error'), message: t('permissions.cameraRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
+      showAlert({ title: t('common.error'), message: t('permissions.cameraRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
       return;
     }
     try {
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.7,
-      });
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.log('Error taking picture:', error);
-    }
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+      if (!result.canceled) { setImage(result.assets[0].uri); }
+    } catch (error) { console.log('Error taking picture:', error); }
   };
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      showAlert({ title: t('common.error'), message: t('permissions.galleryRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
+      showAlert({ title: t('common.error'), message: t('permissions.galleryRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
       return;
     }
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.7,
-      });
-      if (!result.canceled) {
-        setImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.log('Error picking image:', error);
-    }
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+      if (!result.canceled) { setImage(result.assets[0].uri); }
+    } catch (error) { console.log('Error picking image:', error); }
   };
+
   const removeImage = () => setImage(null);
 
   const onSubmit = (data: FormData) => {
     if (!image) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok'), onPress: () => { } }] });
+      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
       return;
     }
-    if (!id) return;
+    if (!id || !itemToEdit) return;
 
     updateClothing(id, {
-      ...itemToEdit!, // itemToEdit'in var olduğunu varsayıyoruz (useEffect kontrolü sayesinde)
+      ...itemToEdit,
       ...data,
       imageUri: image,
+      style: data.style.join(','),
     });
-    showAlert({
-      title: t('common.success'),
-      message: t('wardrobe.itemUpdatedSuccessfully'),
-      buttons: [{ text: t('common.ok'), onPress: () => router.back() }]
+    
+    Toast.show({
+      type: 'success',
+      text1: t('common.success'),
+      text2: t('wardrobe.itemUpdatedSuccessfully'),
+      position: 'top',
+      visibilityTime: 2000,
+      topOffset: 50,
     });
+    router.back();
   };
 
-  if (!itemToEdit) return null;
+  if (!itemToEdit) {
+    return null; // useEffect içinde yönlendirme yapıldığı için burada null dönebiliriz.
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -148,11 +139,7 @@ export default function EditClothingScreen() {
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
         onLeftPress={() => router.back()}
       />
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardAvoidingView}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -163,35 +150,18 @@ export default function EditClothingScreen() {
             {image ? (
               <View style={styles.imageContainer}>
                 <Image source={{ uri: image }} style={styles.clothingImage} />
-                <TouchableOpacity
-                  style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]}
-                  onPress={removeImage}
-                >
+                <TouchableOpacity style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]} onPress={removeImage}>
                   <X color={theme.colors.white} size={20} />
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
-                <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
-                  {t('wardrobe.addPhoto')}
-                </Text>
+                <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>{t('wardrobe.addPhoto')}</Text>
               </View>
             )}
             <View style={styles.imageButtonsContainer}>
-              <Button
-                icon={<Camera color={theme.colors.text} size={20} />}
-                label={t('wardrobe.takePhoto')}
-                onPress={takePicture}
-                variant="outline"
-                style={styles.imageButton}
-              />
-              <Button
-                icon={<ImageIcon color={theme.colors.text} size={20} />}
-                label={t('wardrobe.choosePhoto')}
-                onPress={pickImage}
-                variant="outline"
-                style={styles.imageButton}
-              />
+              <Button icon={<Camera color={theme.colors.text} size={20} />} label={t('wardrobe.takePhoto')} onPress={takePicture} variant="outline" style={styles.imageButton} />
+              <Button icon={<ImageIcon color={theme.colors.text} size={20} />} label={t('wardrobe.choosePhoto')} onPress={pickImage} variant="outline" style={styles.imageButton} />
             </View>
           </View>
 
@@ -201,33 +171,22 @@ export default function EditClothingScreen() {
               name="name"
               rules={{ required: t('wardrobe.nameRequired') as string }}
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label={t('wardrobe.name')}
-                  placeholder={t('wardrobe.namePlaceholder')}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={errors.name?.message}
+                <Input label={t('wardrobe.name')} placeholder={t('wardrobe.namePlaceholder')} onBlur={onBlur} onChangeText={onChange} value={value} error={errors.name?.message} />
+              )}
+            />
+            <Controller
+              control={control}
+              name="category"
+              rules={{ required: t('wardrobe.categoryRequired') as string }}
+              render={({ field: { onChange, value } }) => (
+                <CategoryPicker
+                  selectedCategory={value}
+                  onSelectCategory={onChange}
+                  error={errors.category?.message}
+                  gender={userPlan?.gender as 'female' | 'male' | undefined}
                 />
               )}
             />
-
-            <View>
-              <Controller
-                control={control}
-                name="category"
-                rules={{ required: t('wardrobe.categoryRequired') as string }}
-                render={({ field: { onChange, value } }) => (
-                  <CategoryPicker
-                    selectedCategory={value}
-                    onSelectCategory={onChange}
-                    error={errors.category?.message}
-                  />
-                )}
-              />
-            </View>
-
-            {/* Diğer alanlar (Color, Season, Style, Notes) değişiklik olmadan kalabilir */}
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.color')}</Text>
               <Controller
@@ -235,12 +194,10 @@ export default function EditClothingScreen() {
                 name="color"
                 rules={{ required: t('wardrobe.colorRequired') as string }}
                 render={({ field: { onChange, value } }) => (
-                  <ColorPicker selectedColor={value} onSelectColor={onChange} />
+                  <ColorPicker selectedColor={value} onSelectColor={onChange} error={errors.color?.message} />
                 )}
               />
-              {errors.color && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.color.message}</Text>}
             </View>
-
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.season')}</Text>
               <Controller
@@ -253,43 +210,26 @@ export default function EditClothingScreen() {
               />
               {errors.season && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>}
             </View>
-
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.style')}</Text>
               <Controller
                 control={control}
                 name="style"
-                rules={{ required: t('wardrobe.styleRequired') as string }}
+                rules={{ validate: (value) => value.length > 0 || (t('wardrobe.styleRequired') as string) }}
                 render={({ field: { onChange, value } }) => (
-                  <StylePicker selectedStyle={value} onSelectStyle={onChange} />
+                  <StylePicker selectedStyles={value} onSelectStyles={onChange} multiSelect={true} />
                 )}
               />
               {errors.style && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>}
             </View>
-
             <Controller
               control={control}
               name="notes"
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label={t('wardrobe.notes')}
-                  placeholder={t('wardrobe.notesPlaceholder')}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
+                <Input label={t('wardrobe.notes')} placeholder={t('wardrobe.notesPlaceholder')} onBlur={onBlur} onChangeText={onChange} value={value} multiline numberOfLines={4} textAlignVertical="top" />
               )}
             />
-
-            <Button
-              label={t('wardrobe.saveChanges')}
-              onPress={handleSubmit(onSubmit)}
-              variant="primary"
-              style={styles.saveButton}
-            />
+            <Button label={t('wardrobe.saveChanges')} onPress={handleSubmit(onSubmit)} variant="primary" style={styles.saveButton} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -312,6 +252,6 @@ const styles = StyleSheet.create({
   imageButton: { flex: 1, marginHorizontal: 4 },
   formSection: { gap: 16 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },
-  errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: -8, marginBottom: 8 },
+  errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },
   saveButton: { marginTop: 16 },
 });

@@ -1,40 +1,50 @@
+// Dosya: kodlar/components/wardrobe/CategoryPicker.tsx (TAM KOD)
+
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import SelectionDropdown from '@/components/common/SelectionDropdown';
-import { CATEGORY_HIERARCHY } from '@/utils/constants';
+import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 
 interface CategoryPickerProps {
-  selectedCategory: string; // Detaylı kategori (örn: 't-shirt')
+  selectedCategory: string;
   onSelectCategory: (category: string) => void;
-  error?: string; // Hata mesajı prop'u
+  gender: 'female' | 'male' | undefined; // Cinsiyet prop'u eklendi
+  error?: string;
 }
 
-const CategoryPicker: React.FC<CategoryPickerProps> = ({ selectedCategory, onSelectCategory, error }) => {
+const CategoryPicker: React.FC<CategoryPickerProps> = ({ selectedCategory, onSelectCategory, gender, error }) => {
   const { t } = useTranslation();
 
-  // Tüm kategori seçeneklerini SelectionDropdown'a uygun formata dönüştür
+  // Cinsiyete göre doğru kategori hiyerarşisini seçer.
+  // Eğer 'gender' prop'u 'male' ise erkek kategorilerini, değilse (veya tanımsızsa) varsayılan olarak kadın kategorilerini kullanır.
+  const categoryHierarchy = useMemo(() => {
+    if (gender === 'male') {
+      return GENDERED_CATEGORY_HIERARCHY.male;
+    }
+    return GENDERED_CATEGORY_HIERARCHY.female;
+  }, [gender]);
+
+  // Seçilen hiyerarşiye göre açılır menü seçeneklerini oluşturur.
+  // Her ana kategoriyi bir başlık, alt kategorileri ise seçilebilir bir öğe olarak formatlar.
   const categoryOptions = useMemo(() => {
     const options: { label: string; value: string; isGroupHeader?: boolean }[] = [];
-
-    Object.keys(CATEGORY_HIERARCHY).forEach(mainCategory => {
-      // Ana kategori başlığını ekle
+    Object.entries(categoryHierarchy).forEach(([mainCategory, subCategories]) => {
+      // Ana Kategori Başlığı
       options.push({
         label: t(`categories.${mainCategory}`),
-        value: mainCategory, // Ana kategorinin kendisi de bir değer olabilir
+        value: `header-${mainCategory}`, // Seçilemez olmasını sağlamak için benzersiz bir value
         isGroupHeader: true,
       });
-
-      // Alt kategorileri ekle
-      CATEGORY_HIERARCHY[mainCategory as keyof typeof CATEGORY_HIERARCHY].forEach(subCategory => {
+      // Alt Kategoriler
+      subCategories.forEach((subCategory: string) => {
         options.push({
           label: t(`categories.${subCategory}`),
           value: subCategory,
         });
       });
     });
-
     return options;
-  }, [t]);
+  }, [t, categoryHierarchy]);
 
   return (
     <SelectionDropdown
@@ -44,7 +54,7 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({ selectedCategory, onSel
       onSelect={onSelectCategory}
       placeholder={t('wardrobe.selectCategoryPlaceholder')}
       error={error}
-      searchable={true} // Kategori listesi uzun olabileceği için arama özelliğini açtık
+      searchable={true}
     />
   );
 };

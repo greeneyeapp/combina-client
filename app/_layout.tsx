@@ -16,6 +16,7 @@ import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
+import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -69,13 +70,6 @@ function RootLayoutNav(): React.JSX.Element | null {
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="webview"
-        options={{
-          presentation: 'modal',
-          animation: 'slide_from_bottom',
-        }}
-      />
       <Stack.Screen name="+not-found" />
     </Stack>
   );
@@ -98,7 +92,6 @@ export default function RootLayout(): React.JSX.Element {
         if (savedLanguage) {
           // Kullanıcı daha önce bir dil seçmişse onu kullan
           await i18n.changeLanguage(savedLanguage);
-          console.log('Saved language loaded:', savedLanguage);
         } else {
           // Kayıtlı dil yoksa telefon dilini kullan
           const deviceLanguage = Localization.locale;
@@ -163,6 +156,7 @@ export default function RootLayout(): React.JSX.Element {
             <RootLayoutNav />
             <CustomAlert />
             <Toast config={toastConfig} />
+            <OnboardingGuide />
           </AuthProvider>
         </ThemeProvider>
       </I18nextProvider>

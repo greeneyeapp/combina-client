@@ -1,13 +1,7 @@
-// screens/history/index.tsx
+// Dosya: kodlar/app/(tabs)/history/index.tsx (TAM KOD)
+
 import React, { useState, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  SectionList,
-  TouchableOpacity,
-  Platform
-} from 'react-native';
+import { View, Text, StyleSheet, SectionList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
@@ -15,8 +9,10 @@ import { useOutfitStore, Outfit } from '@/store/outfitStore';
 import HeaderBar from '@/components/common/HeaderBar';
 import EmptyState from '@/components/common/EmptyState';
 import OutfitHistoryItem from '@/components/history/OutfitHistoryItem';
-import { groupOutfitsByDate, formatDate } from '@/utils/dateUtils';
+import { groupOutfitsByDate } from '@/utils/dateUtils';
 import { router } from 'expo-router';
+import useAlertStore from '@/store/alertStore';
+import { Trash2 } from 'lucide-react-native';
 
 interface Section {
   title: string;
@@ -26,25 +22,28 @@ interface Section {
 export default function HistoryScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
-  const { outfits } = useOutfitStore();
+  const { outfits, removeOutfit } = useOutfitStore();
+  const { show: showAlert } = useAlertStore();
 
-  // lazy‐loading ayarları
-  const [limit, setLimit] = useState(10);
-  const loadMore = () => {
-    if (limit < outfits.length) {
-      setLimit(prev => Math.min(prev + 10, outfits.length));
-    }
-  };
-
-  // limitli liste ve section oluştur
-  const limited = useMemo(() => outfits.slice(0, limit), [outfits, limit]);
   const sections: Section[] = useMemo(
-    () => groupOutfitsByDate(limited, i18n.language, t),
-    [limited, i18n.language, t]
+    () => groupOutfitsByDate(outfits, i18n.language, t),
+    [outfits, i18n.language, t]
   );
 
-  // Bugünün tarihi (localized)
-  const todayString = formatDate(new Date().toISOString(), i18n.language);
+  const handleDelete = (id: string) => {
+    showAlert({
+      title: t('history.deleteTitle'),
+      message: t('history.deleteMessage'),
+      buttons: [
+        { text: t('common.cancel'), onPress: () => {}, variant: 'outline' },
+        {
+          text: t('common.delete'),
+          onPress: () => removeOutfit(id),
+          variant: 'destructive',
+        },
+      ],
+    });
+  };
 
   if (outfits.length === 0) {
     return (
@@ -64,48 +63,45 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('history.title')} />
-
-      {/* Sabit "Today" etiketi (veya başka bir başlık) */}
-      <View style={[
-        styles.todayHeader,
-        { backgroundColor: theme.colors.card }
-      ]}>
-        <Text style={[
-          styles.todayHeaderText,
-          { color: theme.colors.textLight }
-        ]}>
-          {t('history.today')}
-        </Text>
-      </View>
-
+      
       <SectionList
         sections={sections}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        stickySectionHeadersEnabled
-        onEndReached={loadMore}
-        onEndReachedThreshold={0.5}
+        stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section: { title } }) => (
-          <View style={[
-            styles.sectionHeader,
-            { backgroundColor: theme.colors.card }
-          ]}>
-            <Text style={[
-              styles.sectionTitle,
-              { color: theme.colors.text }
-            ]}>
-              {title}
-            </Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+            {title}
+          </Text>
         )}
-        renderItem={({ item }) => (
-          <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
-            <OutfitHistoryItem outfit={item} />
-            <Text style={[styles.description, { color: theme.colors.text }]}>{item.description}</Text>
-            <Text style={[styles.suggestionTip, { color: theme.colors.textLight }]}>{item.suggestion_tip}</Text>
-          </View>
-        )}
+        renderItem={({ item }) => {
+          // ---- RENK KONTROLÜ BURADA YAPILIYOR ----
+          // Açık tema ise daha koyu bir 'warning' rengi, koyu tema ise parlak 'accent' rengi kullan.
+          const tipColor = theme.mode === 'light' ? theme.colors.warning : theme.colors.accent;
+
+          return (
+            <View style={[styles.card, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.cardHeader}>
+                <Text style={[styles.occasion, { color: theme.colors.text }]}>
+                  {t(`occasions.${item.occasion}`)} • {t(`weather.${item.weather}`)}
+                </Text>
+                <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                  <Trash2 color={theme.colors.error} size={20} />
+                </TouchableOpacity>
+              </View>
+              <OutfitHistoryItem outfit={item} />
+              <Text style={[styles.description, { color: theme.colors.textLight }]}>
+                {item.description}
+              </Text>
+              {item.suggestion_tip && (
+                 <Text style={[styles.suggestionTip, { color: tipColor }]}>
+                    💡 {item.suggestion_tip}
+                 </Text>
+              )}
+            </View>
+          );
+        }}
       />
     </SafeAreaView>
   );
@@ -113,63 +109,44 @@ export default function HistoryScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  list: { paddingHorizontal: 16, paddingBottom: 32 },
-  todayHeader: {
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 0,
-    marginHorizontal: 16,
-  },
-  todayHeaderText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 14,
-  },
-  sectionHeader: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 24,
-    marginBottom: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: { elevation: 2 },
-    }),
-  },
+  listContent: { paddingHorizontal: 16, paddingBottom: 32 },
   sectionTitle: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 14,
+    fontFamily: 'PlayfairDisplay-Bold',
+    fontSize: 22,
+    marginTop: 24,
+    marginBottom: 12,
   },
   card: {
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-      },
-      android: { elevation: 1 },
-    }),
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  occasion: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
   },
   description: {
     marginTop: 12,
     fontFamily: 'Montserrat-Regular',
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   suggestionTip: {
-    marginTop: 8,
+    marginTop: 12,
     fontFamily: 'Montserrat-Medium',
     fontSize: 13,
+    lineHeight: 19,
     fontStyle: 'italic',
   },
 });

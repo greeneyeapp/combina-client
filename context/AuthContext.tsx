@@ -5,6 +5,7 @@ import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { initializeUserProfile } from '@/services/userService';
 import axios from 'axios';
+import { useOnboardingStore } from '@/store/onboardingStore';
 import API_URL from '@/config';
 
 interface AuthContextType {
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { setJwt, clearJwt, loadJwt, isReady } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
+  const { startOnboarding, checkIfOnboardingCompleted } = useOnboardingStore();
 
   useEffect(() => {
     loadJwt();
@@ -39,16 +41,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
-      
+
       if (currentUser && !currentUser.isAnonymous) {
         try {
-          // Get API token
           const idToken = await currentUser.getIdToken();
           const response = await axios.post(`${API_URL}/token`, { id_token: idToken });
           await setJwt(response.data.access_token);
-          
-          // Initialize user profile
+
           await initializeUserProfile();
+
+          const hasCompleted = await checkIfOnboardingCompleted();
+          if (!hasCompleted) {
+            startOnboarding();
+          }
           
         } catch (error) {
           console.error("Failed to initialize user session:", error);
@@ -60,10 +65,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await clearJwt();
         clearUserPlan();
       }
-      
+
       setLoading(false);
     });
-    
+
     return () => unsubscribe();
   }, [isReady, setJwt, clearJwt, clearUserPlan]);
 
@@ -87,11 +92,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const value = { 
-    user, 
-    loading, 
-    logout, 
-    refreshUserProfile 
+  const value = {
+    user,
+    loading,
+    logout,
+    refreshUserProfile
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

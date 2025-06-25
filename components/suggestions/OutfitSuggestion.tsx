@@ -1,9 +1,11 @@
+// Dosya: kodlar/components/suggestions/OutfitSuggestion.tsx (TAM KOD)
+
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { OutfitSuggestionResponse } from '@/services/aiService';
-import { Heart } from 'lucide-react-native';
+import { Heart, Sparkles } from 'lucide-react-native';
 
 interface OutfitSuggestionProps {
   outfit: OutfitSuggestionResponse;
@@ -26,6 +28,7 @@ const OutfitSuggestion: React.FC<OutfitSuggestionProps> = ({ outfit, onLike, lik
   }, [outfit.items, clothing]);
 
   const renderHighlightedDescription = () => {
+    // Bu fonksiyon aynı kalabilir
     let elements: (string | { match: string })[] = [outfit.description];
     const sorted = [...outfit.items].sort((a, b) => b.name.length - a.name.length);
 
@@ -47,7 +50,6 @@ const OutfitSuggestion: React.FC<OutfitSuggestionProps> = ({ outfit, onLike, lik
           next.push(el);
         }
       }
-
       elements = next;
     }
 
@@ -62,67 +64,118 @@ const OutfitSuggestion: React.FC<OutfitSuggestionProps> = ({ outfit, onLike, lik
     );
   };
 
+  const renderItems = () => {
+    const itemCount = mergedItems.length;
+
+    // 3 ürün için özel kolaj görünümü
+    if (itemCount === 3) {
+      return (
+        <View style={styles.collageContainer}>
+          <View style={styles.largeItem}>
+            <Image source={{ uri: mergedItems[0].imageUri }} style={styles.itemImage} />
+          </View>
+          <View style={styles.smallItemsColumn}>
+            <View style={styles.smallItem}>
+              <Image source={{ uri: mergedItems[1].imageUri }} style={styles.itemImage} />
+            </View>
+            <View style={styles.smallItem}>
+              <Image source={{ uri: mergedItems[2].imageUri }} style={styles.itemImage} />
+            </View>
+          </View>
+        </View>
+      );
+    }
+    
+    // 1, 2, 4 veya daha fazla ürün için standart grid görünümü
+    return (
+      <View style={styles.gridContainer}>
+        {mergedItems.map(item => (
+          <View key={item.id} style={[styles.gridItem, { width: itemCount === 1 ? '100%' : '48%' }]}>
+             <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.card }]}>
-      <FlatList
-        horizontal
-        data={mergedItems}
-        keyExtractor={item => item.id}
-        renderItem={({ item, index }) => (
-          <View style={[styles.itemContainer, index > 0 && styles.itemMargin]}>
-            {item.imageUri ? (
-              <Image source={{ uri: item.imageUri }} style={styles.itemImage} />
-            ) : (
-              <View style={[styles.itemImage, { backgroundColor: '#ccc' }]} />
-            )}
-          </View>
+      <View style={styles.itemsContainer}>
+        {renderItems()}
+        {onLike && (
+          <TouchableOpacity 
+            style={[styles.heartBtn, { backgroundColor: theme.colors.card }]} 
+            onPress={onLike}
+          >
+            <Heart 
+              color={liked ? theme.colors.primary : theme.colors.textLight} 
+              fill={liked ? theme.colors.primaryLight : "transparent"} 
+              size={24} 
+            />
+          </TouchableOpacity>
         )}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-      />
+      </View>
 
-      {onLike && (
-        <TouchableOpacity style={styles.heartBtn} onPress={onLike}>
-          <Heart 
-            color={liked ? theme.colors.accent : theme.colors.textLight} 
-            fill={liked ? theme.colors.accent : "none"} 
-            size={28} 
-          />
-        </TouchableOpacity>
-      )}
-
-      <Text style={[styles.description, { color: theme.colors.text }]}>
-        {renderHighlightedDescription()}
-      </Text>
+      <View style={styles.descriptionContainer}>
+          <Text style={[styles.description, { color: theme.colors.text }]}>
+            {renderHighlightedDescription()}
+          </Text>
+      </View>
 
       {outfit.suggestion_tip && (
-        <View style={[styles.tipBox, { backgroundColor: theme.colors.card, borderLeftColor: theme.colors.accent }]}>
-          <Text style={[styles.tipText, { color: theme.colors.text }]}>💡 {outfit.suggestion_tip}</Text>
+        <View style={[styles.tipBox, { borderLeftColor: theme.colors.accent, backgroundColor: theme.colors.background }]}>
+          <Sparkles color={theme.colors.accent} size={20} style={styles.tipIcon} />
+          <Text style={[styles.tipText, { color: theme.colors.text }]}>{outfit.suggestion_tip}</Text>
         </View>
       )}
     </View>
   );
 };
 
+// --- YENİ DİNAMİK STİLLER ---
 const styles = StyleSheet.create({
   container: {
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
-  },
-  listContent: {
-    paddingBottom: 16,
-  },
-  itemContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#fff',
   },
-  itemMargin: {
-    marginLeft: -20,
+  itemsContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  // 3'lü kolaj stilleri
+  collageContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    height: 200, // Sabit bir yükseklik verelim
+  },
+  largeItem: {
+    flex: 2, // Geniş alan
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  smallItemsColumn: {
+    flex: 1, // Dar alan
+    flexDirection: 'column',
+    gap: 8,
+  },
+  smallItem: {
+    flex: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  // Standart grid stilleri
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  gridItem: {
+    aspectRatio: 1,
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   itemImage: {
     width: '100%',
@@ -130,30 +183,47 @@ const styles = StyleSheet.create({
   },
   heartBtn: {
     position: 'absolute',
-    right: 12,
-    top: 12,
-    zIndex: 2,
+    bottom: -10,
+    right: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    zIndex: 10,
+  },
+  descriptionContainer: {
+    marginBottom: 16,
   },
   description: {
     fontFamily: 'Montserrat-Regular',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 8,
+    fontSize: 15,
+    lineHeight: 22,
   },
   highlight: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 14,
   },
   tipBox: {
-    marginTop: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 12,
     borderRadius: 12,
-    borderLeftWidth: 4,
+    borderLeftWidth: 5,
+  },
+  tipIcon: {
+    marginRight: 12,
   },
   tipText: {
+    flex: 1,
     fontFamily: 'Montserrat-Medium',
     fontSize: 14,
     lineHeight: 20,
+    fontStyle: 'italic',
   },
 });
 

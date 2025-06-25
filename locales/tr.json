@@ -338,11 +338,11 @@
   "occasions": {
     "categories": {
       "casual": "Günlük",
-      "work": "Profesyonel",
-      "formal": "Etkinlik",
+      "work": "İş",
+      "formal": "Etkinlikler",
       "social": "Sosyal",
-      "active": "Aktif",
-      "special": "Seyahat & Özel"
+      "active": "Spor",
+      "special": "Seyahat"
     },
     "errands-run": "Günlük Koşturmaca",
     "friends-gathering": "Arkadaş Buluşması",

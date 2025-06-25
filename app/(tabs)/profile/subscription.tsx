@@ -13,29 +13,59 @@ import {
   Shirt,
   TrendingUp,
   ShieldX,
-  CheckCircle2 // Mevcut plan ikonu
+  CheckCircle2,
+  Heart
 } from 'lucide-react-native';
 import Button from '@/components/common/Button';
 import Purchases, { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
 import { purchasePackage } from '@/services/purchaseService';
-import { useRevenueCat } from '@/hooks/useRevenueCat'; // Kullanıcının mevcut planını almak için
+import { useRevenueCat } from '@/hooks/useRevenueCat';
+
+// RevenueCat metadata interface
+interface OfferingMetadata {
+  app_config?: {
+    free_daily_suggestions: number;
+    free_wardrobe_limit: number;
+  };
+  plans?: {
+    premium?: {
+      daily_suggestions: number;
+      features: {
+        advanced_tips: boolean;
+        no_ads: boolean;
+        pinterest_inspiration: boolean;
+        priority_support: boolean;
+      };
+      wardrobe_limit: string | number;
+    };
+    standard?: {
+      daily_suggestions: number;
+      features: {
+        advanced_tips: boolean;
+        no_ads: boolean;
+        pinterest_inspiration: boolean;
+        priority_support: boolean;
+      };
+      wardrobe_limit: number;
+    };
+  };
+}
 
 export default function SubscriptionScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { show: showAlert } = useAlertStore();
 
-  // KULLANICININ MEVCUT PLANINI REVENUECAT'TEN ALIYORUZ
   const { currentPlan, isLoading: isRevenueCatLoading } = useRevenueCat();
 
   const [isYearly, setIsYearly] = useState(false);
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
+  const [metadata, setMetadata] = useState<OfferingMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
   
-  // Planların seviyesini belirlemek için bir hiyerarşi
   const planHierarchy = {
     free: 0,
     standard: 1,
@@ -56,6 +86,18 @@ export default function SubscriptionScreen() {
       const offerings = await Purchases.getOfferings();
       if (offerings.current !== null) {
         setOffering(offerings.current);
+        
+        // Metadata'yı parse et
+        try {
+          const metadataString = offerings.current.metadata;
+          if (metadataString && typeof metadataString === 'object') {
+            setMetadata(metadataString as unknown as OfferingMetadata);
+          } else if (typeof metadataString === 'string') {
+            setMetadata(JSON.parse(metadataString) as OfferingMetadata);
+          }
+        } catch (error) {
+          console.error('Failed to parse offering metadata:', error);
+        }
       }
     } catch (error) {
       console.error('Failed to load offerings:', error);
@@ -93,10 +135,10 @@ export default function SubscriptionScreen() {
     setPurchasingId(null);
   };
 
-  // --- Diğer yardımcı fonksiyonlar (getPlanType, getPlanIcon vb.) aynı kalabilir ---
-
   const getPlanType = (pkg: PurchasesPackage): 'standard' | 'premium' => {
-    return pkg.product.identifier.includes('premium') ? 'premium' : 'standard';
+    // Package identifier'ından plan tipini belirle
+    const identifier = pkg.identifier.toLowerCase();
+    return identifier.includes('premium') ? 'premium' : 'standard';
   };
   
   const getPlanIcon = (planType: 'standard' | 'premium') => {
@@ -115,6 +157,58 @@ export default function SubscriptionScreen() {
     return theme.mode === 'dark' ? 'rgba(59, 130, 246, 0.1)' : '#EBF4FF';
   };
 
+  const getPlanFeatures = (planType: 'standard' | 'premium') => {
+    if (!metadata?.plans?.[planType]) return [];
+
+    const planData = metadata.plans[planType]!;
+    const features = [];
+
+    // Wardrobe limit
+    features.push({
+      icon: <Shirt size={16} color={getPlanColor(planType)} />,
+      text: planData.wardrobe_limit === 'unlimited' 
+        ? t('subscription.features.unlimitedItems')
+        : t('subscription.features.wardrobeItems', { count: Number(planData.wardrobe_limit) })
+    });
+
+    // Daily suggestions
+    features.push({
+      icon: <TrendingUp size={16} color={getPlanColor(planType)} />,
+      text: t('subscription.features.dailySuggestions', { count: planData.daily_suggestions })
+    });
+
+    // Plan features
+    if (planData.features?.no_ads) {
+      features.push({
+        icon: <ShieldX size={16} color={getPlanColor(planType)} />,
+        text: t('subscription.features.noAds')
+      });
+    }
+
+    if (planData.features?.advanced_tips) {
+      features.push({
+        icon: <Sparkles size={16} color={getPlanColor(planType)} />,
+        text: t('subscription.features.advancedTips')
+      });
+    }
+
+    if (planData.features?.pinterest_inspiration) {
+      features.push({
+        icon: <Heart size={16} color={getPlanColor(planType)} />,
+        text: t('subscription.features.pinterestInspiration')
+      });
+    }
+
+    if (planData.features?.priority_support) {
+      features.push({
+        icon: <Check size={16} color={getPlanColor(planType)} />,
+        text: t('subscription.features.prioritySupport')
+      });
+    }
+
+    return features;
+  };
+
   const renderLoading = () => (
     <View style={styles.centeredContainer}>
       <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -126,7 +220,9 @@ export default function SubscriptionScreen() {
     <View style={styles.centeredContainer}>
       <Sparkles color={theme.colors.primary} size={48} />
       <Text style={[styles.heroTitle, { color: theme.colors.text }]}>{t('subscription.comingSoon')}</Text>
-      <Text style={[styles.messageText, { color: theme.colors.textLight }]}>{t('subscription.androidComingSoon')}</Text>
+      <Text style={[styles.messageText, { color: theme.colors.textLight }]}>
+        {Platform.OS === 'android' ? t('subscription.androidComingSoon') : t('subscription.loadError')}
+      </Text>
     </View>
   );
 
@@ -136,7 +232,6 @@ export default function SubscriptionScreen() {
     const planBackground = getPlanBackground(cardPlanType);
     const isLoading = purchasingId === pkg.identifier;
 
-    // --- YENİLENMİŞ VE DAHA AKILLI BUTON MANTIĞI ---
     let buttonLabel = t('subscription.upgrade');
     let isButtonDisabled = purchasingId !== null;
     let buttonVariant: 'primary' | 'outline' = isPopular ? 'primary' : 'outline';
@@ -148,10 +243,9 @@ export default function SubscriptionScreen() {
     if (currentUserPlanLevel === cardPlanLevel) {
       buttonLabel = t('subscription.currentPlan', 'Current Plan');
       isButtonDisabled = true;
-      buttonVariant = 'outline'; // Mevcut planı daha soluk göster
+      buttonVariant = 'outline';
       buttonIcon = <CheckCircle2 size={16} color={theme.colors.success} />;
     } else if (currentUserPlanLevel > cardPlanLevel) {
-      // Kullanıcı daha yüksek bir planda, daha düşüğünü alamaz
       buttonLabel = t('subscription.downgradeNotPossible', 'Downgrade Not Available');
       isButtonDisabled = true;
       buttonVariant = 'outline';
@@ -159,49 +253,64 @@ export default function SubscriptionScreen() {
       buttonLabel = t('subscription.processing');
     }
     
-    // Yükseltme butonu, sadece daha yüksek bir plan ise ve mevcut plan değilse parlak renkte olsun
     if (currentUserPlanLevel < cardPlanLevel && isPopular) {
-        buttonVariant = 'primary';
+      buttonVariant = 'primary';
     } else if (currentUserPlanLevel < cardPlanLevel) {
-        buttonVariant = 'outline'; // Yükseltilebilir ama popüler değilse
+      buttonVariant = 'outline';
     }
     
-    const features = [
-        { key: 'wardrobeItems', icon: <Shirt size={16} color={planColor} />, text: t(cardPlanType === 'premium' ? 'subscription.features.unlimitedItems' : 'subscription.features.wardrobeItems', { count: 100 }) },
-        { key: 'dailySuggestions', icon: <TrendingUp size={16} color={planColor} />, text: t('subscription.features.dailySuggestions', { count: cardPlanType === 'premium' ? 50 : 10 }) },
-        { key: 'noAds', icon: <ShieldX size={16} color={planColor} />, text: t('subscription.features.noAds') },
-        { key: 'advancedTips', icon: <Sparkles size={16} color={planColor} />, text: t('subscription.features.advancedTips') },
-        { key: 'pinterestInspiration', icon: <Check size={16} color={planColor} />, text: t('subscription.features.pinterestInspiration') },
-      ];
-      if (cardPlanType === 'premium') {
-        features.push({ key: 'prioritySupport', icon: <Check size={16} color={planColor} />, text: t('subscription.features.prioritySupport') });
-      }
+    const features = getPlanFeatures(cardPlanType);
 
     return (
-      <View key={pkg.identifier} style={[styles.planCard, { backgroundColor: planBackground, borderColor: isPopular && !isButtonDisabled ? planColor : theme.colors.border, borderWidth: isPopular && !isButtonDisabled ? 2 : 1 }]}>
+      <View key={pkg.identifier} style={[
+        styles.planCard, 
+        { 
+          backgroundColor: planBackground, 
+          borderColor: isPopular && !isButtonDisabled ? planColor : theme.colors.border, 
+          borderWidth: isPopular && !isButtonDisabled ? 2 : 1 
+        }
+      ]}>
         {isPopular && !isButtonDisabled && (
           <View style={[styles.popularBadge, { backgroundColor: planColor }]}>
-            <Text style={[styles.popularText, { color: theme.mode === 'dark' ? '#000' : '#fff' }]}>{t('subscription.mostPopular')}</Text>
+            <Text style={[styles.popularText, { color: theme.mode === 'dark' ? '#000' : '#fff' }]}>
+              {t('subscription.mostPopular')}
+            </Text>
           </View>
         )}
+        
         <View style={styles.planHeader}>
           {getPlanIcon(cardPlanType)}
-          <Text style={[styles.planName, { color: planColor }]}>{t(`profile.plans.${cardPlanType}`)}</Text>
+          <Text style={[styles.planName, { color: planColor }]}>
+            {t(`profile.plans.${cardPlanType}`)}
+          </Text>
         </View>
+        
         <View style={styles.priceSection}>
           <Text style={[styles.price, { color: theme.colors.text }]}>{pkg.product.priceString}</Text>
           <Text style={[styles.priceUnit, { color: theme.colors.textLight }]}>
             /{t(isYearly ? 'subscription.year' : 'subscription.month')}
           </Text>
         </View>
+        {isYearly && (
+          <Text style={[styles.priceNote, { color: theme.colors.textLight }]}>
+            {/* Aylık fiyat hesaplaması göster */}
+            {(pkg.product.price / 12).toLocaleString('tr-TR', { 
+              style: 'currency', 
+              currency: pkg.product.currencyCode,
+              minimumFractionDigits: 2 
+            })}/ay
+          </Text>
+        )}
+        
         <View style={styles.featuresContainer}>
-          {features.map(feature => (
-            <View key={feature.key} style={styles.featureRow}>
+          {features.map((feature, index) => (
+            <View key={index} style={styles.featureRow}>
               {feature.icon}
               <Text style={[styles.featureText, { color: theme.colors.text }]}>{feature.text}</Text>
             </View>
           ))}
         </View>
+        
         <Button
           label={buttonLabel}
           onPress={() => handlePurchase(pkg)}
@@ -217,9 +326,13 @@ export default function SubscriptionScreen() {
 
   const renderContent = () => {
     if (loading || isRevenueCatLoading) return renderLoading();
-    if (!offering || Platform.OS !== 'ios') return renderNotAvailable();
+    if (!offering && Platform.OS === 'ios') return renderNotAvailable();
+    if (Platform.OS !== 'ios') return renderNotAvailable();
 
-    const packages = isYearly ? offering.availablePackages.filter(p => p.packageType === 'ANNUAL') : offering.availablePackages.filter(p => p.packageType === 'MONTHLY');
+    const packages = isYearly 
+      ? offering!.availablePackages.filter(p => p.packageType === 'ANNUAL') 
+      : offering!.availablePackages.filter(p => p.packageType === 'MONTHLY');
+    
     packages.sort((a, b) => (planHierarchy[getPlanType(b)] || 0) - (planHierarchy[getPlanType(a)] || 0));
 
     return (
@@ -231,17 +344,23 @@ export default function SubscriptionScreen() {
         </View>
 
         <View style={styles.billingToggle}>
-          <Text style={[styles.billingText, { color: !isYearly ? theme.colors.text : theme.colors.textLight }]}>{t('subscription.monthly')}</Text>
+          <Text style={[styles.billingText, { color: !isYearly ? theme.colors.text : theme.colors.textLight }]}>
+            {t('subscription.monthly')}
+          </Text>
           <Switch
             value={isYearly}
             onValueChange={setIsYearly}
             trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
             thumbColor={theme.colors.white}
           />
-          <Text style={[styles.billingText, { color: isYearly ? theme.colors.text : theme.colors.textLight }]}>{t('subscription.yearly')}</Text>
+          <Text style={[styles.billingText, { color: isYearly ? theme.colors.text : theme.colors.textLight }]}>
+            {t('subscription.yearly')}
+          </Text>
           {isYearly && (
             <View style={[styles.discountBadge, { backgroundColor: theme.colors.success }]}>
-              <Text style={[styles.discountText, { color: theme.colors.white }]}>{t('subscription.savePercent', { percent: 17 })}</Text>
+              <Text style={[styles.discountText, { color: theme.colors.white }]}>
+                {t('subscription.savePercent', { percent: 17 })}
+              </Text>
             </View>
           )}
         </View>
@@ -249,7 +368,9 @@ export default function SubscriptionScreen() {
         <View style={styles.plansContainer}>
           {packages.length > 0 ? packages.map((pkg, index) => renderPackageCard(pkg, index === 0)) : (
             <View style={styles.centeredContainer}>
-               <Text style={[styles.messageText, { color: theme.colors.textLight }]}>{t('subscription.loadError')}</Text>
+               <Text style={[styles.messageText, { color: theme.colors.textLight }]}>
+                 {t('subscription.loadError')}
+               </Text>
             </View>
           )}
         </View>
@@ -273,131 +394,31 @@ export default function SubscriptionScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16 },
   backButton: { padding: 8 },
   title: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 24 },
   content: { flex: 1 },
-  centeredContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-    padding: 24,
-  },
-  messageText: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 16,
-    textAlign: 'center'
-  },
-  heroSection: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 24,
-  },
-  heroTitle: {
-    fontFamily: 'PlayfairDisplay-Bold',
-    fontSize: 28,
-    textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  heroSubtitle: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 22,
-  },
-  billingToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 32,
-    gap: 12,
-  },
-  billingText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 16,
-  },
-  discountBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 4,
-  },
-  discountText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 12,
-  },
-  plansContainer: {
-    paddingHorizontal: 16,
-    gap: 20,
-    marginBottom: 48,
-  },
-  planCard: {
-    padding: 24,
-    borderRadius: 20,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  popularBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  popularText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 12,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  planName: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 22,
-    marginLeft: 12,
-    textTransform: 'capitalize'
-  },
-  priceSection: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginBottom: 24,
-  },
-  price: {
-    fontFamily: 'PlayfairDisplay-Bold',
-    fontSize: 40,
-  },
-  priceUnit: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 16,
-    marginLeft: 6,
-    marginBottom: 4,
-  },
-  featuresContainer: {
-    marginBottom: 24,
-    gap: 14,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  featureText: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
-    marginLeft: 12,
-    flex: 1,
-  },
-  planButton: {
-    marginTop: 8,
-  },
+  centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, padding: 24 },
+  messageText: { fontFamily: 'Montserrat-Medium', fontSize: 16, textAlign: 'center' },
+  heroSection: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24 },
+  heroTitle: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 28, textAlign: 'center', marginTop: 16, marginBottom: 8 },
+  heroSubtitle: { fontFamily: 'Montserrat-Regular', fontSize: 16, textAlign: 'center', lineHeight: 22 },
+  billingToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 32, gap: 12 },
+  billingText: { fontFamily: 'Montserrat-Bold', fontSize: 16 },
+  discountBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 4 },
+  discountText: { fontFamily: 'Montserrat-Bold', fontSize: 12 },
+  plansContainer: { paddingHorizontal: 16, gap: 20, marginBottom: 48 },
+  planCard: { padding: 24, borderRadius: 20, position: 'relative', overflow: 'hidden' },
+  popularBadge: { position: 'absolute', top: 16, right: 16, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
+  popularText: { fontFamily: 'Montserrat-Bold', fontSize: 12 },
+  planHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  planName: { fontFamily: 'Montserrat-Bold', fontSize: 22, marginLeft: 12, textTransform: 'capitalize' },
+  priceSection: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 24 },
+  price: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 40 },
+  priceUnit: { fontFamily: 'Montserrat-Regular', fontSize: 16, marginLeft: 6, marginBottom: 4 },
+  priceNote: { fontFamily: 'Montserrat-Regular', fontSize: 12, textAlign: 'center', marginBottom: 16 },
+  featuresContainer: { marginBottom: 24, gap: 14 },
+  featureRow: { flexDirection: 'row', alignItems: 'center' },
+  featureText: { fontFamily: 'Montserrat-Medium', fontSize: 14, marginLeft: 12, flex: 1 },
+  planButton: { marginTop: 8 },
 });

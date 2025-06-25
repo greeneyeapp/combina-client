@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -24,6 +24,7 @@ function RootLayoutNav(): React.JSX.Element | null {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+  const hasNavigated = useRef(false);
 
   const shouldUseRevenueCat = user && !user.isAnonymous && Platform.OS === 'ios';
   const revenueCatState = useRevenueCat();
@@ -40,8 +41,27 @@ function RootLayoutNav(): React.JSX.Element | null {
     const isReady = (fontsLoaded || fontError) && !loading && navigationState?.key;
     if (!isReady) return;
 
-    SplashScreen.hideAsync();
+    // İlk navigasyon işlemi
+    if (!hasNavigated.current) {
+      hasNavigated.current = true;
+      
+      if (user && (user.isAnonymous || user.emailVerified)) {
+        // Kullanıcı varsa direkt wardrobe'a git
+        router.replace('/(tabs)/wardrobe');
+      } else {
+        // Kullanıcı yoksa auth'a git
+        router.replace('/(auth)');
+      }
+      
+      // Kısa bir gecikme ile splash'i kapat
+      setTimeout(() => {
+        SplashScreen.hideAsync();
+      }, 200);
+      
+      return;
+    }
 
+    // Sonraki routing işlemleri (normal akış)
     const inAuthGroup = segments[0] === '(auth)';
     const inTabsGroup = segments[0] === '(tabs)';
 

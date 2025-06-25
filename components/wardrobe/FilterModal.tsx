@@ -37,12 +37,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
   
   const [expandedSection, setExpandedSection] = useState<string | null>('category');
 
-  // Cinsiyete göre doğru kategori hiyerarşisini seçer
   const categoryHierarchy = useMemo(() => {
     return gender === 'male' ? GENDERED_CATEGORY_HIERARCHY.male : GENDERED_CATEGORY_HIERARCHY.female;
   }, [gender]);
 
-  // Modal her açıldığında filtreleri başlangıç değerlerine sıfırla
   useEffect(() => {
     if (isVisible) {
       setSelectedCategories(initialFilters.categories);
@@ -104,10 +102,20 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
                     {(subcats as string[]).map(sub => (
                       <TouchableOpacity
                         key={sub}
-                        style={[styles.filterOption, selectedCategories.includes(sub) && { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}
+                        style={[
+                          styles.filterOption, 
+                          { borderColor: theme.colors.border },
+                          selectedCategories.includes(sub) && { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }
+                        ]}
                         onPress={() => toggleSelection(selectedCategories, sub, setSelectedCategories)}
                       >
-                        <Text style={[styles.filterOptionText, selectedCategories.includes(sub) && { color: theme.colors.primary }]}>{t(`categories.${sub}`)}</Text>
+                        <Text style={[
+                          styles.filterOptionText, 
+                          { color: theme.colors.text },
+                          selectedCategories.includes(sub) && { color: theme.colors.primary }
+                        ]}>
+                          {t(`categories.${sub}`)}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -120,11 +128,21 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
                 {ALL_COLORS.map(color => (
                   <TouchableOpacity
                     key={color.name}
-                    style={[styles.colorOption, selectedColors.includes(color.name) && { borderColor: theme.colors.primary }]}
+                    style={[
+                      styles.colorOption, 
+                      { borderColor: theme.colors.border },
+                      selectedColors.includes(color.name) && { borderColor: theme.colors.primary }
+                    ]}
                     onPress={() => toggleSelection(selectedColors, color.name, setSelectedColors)}
                   >
                     <View style={[styles.colorSwatch, { backgroundColor: color.hex, borderColor: theme.colors.border }]} />
-                    <Text style={[styles.filterOptionText, selectedColors.includes(color.name) && { color: theme.colors.primary }]}>{t(`colors.${color.name}`)}</Text>
+                    <Text style={[
+                      styles.filterOptionText, 
+                      { color: theme.colors.text },
+                      selectedColors.includes(color.name) && { color: theme.colors.primary }
+                    ]}>
+                      {t(`colors.${color.name}`)}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -135,10 +153,20 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
                 {ALL_SEASONS.map(item => (
                   <TouchableOpacity
                     key={item}
-                    style={[styles.filterOption, selectedSeasons.includes(item) && { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}
+                    style={[
+                      styles.filterOption, 
+                      { borderColor: theme.colors.border },
+                      selectedSeasons.includes(item) && { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }
+                    ]}
                     onPress={() => toggleSelection(selectedSeasons, item, setSelectedSeasons)}
                   >
-                    <Text style={[styles.filterOptionText, selectedSeasons.includes(item) && { color: theme.colors.primary }]}>{t(`seasons.${item}`)}</Text>
+                    <Text style={[
+                      styles.filterOptionText, 
+                      { color: theme.colors.text },
+                      selectedSeasons.includes(item) && { color: theme.colors.primary }
+                    ]}>
+                      {t(`seasons.${item}`)}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -149,10 +177,20 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
                 {ALL_STYLES.map(item => (
                   <TouchableOpacity
                     key={item}
-                    style={[styles.filterOption, selectedStyles.includes(item) && { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}
+                    style={[
+                      styles.filterOption, 
+                      { borderColor: theme.colors.border },
+                      selectedStyles.includes(item) && { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }
+                    ]}
                     onPress={() => toggleSelection(selectedStyles, item, setSelectedStyles)}
                   >
-                    <Text style={[styles.filterOptionText, selectedStyles.includes(item) && { color: theme.colors.primary }]}>{t(`styles.${item}`)}</Text>
+                    <Text style={[
+                      styles.filterOptionText, 
+                      { color: theme.colors.text },
+                      selectedStyles.includes(item) && { color: theme.colors.primary }
+                    ]}>
+                      {t(`styles.${item}`)}
+                    </Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -169,7 +207,6 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
   );
 };
 
-// Stillendirme aynı kalabilir.
 const styles = StyleSheet.create({
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
   modalContent: { height: '85%', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingHorizontal: 20, paddingTop: 20 },
@@ -183,9 +220,9 @@ const styles = StyleSheet.create({
   groupBlock: { marginBottom: 16 },
   groupTitle: { fontFamily: 'Montserrat-SemiBold', fontSize: 14, marginBottom: 12, textTransform: 'uppercase' },
   optionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  filterOption: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: '#ddd' },
+  filterOption: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
   filterOptionText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
-  colorOption: { flexDirection: 'row', alignItems: 'center', padding: 8, paddingRight: 12, borderRadius: 20, borderWidth: 1, borderColor: '#ddd' },
+  colorOption: { flexDirection: 'row', alignItems: 'center', padding: 8, paddingRight: 12, borderRadius: 20, borderWidth: 1 },
   colorSwatch: { width: 20, height: 20, borderRadius: 10, marginRight: 8, borderWidth: 1 },
   modalFooter: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, paddingVertical: 15, paddingBottom: 25 },
   footerButton: { flex: 1, marginHorizontal: 8 },

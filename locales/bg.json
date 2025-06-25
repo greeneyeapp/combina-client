@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "Ежедневни",
-      "work": "Професионални",
+      "casual": "Ежедневие",
+      "work": "Работа",
       "formal": "Събития",
       "social": "Социални",
-      "active": "Активни",
-      "special": "Пътуване и специални"
+      "active": "Спорт",
+      "special": "Пътуване"
     },
     "errands-run": "Ежедневни задачи",
     "friends-gathering": "Среща с приятели",

@@ -5,7 +5,6 @@ import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { initializeUserProfile } from '@/services/userService';
 import axios from 'axios';
-import { useOnboardingStore } from '@/store/onboardingStore';
 import API_URL from '@/config';
 
 interface AuthContextType {
@@ -30,7 +29,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { setJwt, clearJwt, loadJwt, isReady } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
-  const { startOnboarding, checkIfOnboardingCompleted } = useOnboardingStore();
 
   useEffect(() => {
     loadJwt();
@@ -49,11 +47,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await setJwt(response.data.access_token);
 
           await initializeUserProfile();
-
-          const hasCompleted = await checkIfOnboardingCompleted();
-          if (!hasCompleted) {
-            startOnboarding();
-          }
           
         } catch (error) {
           console.error("Failed to initialize user session:", error);
@@ -61,7 +54,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           clearUserPlan();
         }
       } else {
-        // User logged out or is anonymous
         await clearJwt();
         clearUserPlan();
       }

@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
 import useAlertStore from '@/store/alertStore';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -23,6 +24,7 @@ export default function LoginScreen() {
   });
   
   const { show: showAlert } = useAlertStore();
+  const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
 
   const onEmailLogin = async (data: { email: string; password: string }) => {
     setLoading(true);
@@ -38,7 +40,21 @@ export default function LoginScreen() {
         await auth.signOut();
         return;
       }
+
       router.replace('/(tabs)/wardrobe');
+
+      setTimeout(async () => {
+        try {
+          const hasCompleted = await checkIfOnboardingCompleted();
+          if (!hasCompleted) {
+            setTimeout(() => {
+              startOnboarding();
+            }, 1000);
+          }
+        } catch (error) {
+          console.error('Onboarding check failed:', error);
+        }
+      }, 500);
 
     } catch (error: any) {
       showAlert({
@@ -89,6 +105,8 @@ export default function LoginScreen() {
                     autoComplete="email"
                     autoCorrect={false}
                     spellCheck={false}
+                    autoFocus={false}
+                    importantForAutofill="yes"
                   />
                 )}
                 name="email"
@@ -106,9 +124,10 @@ export default function LoginScreen() {
                     error={errors.password?.message}
                     secureTextEntry
                     textContentType="password"
-                    autoComplete="password"
+                    autoComplete="current-password"
                     autoCorrect={false}
                     spellCheck={false}
+                    importantForAutofill="yes"
                   />
                 )}
                 name="password"

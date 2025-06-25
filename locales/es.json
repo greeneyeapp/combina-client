@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "Casual",
-      "work": "Profesional",
+      "casual": "Diario",
+      "work": "Trabajo",
       "formal": "Eventos",
       "social": "Social",
-      "active": "Activo",
-      "special": "Viajes y Especial"
+      "active": "Deportes",
+      "special": "Viajes"
     },
     "errands-run": "Hacer recados",
     "friends-gathering": "Reunión de amigos",

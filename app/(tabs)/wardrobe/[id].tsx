@@ -12,7 +12,7 @@ import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
 
 export default function ClothingDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { clothing, removeClothing } = useClothingStore();
@@ -170,7 +170,7 @@ export default function ClothingDetailScreen() {
               {t('wardrobe.addedOn')}
             </Text>
             <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-              {formatDate(item.createdAt)}
+              {formatDate(item.createdAt, i18n.language)}
             </Text>
           </View>
         </View>

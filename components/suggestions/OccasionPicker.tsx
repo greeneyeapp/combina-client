@@ -1,4 +1,4 @@
-// Dosya: kodlar/components/suggestions/OccasionPicker.tsx (BU KODU KULLANIN)
+// Dosya: kodlar/components/suggestions/OccasionPicker.tsx (DÜZENLENMIŞ)
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, FlatList, SafeAreaView as ModalSafeArea } from 'react-native';
@@ -100,7 +100,6 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
                 <X size={24} color={theme.colors.textLight} />
               </TouchableOpacity>
             </View>
-            {/* FlatList zaten kaydırma (scroll) özelliğine sahiptir */}
             <FlatList
               data={occasionCategories[currentCategory]}
               keyExtractor={(item) => item}
@@ -117,6 +116,7 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
                   </Text>
                 </TouchableOpacity>
               )}
+              contentContainerStyle={styles.flatListContent}
             />
           </ModalSafeArea>
         </View>
@@ -163,8 +163,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   scrollContainer: {
-    paddingHorizontal: 16,
-    paddingRight: 32,
+    paddingHorizontal: 0, // Gereksiz padding kaldırıldı
+    paddingRight: 16, // Sadece sağda biraz boşluk
   },
   categoryItem: {
     paddingHorizontal: 16,
@@ -185,22 +185,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    height: '75%', // Listenin rahatça sığması için yüksekliği artırdım
+    height: '60%', // Yükseklik azaltıldı, gereksiz boşluk kaldırıldı
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingBottom: 16,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+    marginBottom: 8,
   },
   modalTitle: {
     fontFamily: 'Montserrat-Bold',
     fontSize: 18,
+  },
+  flatListContent: {
+    paddingBottom: 16,
   },
   subOccasionItem: {
     padding: 16,

@@ -352,8 +352,25 @@ export default function ProfileScreen() {
           </Text>
 
           <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={handleHelpPress}
+            >
+              <View style={styles.settingLabelContainer}>
+                <HelpCircle color={theme.colors.text} size={20} />
+                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
+                  {t('profile.help')}
+                </Text>
+              </View>
+              <View style={styles.settingAction}>
+                <ChevronRight color={theme.colors.textLight} size={16} />
+              </View>
+            </TouchableOpacity>
+
             {Platform.OS === 'ios' && (
               <>
+                <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                
                 <TouchableOpacity
                   style={styles.settingRow}
                   onPress={handleRestorePurchases}
@@ -370,27 +387,8 @@ export default function ProfileScreen() {
                     <ChevronRight color={theme.colors.textLight} size={16} />
                   </View>
                 </TouchableOpacity>
-
-                <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               </>
             )}
-          </View>
-
-          <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={handleHelpPress}
-            >
-              <View style={styles.settingLabelContainer}>
-                <HelpCircle color={theme.colors.text} size={20} />
-                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>
-                  {t('profile.help')}
-                </Text>
-              </View>
-              <View style={styles.settingAction}>
-                <ChevronRight color={theme.colors.textLight} size={16} />
-              </View>
-            </TouchableOpacity>
 
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 

@@ -338,11 +338,11 @@
   "occasions": {
     "categories": {
       "casual": "Quotidien",
-      "work": "Professionnel",
+      "work": "Travail",
       "formal": "Événements",
       "social": "Social",
-      "active": "Actif",
-      "special": "Voyage & Spécial"
+      "active": "Sport",
+      "special": "Voyage"
     },
     "errands-run": "Faire des courses",
     "friends-gathering": "Rassemblement entre amis",

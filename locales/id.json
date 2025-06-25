@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "Kasual",
-      "work": "Profesional",
+      "casual": "Sehari-hari",
+      "work": "Kerja",
       "formal": "Acara",
       "social": "Sosial",
-      "active": "Aktif",
-      "special": "Perjalanan & Khusus"
+      "active": "Olahraga",
+      "special": "Perjalanan"
     },
     "errands-run": "Urusan Sehari-hari",
     "friends-gathering": "Kumpul Teman",

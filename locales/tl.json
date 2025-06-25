@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "Pang-araw-araw",
-      "work": "Propesyonal",
-      "formal": "Pormal",
+      "casual": "Araw-araw",
+      "work": "Trabaho",
+      "formal": "Mga Kaganapan",
       "social": "Panlipunan",
-      "active": "Aktibo",
-      "special": "Paglalakbay at Espesyal"
+      "active": "Palakasan",
+      "special": "Paglalakbay"
     },
     "errands-run": "Pamamalengke",
     "friends-gathering": "Pulong ng mga Kaibigan",

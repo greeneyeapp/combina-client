@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "休闲",
-      "work": "职场",
-      "formal": "正式",
+      "casual": "日常",
+      "work": "工作",
+      "formal": "活动",
       "social": "社交",
-      "active": "活跃",
-      "special": "旅行&特殊"
+      "active": "运动",
+      "special": "旅行"
     },
     "errands-run": "跑腿",
     "friends-gathering": "朋友聚会",

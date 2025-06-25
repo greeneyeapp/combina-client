@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "कैजुअल",
-      "work": "पेशेवर",
+      "casual": "दैनिक",
+      "work": "कार्य",
       "formal": "कार्यक्रम",
       "social": "सामाजिक",
-      "active": "सक्रिय",
-      "special": "यात्रा और विशेष"
+      "active": "खेल",
+      "special": "यात्रा"
     },
     "errands-run": "काम-काज चलाना",
     "friends-gathering": "दोस्तों से मिलना",

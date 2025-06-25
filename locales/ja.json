@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "カジュアル",
-      "work": "ビジネス",
-      "formal": "フォーマル",
-      "social": "社交",
-      "active": "アクティブ",
-      "special": "旅行・特別な日"
+      "casual": "日常",
+      "work": "仕事",
+      "formal": "イベント",
+      "social": "ソーシャル",
+      "active": "スポーツ",
+      "special": "旅行"
     },
     "errands-run": "お出かけ",
     "friends-gathering": "友人の集まり",

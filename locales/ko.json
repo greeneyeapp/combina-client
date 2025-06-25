@@ -337,12 +337,12 @@
   },
   "occasions": {
     "categories": {
-      "casual": "캐주얼",
-      "work": "비즈니스",
-      "formal": "포멀 이벤트",
-      "social": "사회적 모임",
-      "active": "활동적",
-      "special": "여행 및 특별한 날"
+      "casual": "일상",
+      "work": "업무",
+      "formal": "행사",
+      "social": "소셜",
+      "active": "스포츠",
+      "special": "여행"
     },
     "errands-run": "볼일 보기",
     "friends-gathering": "친구 모임",

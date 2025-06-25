@@ -1,10 +1,11 @@
 import { Outfit } from '@/store/outfitStore';
+import i18n from '@/locales/i18n';
 
-export function formatDate(dateString: string, locale: string = 'en-US'): string {
+export function formatDate(dateString: string, locale?: string): string {
   const date = new Date(dateString);
+  const currentLocale = locale || i18n.language || 'en-US';
   
-  // Türkçe locale için özel aylar dizisi
-  if (locale === 'tr' || locale === 'tr-TR') {
+  if (currentLocale === 'tr' || currentLocale === 'tr-TR') {
     const months = [
       'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
       'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
@@ -17,15 +18,14 @@ export function formatDate(dateString: string, locale: string = 'en-US'): string
     return `${day} ${month} ${year}`;
   }
   
-  // Diğer diller için standart format
-  return date.toLocaleDateString(locale, {
+  return date.toLocaleDateString(currentLocale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 }
 
-export function formatRelativeTime(dateString: string, locale: string = 'en-US', t: any): string {
+export function formatRelativeTime(dateString: string, locale?: string, t?: any): string {
   const date = new Date(dateString);
   const now = new Date();
   const diffInMs = now.getTime() - date.getTime();
@@ -35,18 +35,21 @@ export function formatRelativeTime(dateString: string, locale: string = 'en-US',
   const diffInHours = Math.floor(diffInMinutes / 60);
   const diffInDays = Math.floor(diffInHours / 24);
   
+  const translator = t || i18n.t;
+  const currentLocale = locale || i18n.language || 'en-US';
+  
   if (diffInDays > 6) {
-    return formatDate(dateString, locale);
+    return formatDate(dateString, currentLocale);
   } else if (diffInDays > 1) {
-    return t('common.daysAgo', { count: diffInDays });
+    return translator('common.daysAgo', { count: diffInDays });
   } else if (diffInDays === 1) {
-    return t('common.yesterday');
+    return translator('common.yesterday');
   } else if (diffInHours > 1) {
-    return t('common.hoursAgo', { count: diffInHours });
+    return translator('common.hoursAgo', { count: diffInHours });
   } else if (diffInMinutes > 1) {
-    return t('common.minutesAgo', { count: diffInMinutes });
+    return translator('common.minutesAgo', { count: diffInMinutes });
   } else {
-    return t('common.justNow');
+    return translator('common.justNow');
   }
 }
 
@@ -63,13 +66,15 @@ function isYesterday(dateString: string): boolean {
   return date.toDateString() === yesterday.toDateString();
 }
 
-export function groupOutfitsByDate(outfits: Outfit[], locale: string = 'en-US', t: any) {
+export function groupOutfitsByDate(outfits: Outfit[], locale?: string, t?: any) {
   const groups: { title: string; data: Outfit[] }[] = [];
   const map = new Map<string, { outfits: Outfit[]; originalDate: string }>();
+  
+  const translator = t || i18n.t;
+  const currentLocale = locale || i18n.language || 'en-US';
 
   outfits.forEach(outfit => {
-    // Date anahtarı olarak YYYY-MM-DD formatını kullan (locale bağımsız)
-    const dateKey = outfit.date.split('T')[0]; // "2025-06-23"
+    const dateKey = outfit.date.split('T')[0];
     
     if (!map.has(dateKey)) {
       map.set(dateKey, { outfits: [], originalDate: outfit.date });
@@ -77,20 +82,17 @@ export function groupOutfitsByDate(outfits: Outfit[], locale: string = 'en-US', 
     map.get(dateKey)!.outfits.push(outfit);
   });
 
-  // Grupları oluştur, en yeni tarih yukarıda olacak şekilde sırala
   Array.from(map.entries())
     .sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime())
     .forEach(([dateKey, { outfits, originalDate }]) => {
       let title: string;
       
-      // Bugün, dün kontrolü
       if (isToday(originalDate)) {
-        title = t('common.today');
+        title = translator('common.today');
       } else if (isYesterday(originalDate)) {
-        title = t('common.yesterday');
+        title = translator('common.yesterday');
       } else {
-        // Localized tarih formatı - burada locale parametresini geçiyoruz
-        title = formatDate(originalDate, locale);
+        title = formatDate(originalDate, currentLocale);
       }
 
       groups.push({ 

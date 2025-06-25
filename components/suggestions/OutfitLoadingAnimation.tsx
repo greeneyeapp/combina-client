@@ -31,6 +31,7 @@ export default function OutfitLoadingAnimation({ isVisible, onComplete }: Outfit
   
   const [currentItems, setCurrentItems] = useState<ClothingItem[]>([]);
   const [shuffleCount, setShuffleCount] = useState(0);
+  const [usedItemIds, setUsedItemIds] = useState<Set<string>>(new Set());
   
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -39,12 +40,29 @@ export default function OutfitLoadingAnimation({ isVisible, onComplete }: Outfit
   const shuffleAnim = useRef(new Animated.Value(0)).current;
   const sparkleAnim = useRef(new Animated.Value(0)).current;
 
-  // Get random items from wardrobe
+  // Get random items from wardrobe (tekrarları engelle)
   const getRandomItems = (count: number = 4): ClothingItem[] => {
     if (clothing.length === 0) return [];
     
-    const shuffled = [...clothing].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, Math.min(count, clothing.length));
+    // Eğer kullanılabilir eşya sayısı istenen sayıdan azsa, used set'i sıfırla
+    const availableItems = clothing.filter(item => !usedItemIds.has(item.id));
+    if (availableItems.length < count && usedItemIds.size > 0) {
+      setUsedItemIds(new Set());
+      return getRandomItems(count);
+    }
+    
+    // Kullanılmamış eşyalardan rastgele seç
+    const shuffled = [...availableItems].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, Math.min(count, availableItems.length));
+    
+    // Seçilen eşyaları kullanılmış listesine ekle
+    setUsedItemIds(prev => {
+      const newSet = new Set(prev);
+      selected.forEach(item => newSet.add(item.id));
+      return newSet;
+    });
+    
+    return selected;
   };
 
   // Shuffle items animation
@@ -71,6 +89,8 @@ export default function OutfitLoadingAnimation({ isVisible, onComplete }: Outfit
   // Start animations when visible
   useEffect(() => {
     if (isVisible) {
+      // Reset state
+      setUsedItemIds(new Set());
       setCurrentItems(getRandomItems(4));
       setShuffleCount(0);
       
@@ -134,6 +154,7 @@ export default function OutfitLoadingAnimation({ isVisible, onComplete }: Outfit
       rotateAnim.setValue(0);
       shuffleAnim.setValue(0);
       sparkleAnim.setValue(0);
+      setUsedItemIds(new Set());
     }
   }, [isVisible]);
 

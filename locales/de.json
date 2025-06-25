@@ -224,6 +224,8 @@
   "suggestions": {
     "title": "Outfit-Vorschläge",
     "generating": "Wird generiert...",
+    "wardrobeLimitReachedTitle": "Garderoben-Limit erreicht",
+    "wardrobeLimitReachedMessage": "Dein '{{plan}}'-Abo ist auf {{limit}} Kleidungsstücke begrenzt. Um neue Outfits zu erstellen, erweitere bitte deinen Plan.",
     "generatingOutfit": "Dein perfektes Outfit wird erstellt",
     "analyzingWardrobe": "Dein Kleiderschrank wird analysiert...",
     "findingPerfectMatch": "Die perfekte Kombination wird gesucht...",

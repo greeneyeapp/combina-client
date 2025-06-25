@@ -33,6 +33,7 @@ import { canGetSuggestion, getUserProfile } from '@/services/userService';
 import { CATEGORY_HIERARCHY } from '@/utils/constants';
 import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
+import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
 
 interface PinterestLink {
   title: string;
@@ -47,13 +48,14 @@ export default function SuggestionsScreen() {
   const { weather, loading: weatherLoading, fetchWeather, error: weatherError } = useWeatherStore();
   const { user } = useAuth();
   const { userPlan } = useUserPlanStore();
+  const { limitInfo, isLoading: isLimitLoading } = useWardrobeLimit();
   const { show: showAlert } = useAlertStore();
 
   const scrollViewRef = useRef<ScrollView>(null);
   const [suggestion, setSuggestion] = useState<OutfitSuggestionResponse | null>(null);
   const [suggestionLayoutY, setSuggestionLayoutY] = useState<number>(0);
 
-  const [selectedOccasion, setSelectedOccasion] = useState('running-errands');
+  const [selectedOccasion, setSelectedOccasion] = useState('errands-run');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pinterestLinks, setPinterestLinks] = useState<PinterestLink[]>([]);
@@ -80,11 +82,7 @@ export default function SuggestionsScreen() {
   }, [suggestion]);
 
   useEffect(() => {
-    if (suggestion?.pinterest_links) {
-      setPinterestLinks(suggestion.pinterest_links);
-    } else {
-      setPinterestLinks([]);
-    }
+    setPinterestLinks(suggestion?.pinterest_links || []);
   }, [suggestion]);
 
   useEffect(() => {
@@ -108,7 +106,7 @@ export default function SuggestionsScreen() {
     const counts: Record<string, number> = {};
     clothing.forEach(item => {
       for (const [mainCat, subcats] of Object.entries(CATEGORY_HIERARCHY)) {
-        if (subcats.includes(item.category)) {
+        if ((subcats as any).includes(item.category)) {
           counts[mainCat] = (counts[mainCat] || 0) + 1;
           break;
         }
@@ -155,6 +153,25 @@ export default function SuggestionsScreen() {
   const handleGenerateSuggestion = async () => {
     if (!wardrobeStatus.hasEnough || !weather) return;
 
+    if (limitInfo?.isLimitReached) {
+      showAlert({
+        title: t('suggestions.wardrobeLimitReachedTitle'),
+        message: t('suggestions.wardrobeLimitReachedMessage', {
+          plan: t(`profile.plans.${limitInfo.plan}`),
+          limit: limitInfo.limit,
+        }),
+        buttons: [
+          { text: t('common.cancel'), variant: 'outline', onPress: ()=>{} },
+          {
+            text: t('profile.upgrade'),
+            onPress: () => router.push('/profile/subscription' as any),
+            variant: 'primary'
+          }
+        ]
+      });
+      return;
+    }
+
     setSuggestionLayoutY(0);
 
     try {
@@ -165,7 +182,7 @@ export default function SuggestionsScreen() {
           message: usageCheck.reason || t('suggestions.limitExceededMessage'),
           buttons: [
             { text: t('common.cancel'), onPress: () => { }, variant: 'outline' },
-            { text: t('profile.upgrade'), onPress: () => router.push('/profile/subscription'), variant: 'primary' }
+            { text: t('profile.upgrade'), onPress: () => router.push('/profile/subscription' as any), variant: 'primary' }
           ]
         });
         return;
@@ -182,10 +199,9 @@ export default function SuggestionsScreen() {
       const weatherCondition = getWeatherCondition(weather as any);
       const last5 = outfits.slice(0, 5);
 
-      // --- API ÇAĞRISI GÜNCELLENDİ ---
       const result = await getOutfitSuggestion(
         i18n.language,
-        userPlan?.gender as 'female' | 'male' | undefined, // Cinsiyet bilgisi burada gönderiliyor
+        userPlan?.gender as 'female' | 'male' | undefined,
         clothing,
         last5,
         weatherCondition,
@@ -232,23 +248,34 @@ export default function SuggestionsScreen() {
   };
 
   const renderUsageInfo = () => {
-    if (!userPlan) return null;
-
-    const usagePercentage = userPlan.usage.percentage_used;
+    // --- DÜZELTME BURADA ---
+    // Veri hala yükleniyorsa veya yoksa, bir yükleme göstergesi göster
+    if (isLimitLoading || !limitInfo) {
+      return (
+        <View style={[styles.usageContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+            <ActivityIndicator color={theme.colors.primary} />
+        </View>
+      );
+    }
+    
+    // Yüklendikten sonra `limitInfo`'dan gelen doğru verileri kullan
+    const usagePercentage = limitInfo.percentage;
     const isNearLimit = usagePercentage > 80;
 
     return (
       <View style={[styles.usageContainer, { backgroundColor: theme.colors.card }]}>
         <View style={styles.usageHeader}>
-          <Text style={[styles.usageTitle, { color: theme.colors.text }]}>{t('suggestions.dailyUsage')}</Text>
-          {userPlan.plan !== 'premium' && (
-            <TouchableOpacity onPress={() => router.push('/profile/subscription')}>
+          <Text style={[styles.usageTitle, { color: theme.colors.text }]}>
+            {t('wardrobe.title')}
+          </Text>
+          {limitInfo.plan !== 'premium' && (
+            <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
               <Text style={[styles.upgradeLink, { color: theme.colors.primary }]}>{t('profile.upgrade')} ✨</Text>
             </TouchableOpacity>
           )}
         </View>
         <Text style={[styles.usageText, { color: theme.colors.textLight }]}>
-          {t('suggestions.usageLimitInfo', { used: userPlan.usage.current_usage, total: userPlan.usage.daily_limit })}
+          {t('wardrobe.limit')}: {limitInfo.currentCount} / {limitInfo.limit === Infinity ? '∞' : limitInfo.limit}
         </Text>
         <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
           <View style={[styles.progressFill, { backgroundColor: isNearLimit ? theme.colors.warning : theme.colors.primary, width: `${Math.min(100, usagePercentage)}%` }]} />
@@ -390,6 +417,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
+    minHeight: 90, // Yükleme sırasında zıplamayı önlemek için
   },
   usageHeader: {
     flexDirection: 'row',

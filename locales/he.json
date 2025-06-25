@@ -227,6 +227,8 @@
     "generatingOutfit": "יוצר את התלבושת המושלמת שלך",
     "analyzingWardrobe": "מנתח את המלתחה שלך...",
     "findingPerfectMatch": "מוצא את ההתאמה המושלמת...",
+    "wardrobeLimitReachedTitle": "הגעת למגבלת המלתחה",
+    "wardrobeLimitReachedMessage": "לא ניתן ליצור תלבושות חדשות. הגעת למגבלת {{limit}} הפריטים בתוכנית '{{plan}}'. כדי להמשיך, יש לשדרג את התוכנית.",
     "inspirationTitle": "השראת סטייל",
     "linkError": "לא ניתן לפתוח את הקישור.",
     "weatherError": "נתוני מזג האוויר אינם זמינים. לחץ כדי לנסות שוב.",

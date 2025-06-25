@@ -243,6 +243,8 @@
     "addMoreItems": "Magdagdag pa ng Item",
     "likeSuccess": "Nai-save ang outfit sa kasaysayan!",
     "likeInfo": "Makikita mo na ito sa iyong kasaysayan.",
+    "wardrobeLimitReachedTitle": "Naabot na ang Limitasyon ng Wardrobe",
+    "wardrobeLimitReachedMessage": "Naabot mo na ang limitasyon na {{limit}} na item para sa iyong '{{plan}}' plan. Para makabuo ng mga bagong outfit, paki-upgrade ang iyong plano.",
     "alreadyLiked": "Nasa kasaysayan mo na ang outfit na ito.",
     "usageLimitInfo": "Nagamit na {{used}} sa {{total}} suggestion ngayon",
     "dailyUsage": "Arawang Gamit"

@@ -224,6 +224,8 @@
   "suggestions": {
     "title": "Предложения за визии",
     "generating": "Генериране...",
+    "wardrobeLimitReachedTitle": "Достигнат лимит на гардероба",
+    "wardrobeLimitReachedMessage": "Достигнахте лимита от {{limit}} артикула за план '{{plan}}'. За да създавате нови комбинации, моля, надстройте своя план.",
     "generatingOutfit": "Създаваме Вашата перфектна визия",
     "analyzingWardrobe": "Анализираме гардероба Ви...",
     "findingPerfectMatch": "Намираме перфектното съвпадение...",

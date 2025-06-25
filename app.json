@@ -2,11 +2,16 @@
   "expo": {
     "name": "Combina",
     "slug": "combina-client",
-    "version": "1.2.1",
+    "version": "1.2.3",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/logo.webp",
     "scheme": "combina-client",
     "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/splash-logo.webp",
+      "resizeMode": "contain",
+      "backgroundColor": "#f9f7f1"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.greeneyeapp.combina",
@@ -20,6 +25,10 @@
     },
     "android": {
       "package": "com.greeneyeapp.combina",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/logo.webp",
+        "backgroundColor": "#FFFFFF"
+      },
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
@@ -34,7 +43,7 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.webp"
     },
     "plugins": [
       "expo-router",
@@ -45,7 +54,10 @@
         "expo-build-properties",
         {
           "android": {
-            "kotlinVersion": "2.1.0"
+            "kotlinVersion": "2.1.0",
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 34,
+            "buildToolsVersion": "35.0.0"
           }
         }
       ],
@@ -61,11 +73,6 @@
       "eas": {
         "projectId": "461c4ed2-19b1-4bc8-9de5-a5f9ea9b2d5c"
       }
-    },
-    "splash": {
-      "image": "./assets/images/splash-logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#f9f7f1"
     }
   }
 }

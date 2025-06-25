@@ -227,6 +227,8 @@
     "generatingOutfit": "Mükemmel Kombinin Oluşturuluyor",
     "analyzingWardrobe": "Gardırobun analiz ediliyor...",
     "findingPerfectMatch": "Mükemmel eşleşme bulunuyor...",
+    "wardrobeLimitReachedTitle": "Gardırop Limiti Doldu",
+    "wardrobeLimitReachedMessage": "'{{plan}}' planınızdaki {{limit}} parçalık gardırop limitinize ulaştınız. Yeni kombinler oluşturmak için lütfen planınızı yükseltin.",
     "inspirationTitle": "Stil İlhamı",
     "linkError": "Bağlantı açılamadı.",
     "weatherError": "Hava durumu verisi alınamadı. Tekrar denemek için dokun.",

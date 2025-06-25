@@ -1,5 +1,3 @@
-// Dosya: kodlar/app/(tabs)/wardrobe/edit/[id].tsx (TAM KOD)
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +18,7 @@ import SeasonPicker from '@/components/wardrobe/SeasonPicker';
 import StylePicker from '@/components/wardrobe/StylePicker';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
+import * as FileSystem from 'expo-file-system';
 
 type FormData = {
   name: string;
@@ -47,14 +46,7 @@ export default function EditClothingScreen() {
     formState: { errors },
     reset,
   } = useForm<FormData>({
-    defaultValues: {
-      name: '',
-      category: '',
-      color: '',
-      season: [],
-      style: [],
-      notes: '',
-    },
+    defaultValues: { name: '', category: '', color: '', season: [], style: [], notes: '' },
   });
 
   useEffect(() => {
@@ -80,7 +72,7 @@ export default function EditClothingScreen() {
   const takePicture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      showAlert({ title: t('common.error'), message: t('permissions.cameraRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ title: t('common.error'), message: t('permissions.cameraRequired'), buttons: [{ text: t('common.ok') }] });
       return;
     }
     try {
@@ -92,7 +84,7 @@ export default function EditClothingScreen() {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      showAlert({ title: t('common.error'), message: t('permissions.galleryRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ title: t('common.error'), message: t('permissions.galleryRequired'), buttons: [{ text: t('common.ok') }] });
       return;
     }
     try {
@@ -103,33 +95,53 @@ export default function EditClothingScreen() {
 
   const removeImage = () => setImage(null);
 
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     if (!image) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok') }] });
       return;
     }
     if (!id || !itemToEdit) return;
 
-    updateClothing(id, {
-      ...itemToEdit,
-      ...data,
-      imageUri: image,
-      style: data.style.join(','),
-    });
-    
-    Toast.show({
-      type: 'success',
-      text1: t('common.success'),
-      text2: t('wardrobe.itemUpdatedSuccessfully'),
-      position: 'top',
-      visibilityTime: 2000,
-      topOffset: 50,
-    });
-    router.back();
+    try {
+      let permanentImageUri = image;
+
+      // Resim değiştirilmişse ve yeni resim geçici bir yoldaysa, kalıcıya kopyala
+      if (image !== itemToEdit.imageUri && image.startsWith('file://')) {
+        const filename = `wardrobe_${Date.now()}.jpg`;
+        const newImageUri = (FileSystem.documentDirectory || '') + filename;
+        await FileSystem.copyAsync({ from: image, to: newImageUri });
+        permanentImageUri = newImageUri;
+
+        // Eski resmi silerek yerden tasarruf et (isteğe bağlı ama önerilir)
+        if (itemToEdit.imageUri.startsWith(FileSystem.documentDirectory || '')) {
+            await FileSystem.deleteAsync(itemToEdit.imageUri, { idempotent: true });
+        }
+      }
+      
+      updateClothing(id, {
+        ...itemToEdit,
+        ...data,
+        imageUri: permanentImageUri,
+        style: data.style.join(','),
+      });
+      
+      Toast.show({
+        type: 'success',
+        text1: t('common.success'),
+        text2: t('wardrobe.itemUpdatedSuccessfully'),
+        position: 'top',
+        visibilityTime: 2000,
+      });
+      router.back();
+
+    } catch (error) {
+        console.error("Error updating item: ", error);
+        showAlert({ title: t('common.error'), message: t('wardrobe.errorAddingItem'), buttons: [{text: t('common.ok')}]})
+    }
   };
 
   if (!itemToEdit) {
-    return null; // useEffect içinde yönlendirme yapıldığı için burada null dönebiliriz.
+    return null;
   }
 
   return (

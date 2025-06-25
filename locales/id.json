@@ -226,6 +226,8 @@
     "generating": "Menghasilkan...",
     "generatingOutfit": "Menciptakan Pakaian Sempurna Anda",
     "analyzingWardrobe": "Menganalisis lemari pakaian Anda...",
+    "wardrobeLimitReachedTitle": "Batas Lemari Pakaian Tercapai",
+    "wardrobeLimitReachedMessage": "Batas lemari Anda untuk paket '{{plan}}' adalah {{limit}} item. Untuk menghasilkan setelan baru, silakan tingkatkan paket Anda.",
     "findingPerfectMatch": "Mencari padanan yang sempurna...",
     "inspirationTitle": "Inspirasi Gaya",
     "linkError": "Tidak dapat membuka tautan.",

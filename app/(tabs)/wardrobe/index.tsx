@@ -1,6 +1,4 @@
-// Dosya: kodlar/app/(tabs)/wardrobe/index.tsx (TAM KOD)
-
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,9 +12,8 @@ import FilterModal from '@/components/wardrobe/FilterModal';
 import Input from '@/components/common/Input';
 import EmptyState from '@/components/common/EmptyState';
 import ClothingItem from '@/components/wardrobe/ClothingItem';
-import { useAuth } from '@/context/AuthContext';
-import { getUserProfile } from '@/services/userService';
 import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
+import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
 
 interface SectionData {
   title: string;
@@ -30,18 +27,12 @@ const gridColumns = 3;
 const sidePadding = 16;
 const gridItemWidth = (width - sidePadding * 2 - gridSpacing * (gridColumns - 1)) / gridColumns;
 
-const WARDROBE_LIMITS: { [key: string]: number } = {
-  free: 30,
-  standard: 100,
-  premium: Infinity,
-};
-
 export default function WardrobeScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
-  const { user } = useAuth();
   const { userPlan: storedUserPlan } = useUserPlanStore();
+  const { limitInfo, isLoading: isLimitLoading } = useWardrobeLimit();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
@@ -51,40 +42,13 @@ export default function WardrobeScreen() {
     seasons: string[];
     styles: string[];
   }>({ categories: [], colors: [], seasons: [], styles: [] });
-  
-  const [userPlan, setUserPlan] = useState<string | null>(null);
-  const [isLoadingPlan, setIsLoadingPlan] = useState(true);
 
   const { clothing } = useClothingStore();
-  const currentItemCount = clothing.length;
-
-  useEffect(() => {
-    const fetchPlan = async () => {
-      if (user && !user.isAnonymous) {
-        try {
-          setIsLoadingPlan(true);
-          const profile = await getUserProfile();
-          setUserPlan(profile.plan);
-        } catch (error) {
-          console.error('Failed to fetch user plan:', error);
-          setUserPlan('free');
-        } finally {
-          setIsLoadingPlan(false);
-        }
-      } else {
-        setUserPlan('free');
-        setIsLoadingPlan(false);
-      }
-    };
-    fetchPlan();
-  }, [user]);
-
-  const limit = userPlan ? WARDROBE_LIMITS[userPlan] : 0;
-  const limitReached = limit !== Infinity && currentItemCount >= limit;
   
   const getUsageColor = () => {
-    if (limit === Infinity) return theme.colors.success;
-    const percentage = (currentItemCount / limit) * 100;
+    if (!limitInfo) return theme.colors.textLight;
+    if (limitInfo.limit === Infinity) return theme.colors.success;
+    const percentage = limitInfo.percentage;
     if (percentage > 90) return theme.colors.error;
     if (percentage > 75) return theme.colors.warning;
     return theme.colors.success;
@@ -126,7 +90,6 @@ export default function WardrobeScreen() {
     const hierarchy = gender === 'male' ? GENDERED_CATEGORY_HIERARCHY.male : GENDERED_CATEGORY_HIERARCHY.female;
 
     filteredClothing.forEach(item => {
-      // Find which main category the item's subcategory belongs to
       let mainCategory = '';
       for (const [mainCat, subCats] of Object.entries(hierarchy)) {
         if ((subCats as string[]).includes(item.category)) {
@@ -183,13 +146,14 @@ export default function WardrobeScreen() {
       <HeaderBar title={t('wardrobe.title')} />
       
       <View style={styles.usageContainer}>
-        {isLoadingPlan ? (
+        {isLimitLoading ? (
           <ActivityIndicator size="small" color={theme.colors.textLight} />
         ) : (
+          limitInfo && 
           <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
             <Text style={[styles.usageText, { color: getUsageColor() }]}>
-              {t('wardrobe.limit')}: {currentItemCount} / {limit === Infinity ? '∞' : limit}
-              {userPlan !== 'premium' && <Text> ✨</Text>}
+              {t('wardrobe.limit')}: {limitInfo.currentCount} / {limitInfo.limit === Infinity ? '∞' : limitInfo.limit}
+              {limitInfo.plan !== 'premium' && <Text> ✨</Text>}
             </Text>
           </TouchableOpacity>
         )}
@@ -234,7 +198,7 @@ export default function WardrobeScreen() {
         />
       )}
 
-      {!isLoadingPlan && !limitReached && (
+      {!isLimitLoading && !limitInfo?.isLimitReached && (
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleAddItem}
@@ -256,7 +220,7 @@ export default function WardrobeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  usageContainer: { alignItems: 'center', paddingBottom: 8, paddingTop: 0 },
+  usageContainer: { alignItems: 'center', paddingBottom: 8, paddingTop: 0, minHeight: 21 },
   usageText: { fontFamily: 'Montserrat-Bold', fontSize: 14 },
   searchContainer: { flexDirection: 'row', padding: 16, paddingTop: 0, alignItems: 'center' },
   searchInput: { flex: 1, marginBottom: 0 },

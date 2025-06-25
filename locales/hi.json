@@ -226,6 +226,8 @@
     "generating": "उत्पन्न हो रहा है...",
     "generatingOutfit": "आपका परफेक्ट आउटफिट बना रहा है",
     "analyzingWardrobe": "आपके वार्डरोब का विश्लेषण कर रहा है...",
+    "wardrobeLimitReachedTitle": "वार्डरोब की सीमा पूरी हो गई",
+    "wardrobeLimitReachedMessage": "आप अपनी '{{plan}}' योजना की {{limit}} आइटम सीमा तक पहुंच गए हैं। नए आउटफिट बनाने के लिए, कृपया अपनी योजना को अपग्रेड करें।",
     "findingPerfectMatch": "सही मैच ढूंढ रहा है...",
     "inspirationTitle": "स्टाइल प्रेरणा",
     "linkError": "लिंक नहीं खोल सका।",

@@ -10,6 +10,7 @@ import HeaderBar from '@/components/common/HeaderBar';
 import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
+import * as FileSystem from 'expo-file-system';
 
 export default function ClothingDetailScreen() {
   const { t, i18n } = useTranslation();
@@ -43,7 +44,6 @@ export default function ClothingDetailScreen() {
     );
   }
   
-  // Stilleri virgüllerden ayırarak bir dizi oluştur
   const stylesArray = item.style ? item.style.split(',') : [];
 
   const handleEdit = () => {
@@ -58,9 +58,19 @@ export default function ClothingDetailScreen() {
             { text: t('common.cancel'), onPress: () => {}, variant: 'outline' },
             {
               text: t('common.delete'),
-              onPress: () => {
-                removeClothing(id);
-                router.back();
+              onPress: async () => {
+                try {
+                    // Cihaz hafızasından resmi sil
+                    if (item.imageUri.startsWith(FileSystem.documentDirectory || '')) {
+                        await FileSystem.deleteAsync(item.imageUri, { idempotent: true });
+                    }
+                    // Store'dan ürünü kaldır
+                    removeClothing(id);
+                    router.back();
+                } catch (error) {
+                    console.error("Error deleting item:", error);
+                    showAlert({title: t('common.error'), message: "Failed to delete item.", buttons: [{text: t('common.ok')}]})
+                }
               },
               variant: 'destructive',
             }
@@ -135,7 +145,6 @@ export default function ClothingDetailScreen() {
             </View>
           </View>
 
-          {/* ---- STİL BÖLÜMÜ GÜNCELLENDİ ---- */}
           <View style={styles.detailRow}>
             <Text style={[styles.detailLabel, { color: theme.colors.textLight }]}>
               {t('wardrobe.style')}

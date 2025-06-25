@@ -230,6 +230,8 @@
     "inspirationTitle": "风格灵感",
     "linkError": "无法打开链接。",
     "weatherError": "天气数据不可用，点击重试。",
+    "wardrobeLimitReachedTitle": "衣橱已达上限",
+    "wardrobeLimitReachedMessage": "您的 '{{plan}}' 套餐最多可容纳 {{limit}} 件衣物。要生成新搭配，请升级您的套餐。",
     "selectOccasion": "选择场合",
     "generateOutfit": "生成搭配",
     "limitExceededTitle": "今日次数已用完",

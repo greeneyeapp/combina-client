@@ -234,6 +234,8 @@
     "generateOutfit": "Generate Outfit",
     "limitExceededTitle": "Daily Limit Reached",
     "limitExceededMessage": "You have reached your daily outfit suggestion limit. Please try again tomorrow or upgrade your plan for more.",
+    "wardrobeLimitReachedTitle": "Wardrobe Limit Reached",
+    "wardrobeLimitReachedMessage": "You cannot generate new outfits because your wardrobe has exceeded the {{limit}}-item limit for the {{plan}} plan. Please upgrade to add more items.",
     "genericError": "An error occurred while getting your outfit suggestion.",
     "notEnoughItemsTitle": "Your Wardrobe Isn't Ready Yet",
     "notEnoughItemsMessage": "You need to add more key pieces to your wardrobe so I can create great outfits for you.",

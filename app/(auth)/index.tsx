@@ -21,8 +21,8 @@ export default function LoginScreen() {
           <Image
             source={
               themeMode === 'dark'
-                ? require('@/assets/images/logo-dark.png')
-                : require('@/assets/images/logo-light.png')
+                ? require('@/assets/images/logo-dark.webp')
+                : require('@/assets/images/logo-light.webp')
             }
             style={styles.logo}
             resizeMode="contain"

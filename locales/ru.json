@@ -229,6 +229,8 @@
     "findingPerfectMatch": "Ищем лучший вариант...",
     "inspirationTitle": "Вдохновение стилем",
     "linkError": "Не удалось открыть ссылку.",
+    "wardrobeLimitReachedTitle": "Достигнут лимит гардероба",
+    "wardrobeLimitReachedMessage": "Вы достигли лимита в {{limit}} вещей для вашего плана '{{plan}}'. Чтобы создавать новые образы, пожалуйста, обновите подписку.",
     "weatherError": "Данные о погоде недоступны. Нажмите, чтобы повторить.",
     "selectOccasion": "Выберите событие",
     "generateOutfit": "Создать образ",

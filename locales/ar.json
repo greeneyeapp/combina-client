@@ -223,6 +223,8 @@
   },
   "suggestions": {
     "title": "اقتراحات التنسيقات",
+    "wardrobeLimitReachedTitle": "تجاوزت حد الخزانة",
+    "wardrobeLimitReachedMessage": "لا يمكنك إنشاء أطقم جديدة لأنك تجاوزت حد {{limit}} قطعة المسموح به في باقة '{{plan}}'. لإنشاء أطقم جديدة، يرجى ترقية باقتك.",
     "generating": "جاري الإنشاء...",
     "generatingOutfit": "نصمم لك إطلالتك المثالية",
     "analyzingWardrobe": "جاري تحليل خزانتك...",

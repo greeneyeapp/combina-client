@@ -229,6 +229,8 @@
     "findingPerfectMatch": "Recherche de la combinaison parfaite...",
     "inspirationTitle": "Inspiration de style",
     "linkError": "Impossible d'ouvrir le lien.",
+    "wardrobeLimitReachedTitle": "Limite de garde-robe atteinte",
+    "wardrobeLimitReachedMessage": "Vous avez atteint la limite de {{limit}} articles de votre forfait '{{plan}}'. Pour créer de nouvelles tenues, veuillez faire évoluer votre abonnement.",
     "weatherError": "Données météo non disponibles. Appuyez pour réessayer.",
     "selectOccasion": "Quelle est l'occasion ?",
     "generateOutfit": "Générer une tenue",

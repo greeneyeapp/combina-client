@@ -232,6 +232,8 @@
     "weatherError": "날씨 정보를 불러올 수 없습니다. 다시 시도하려면 탭하세요.",
     "selectOccasion": "어떤 자리인가요?",
     "generateOutfit": "코디 생성",
+    "wardrobeLimitReachedTitle": "옷장 한도 초과",
+    "wardrobeLimitReachedMessage": "'{{plan}}' 플랜의 아이템 한도({{limit}}개)에 도달했습니다. 새 코디를 만들려면 플랜을 업그레이드하세요.",
     "limitExceededTitle": "일일 제한 초과",
     "limitExceededMessage": "오늘의 코디 제안 횟수를 모두 사용했습니다. 내일 다시 시도하거나 플랜을 업그레이드하세요.",
     "genericError": "코디 제안 중 오류가 발생했습니다.",

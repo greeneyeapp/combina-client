@@ -229,6 +229,8 @@
     "findingPerfectMatch": "最適な組み合わせを探しています...",
     "inspirationTitle": "スタイルインスピレーション",
     "linkError": "リンクを開けませんでした。",
+    "wardrobeLimitReachedTitle": "クローゼットの上限に達しました",
+    "wardrobeLimitReachedMessage": "'{{plan}}'プランでは、{{limit}}個までアイテムを登録できます。新しいコーデを作成するには、プランをアップグレードしてください。",
     "weatherError": "天気情報が取得できません。タップして再試行。",
     "selectOccasion": "シーンを選んでください",
     "generateOutfit": "コーディネート作成",

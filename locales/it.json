@@ -230,6 +230,8 @@
     "inspirationTitle": "Ispirazione di Stile",
     "linkError": "Impossibile aprire il link.",
     "weatherError": "Dati meteo non disponibili. Tocca per riprovare.",
+    "wardrobeLimitReachedTitle": "Limite guardaroba raggiunto",
+    "wardrobeLimitReachedMessage": "Hai raggiunto il limite di {{limit}} articoli per il tuo piano '{{plan}}'. Per creare nuovi outfit, effettua l'upgrade.",
     "selectOccasion": "Qual è l'occasione?",
     "generateOutfit": "Genera Outfit",
     "limitExceededTitle": "Limite giornaliero raggiunto",

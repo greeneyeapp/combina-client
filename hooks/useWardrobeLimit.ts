@@ -1,8 +1,8 @@
-// hooks/useWardrobeLimit.ts
+// Dosya: kodlar/hooks/useWardrobeLimit.ts (REVENUECAT ENTEGRELİ)
+
 import { useEffect, useState } from 'react';
-import { useUserPlanStore } from '@/store/userPlanStore';
 import { useClothingStore } from '@/store/clothingStore';
-import { getUserProfile } from '@/services/userService';
+import { useRevenueCat } from './useRevenueCat'; // getUserProfile yerine bunu kullanıyoruz
 
 interface WardrobeLimitInfo {
   currentCount: number;
@@ -15,10 +15,10 @@ interface WardrobeLimitInfo {
 }
 
 export const useWardrobeLimit = () => {
-  const { userPlan } = useUserPlanStore();
+  // Plan bilgisini doğrudan RevenueCat'ten alıyoruz
+  const { currentPlan, isLoading: isPlanLoading } = useRevenueCat();
   const { clothing } = useClothingStore();
   const [limitInfo, setLimitInfo] = useState<WardrobeLimitInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   const WARDROBE_LIMITS = {
     free: 30,
@@ -27,52 +27,29 @@ export const useWardrobeLimit = () => {
   };
 
   useEffect(() => {
-    const calculateLimitInfo = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Ensure we have fresh plan data
-        const profile = await getUserProfile();
-        
-        const currentCount = clothing.length;
-        const limit = WARDROBE_LIMITS[profile.plan];
-        const remaining = limit === Infinity ? Infinity : Math.max(0, limit - currentCount);
-        const isLimitReached = limit !== Infinity && currentCount >= limit;
-        const percentage = limit === Infinity ? 0 : Math.min(100, (currentCount / limit) * 100);
-        const canAdd = !isLimitReached;
+    // Plan bilgisi yüklendiğinde limitleri hesapla
+    if (!isPlanLoading) {
+      const currentCount = clothing.length;
+      const limit = WARDROBE_LIMITS[currentPlan];
+      const remaining = limit === Infinity ? Infinity : Math.max(0, limit - currentCount);
+      const isLimitReached = limit !== Infinity && currentCount >= limit;
+      const percentage = limit === Infinity ? 0 : Math.min(100, (currentCount / limit) * 100);
+      const canAdd = !isLimitReached;
 
-        setLimitInfo({
-          currentCount,
-          limit,
-          remaining,
-          isLimitReached,
-          percentage,
-          canAdd,
-          plan: profile.plan,
-        });
-      } catch (error) {
-        console.error('Error calculating wardrobe limit:', error);
-        // Fallback to basic calculation if profile fetch fails
-        const fallbackPlan = userPlan?.plan || 'free';
-        const currentCount = clothing.length;
-        const limit = WARDROBE_LIMITS[fallbackPlan];
-        
-        setLimitInfo({
-          currentCount,
-          limit,
-          remaining: limit === Infinity ? Infinity : Math.max(0, limit - currentCount),
-          isLimitReached: limit !== Infinity && currentCount >= limit,
-          percentage: limit === Infinity ? 0 : Math.min(100, (currentCount / limit) * 100),
-          canAdd: limit === Infinity || currentCount < limit,
-          plan: fallbackPlan,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setLimitInfo({
+        currentCount,
+        limit,
+        remaining,
+        isLimitReached,
+        percentage,
+        canAdd,
+        plan: currentPlan,
+      });
+    }
+  }, [clothing.length, currentPlan, isPlanLoading]);
 
-    calculateLimitInfo();
-  }, [clothing.length, userPlan?.plan]);
+  // Yükleme durumu olarak hem planın yüklenmesini hem de limit bilgisinin hesaplanmasını bekliyoruz
+  const isLoading = isPlanLoading || limitInfo === null;
 
   return { limitInfo, isLoading };
 };

@@ -226,6 +226,8 @@
     "generating": "A gerar...",
     "generatingOutfit": "A criar o seu look perfeito",
     "analyzingWardrobe": "A analisar o seu roupeiro...",
+    "wardrobeLimitReachedTitle": "Limite do Guarda-Roupa Atingido",
+    "wardrobeLimitReachedMessage": "Atingiu o limite de {{limit}} peças de roupa do seu plano '{{plan}}'. Para criar novos looks, por favor, atualize o seu plano.",
     "findingPerfectMatch": "À procura da combinação ideal...",
     "inspirationTitle": "Inspiração de Estilo",
     "linkError": "Não foi possível abrir o link.",

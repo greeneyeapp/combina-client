@@ -1,7 +1,7 @@
-// services/purchaseService.ts
+// Dosya: kodlar/services/purchaseService.ts (PLATFORM KONTROLÜ KALDIRILMIŞ VERSİYON)
+
 import Purchases, { PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import { updateUserPlan, getUserProfile } from '@/services/userService';
-import { Platform } from 'react-native';
 import API_URL from '@/config';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 
@@ -21,22 +21,15 @@ export interface RestoreResult {
 
 // Purchase a package
 export const purchasePackage = async (packageToPurchase: PurchasesPackage): Promise<PurchaseResult> => {
-  if (Platform.OS !== 'ios') {
-    return {
-      success: false,
-      error: 'Purchases are only available on iOS',
-    };
-  }
+  // --- DÜZELTME: Platform.OS kontrolü tamamen kaldırıldı. ---
 
   try {
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
-    
-    // Determine the new plan based on active entitlements
+
     const newPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
-    
-    // Sync with backend
+
     await syncPurchaseWithBackend(customerInfo, newPlan);
-    
+
     return {
       success: true,
       customerInfo,
@@ -44,15 +37,14 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
     };
   } catch (error: any) {
     console.error('Purchase failed:', error);
-    
-    // Handle specific RevenueCat errors
+
     if (error.userCancelled) {
       return {
         success: false,
         error: 'Purchase was cancelled by user',
       };
     }
-    
+
     return {
       success: false,
       error: error.message || 'Purchase failed',
@@ -62,21 +54,15 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
 
 // Restore purchases
 export const restorePurchases = async (): Promise<RestoreResult> => {
-  if (Platform.OS !== 'ios') {
-    return {
-      success: false,
-      error: 'Restore is only available on iOS',
-    };
-  }
+  // --- DÜZELTME: Platform.OS kontrolü tamamen kaldırıldı. ---
 
   try {
     const customerInfo = await Purchases.restorePurchases();
-    
+
     const restoredPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
-    
-    // Sync with backend
+
     await syncPurchaseWithBackend(customerInfo, restoredPlan);
-    
+
     return {
       success: true,
       customerInfo,
@@ -101,19 +87,12 @@ const mapEntitlementsToPlan = (entitlements: any): 'free' | 'standard' | 'premiu
 // Sync purchase with backend
 const syncPurchaseWithBackend = async (customerInfo: CustomerInfo, newPlan: 'free' | 'standard' | 'premium') => {
   try {
-    // Update plan in our backend
     await updateUserPlan(newPlan);
-    
-    // Send additional purchase verification to backend (optional)
     await verifyPurchaseWithBackend(customerInfo);
-    
-    // Refresh user profile to get updated limits
     await getUserProfile(true);
-    
     console.log(`Purchase synced: Plan updated to ${newPlan}`);
   } catch (error) {
     console.error('Failed to sync purchase with backend:', error);
-    // Don't throw here - the purchase was successful, just sync failed
   }
 };
 
@@ -123,7 +102,7 @@ const verifyPurchaseWithBackend = async (customerInfo: CustomerInfo) => {
     const token = useApiAuthStore.getState().jwt;
     if (!token) return;
 
-    const response = await fetch(`${API_URL}/api/users/verify-purchase`, {
+    await fetch(`${API_URL}/api/users/verify-purchase`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -138,10 +117,6 @@ const verifyPurchaseWithBackend = async (customerInfo: CustomerInfo) => {
         },
       }),
     });
-
-    if (!response.ok) {
-      console.warn('Purchase verification failed:', response.status);
-    }
   } catch (error) {
     console.error('Purchase verification error:', error);
   }
@@ -149,23 +124,20 @@ const verifyPurchaseWithBackend = async (customerInfo: CustomerInfo) => {
 
 // Check for any active subscriptions on app start
 export const checkSubscriptionStatus = async (): Promise<'free' | 'standard' | 'premium'> => {
-  if (Platform.OS !== 'ios') {
-    return 'free';
-  }
-
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const currentPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
-    
-    // Sync with backend if needed
+
     const backendProfile = await getUserProfile();
     if (backendProfile.plan !== currentPlan) {
       await updateUserPlan(currentPlan);
     }
-    
+
     return currentPlan;
   } catch (error) {
     console.error('Subscription status check failed:', error);
-    return 'free';
+    // Hata durumunda backend'deki plana güven
+    const profile = await getUserProfile();
+    return profile.plan as 'free' | 'standard' | 'premium';
   }
 };

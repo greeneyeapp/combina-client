@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -7,27 +7,21 @@ import { StyleSheet, Platform } from 'react-native';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/locales/i18n';
-import { useAuth } from '@/context/AuthContext';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import CustomAlert from '@/components/common/CustomAlert';
 import Toast, { BaseToastProps } from 'react-native-toast-message';
 import CustomToast from '@/components/common/CustomToast';
 import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
 
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav(): React.JSX.Element | null {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
-  const hasNavigated = useRef(false);
-
-  const shouldUseRevenueCat = user && !user.isAnonymous && Platform.OS === 'ios';
-  const revenueCatState = useRevenueCat();
 
   const [fontsLoaded, fontError] = useFonts({
     'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
@@ -38,136 +32,99 @@ function RootLayoutNav(): React.JSX.Element | null {
   });
 
   useEffect(() => {
-    const isReady = (fontsLoaded || fontError) && !loading && navigationState?.key;
-    if (!isReady) return;
+    const isAppReady = (fontsLoaded || fontError) && !authLoading && navigationState?.key;
+    if (!isAppReady) return;
 
-    // İlk navigasyon işlemi
-    if (!hasNavigated.current) {
-      hasNavigated.current = true;
-      
-      if (user && (user.isAnonymous || user.emailVerified)) {
-        // Kullanıcı varsa direkt wardrobe'a git
+    const inAuthGroup = segments[0] === '(auth)';
+    
+    if (user) {
+      if (inAuthGroup) {
         router.replace('/(tabs)/wardrobe');
-      } else {
-        // Kullanıcı yoksa auth'a git
+      }
+    } else {
+      if (!inAuthGroup) {
         router.replace('/(auth)');
       }
-      
-      // Kısa bir gecikme ile splash'i kapat
-      setTimeout(() => {
-        SplashScreen.hideAsync();
-      }, 200);
-      
-      return;
     }
+    
+    SplashScreen.hideAsync();
 
-    // Sonraki routing işlemleri (normal akış)
-    const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
+  }, [user, segments, authLoading, fontsLoaded, fontError, navigationState?.key]);
 
-    if (user && inAuthGroup) {
-      if (user.isAnonymous || user.emailVerified) {
-        router.replace('/(tabs)/wardrobe');
-      }
-    } else if (!user && inTabsGroup) {
-      router.replace('/(auth)');
-    }
-  }, [user, segments, loading, fontsLoaded, fontError, navigationState?.key]);
-
-  useEffect(() => {
-    if (shouldUseRevenueCat && !revenueCatState.isLoading) {
-      console.log('RevenueCat Status:', {
-        isProUser: revenueCatState.isProUser,
-        currentPlan: revenueCatState.currentPlan,
-        activeEntitlements: Object.keys(revenueCatState.activeEntitlements),
-      });
-    }
-  }, [shouldUseRevenueCat, revenueCatState.isLoading, revenueCatState.currentPlan]);
-
-  if (!fontsLoaded || fontError || loading) return null;
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-      <Stack.Screen name="(auth)" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="+not-found" />
-    </Stack>
+    <>
+      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <OnboardingGuide />
+    </>
   );
 }
 
 export default function RootLayout(): React.JSX.Element {
+  // --- YENİ DURUM: Servislerin hazır olup olmadığını kontrol et ---
+  const [servicesInitialized, setServicesInitialized] = useState(false);
+
   const toastConfig: Record<string, (props: BaseToastProps) => React.JSX.Element> = {
     success: (props) => <CustomToast {...props} type="success" />,
     info: (props) => <CustomToast {...props} type="info" />,
     error: (props) => <CustomToast {...props} type="error" />,
   };
 
-  // Dil ayarını başlat
   useEffect(() => {
-    const initializeLanguage = async () => {
+    const initializeAppServices = async () => {
       try {
-        // Önce kayıtlı dil tercihini kontrol et
-        const savedLanguage = await AsyncStorage.getItem('app_language');
+        // Dil ve RevenueCat ayarlarını başlat
+        const langPromise = (async () => {
+          const savedLanguage = await AsyncStorage.getItem('app_language');
+          if (savedLanguage) {
+            await i18n.changeLanguage(savedLanguage);
+          } else {
+            const deviceLanguage = Localization.getLocales()[0].languageCode;
+            const supportedLanguages = ['en', 'tr'];
+            const finalLanguage = supportedLanguages.includes(deviceLanguage) ? deviceLanguage : 'en';
+            await i18n.changeLanguage(finalLanguage);
+            await AsyncStorage.setItem('app_language', finalLanguage);
+          }
+        })();
+        
+        const purchasesPromise = (async () => {
+          const apiKey = Platform.select({
+            ios: 'appl_DuXXAykkepzomdHesCIharljFmd',
+            android: 'goog_PDkLWblJUhcgbNKkgItuNKXvkZh',
+          });
+          if (apiKey) {
+            await Purchases.configure({ apiKey });
+            console.log(`RevenueCat initialized successfully for ${Platform.OS}`);
+          }
+        })();
 
-        if (savedLanguage) {
-          // Kullanıcı daha önce bir dil seçmişse onu kullan
-          await i18n.changeLanguage(savedLanguage);
-        } else {
-          // Kayıtlı dil yoksa telefon dilini kullan
-          const deviceLanguage = Localization.locale;
-          const languageCode = deviceLanguage.split('-')[0]; // 'tr-TR' -> 'tr'
+        // İki işlemin de bitmesini bekle
+        await Promise.all([langPromise, purchasesPromise]);
 
-          // Desteklenen diller listesi (i18n konfigürasyonunuza göre güncelleyin)
-          const supportedLanguages = ['en', 'tr']; // Bu listeyi desteklediğiniz dillere göre güncelleyin
-
-          const finalLanguage = supportedLanguages.includes(languageCode)
-            ? languageCode
-            : 'en'; // Varsayılan dil
-
-          await i18n.changeLanguage(finalLanguage);
-          // İlk kez ayarlanan dili kaydet
-          await AsyncStorage.setItem('app_language', finalLanguage);
-          console.log('Device language applied:', finalLanguage, 'from device locale:', deviceLanguage);
-        }
       } catch (error) {
-        console.error('Language initialization error:', error);
-        // Hata durumunda varsayılan dil
-        await i18n.changeLanguage('en');
+        console.error('Failed to initialize app services:', error);
+      } finally {
+        // Her durumda, uygulamanın render edilmeye hazır olduğunu belirt
+        setServicesInitialized(true);
       }
     };
 
-    initializeLanguage();
+    initializeAppServices();
   }, []);
 
-  useEffect(() => {
-    const initializePurchases = async () => {
-      const apiKey = Platform.select({
-        ios: 'appl_DuXXAykkepzomdHesCIharljFmd',
-        android: 'goog_PDkLWblJuhcgbNKkgItuNKxVkZh',
-      });
+  // --- YENİ KONTROL: Servisler hazır değilse, hiçbir şey render etme ---
+  if (!servicesInitialized) {
+    return null; // Veya bir yükleme ekranı
+  }
 
-      if (!apiKey) {
-        console.log("No RevenueCat API key found for this platform.");
-        return;
-      }
-
-      try {
-        await Purchases.configure({ apiKey });
-        console.log('RevenueCat initialized successfully');
-      } catch (error) {
-        if (Platform.OS === 'android') {
-          console.error('RevenueCat initialization failed on Android:', error);
-        } else if (Platform.OS === 'ios') {
-          console.error('RevenueCat initialization failed on iOS:', error);
-        } else {
-          console.error('RevenueCat initialization failed:', error);
-        }
-      }
-    };
-
-    initializePurchases();
-  }, []);
-
+  // Servisler hazır olduğunda, tüm uygulamayı render et
   return (
     <GestureHandlerRootView style={styles.container}>
       <I18nextProvider i18n={i18n}>
@@ -176,7 +133,6 @@ export default function RootLayout(): React.JSX.Element {
             <RootLayoutNav />
             <CustomAlert />
             <Toast config={toastConfig} />
-            <OnboardingGuide />
           </AuthProvider>
         </ThemeProvider>
       </I18nextProvider>

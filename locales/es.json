@@ -226,6 +226,8 @@
     "generating": "Generando...",
     "generatingOutfit": "Creando tu conjunto perfecto",
     "analyzingWardrobe": "Analizando tu armario...",
+    "wardrobeLimitReachedTitle": "Límite del armario alcanzado",
+    "wardrobeLimitReachedMessage": "Has alcanzado el límite de {{limit}} prendas de tu plan '{{plan}}'. Para seguir generando conjuntos, por favor, mejora tu suscripción.",
     "findingPerfectMatch": "Buscando la combinación perfecta...",
     "inspirationTitle": "Inspiración de estilo",
     "linkError": "No se pudo abrir el enlace.",

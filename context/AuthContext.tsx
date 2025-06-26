@@ -6,6 +6,7 @@ import { useUserPlanStore } from '@/store/userPlanStore';
 import { initializeUserProfile } from '@/services/userService';
 import axios from 'axios';
 import API_URL from '@/config';
+import Purchases from 'react-native-purchases'; // RevenueCat import'u
 
 interface AuthContextType {
   user: User | null;
@@ -42,18 +43,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (currentUser && !currentUser.isAnonymous) {
         try {
+          // --- YENİ MANTIK BURADA BAŞLIYOR ---
+          // Kullanıcı giriş yaptığında, RevenueCat'teki anonim ID'yi
+          // Firebase'deki kalıcı UID ile birleştir.
+          await Purchases.logIn(currentUser.uid);
+          console.log(`RevenueCat user logged in with UID: ${currentUser.uid}`);
+          // --- YENİ MANTIK BİTİŞİ ---
+
           const idToken = await currentUser.getIdToken();
           const response = await axios.post(`${API_URL}/token`, { id_token: idToken });
           await setJwt(response.data.access_token);
-
           await initializeUserProfile();
           
         } catch (error) {
-          console.error("Failed to initialize user session:", error);
+          console.error("Failed to initialize user session or log in to RevenueCat:", error);
           await clearJwt();
           clearUserPlan();
         }
       } else {
+        // Kullanıcı çıkış yaptığında veya anonimse, RevenueCat oturumunu da kapat.
+        try {
+            await Purchases.logOut();
+            console.log("RevenueCat user logged out.");
+        } catch (e) {
+            console.error("Error logging out from RevenueCat", e);
+        }
         await clearJwt();
         clearUserPlan();
       }
@@ -67,8 +81,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       await firebaseSignOut(auth);
-      await clearJwt();
-      clearUserPlan();
+      // Çıkış yapıldığında AuthContext'teki onAuthStateChanged tetikleneceği için
+      // RevenueCat'ten çıkış yapma ve state temizleme işlemleri orada halledilir.
     } catch (error) {
       console.error("Logout Error:", error);
     }

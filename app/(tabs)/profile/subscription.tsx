@@ -1,4 +1,4 @@
-// Dosya: kodlar/app/(tabs)/profile/subscription.tsx (SON VE DOĞRU VERSİYON)
+// Dosya: kodlar/app/(tabs)/profile/subscription.tsx
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, ActivityIndicator, Platform } from 'react-native';
@@ -24,25 +24,40 @@ import useAlertStore from '@/store/alertStore';
 import { purchasePackage } from '@/services/purchaseService';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
 
-// Planları karşılaştırmak için bir hiyerarşi oluşturuyoruz
+// --- YENİ: Daha detaylı plan hiyerarşisi ---
 const planHierarchy = {
-  free: 0,
-  standard: 1,
-  premium: 2
+  standard_monthly: 1,
+  standard_annual: 2,
+  premium_monthly: 3,
+  premium_annual: 4,
 };
 
-// Paketin identifier'ından plan tipini (standard/premium) döner
-const getPlanType = (pkg: PurchasesPackage): 'standard' | 'premium' => {
-  return pkg.identifier.toLowerCase().includes('premium') ? 'premium' : 'standard';
+// --- YENİ: Paketin tam kimliğini döndüren yardımcı fonksiyon ---
+const getPackageIdentifier = (pkg: PurchasesPackage): keyof typeof planHierarchy | null => {
+    const id = pkg.product.identifier.toLowerCase();
+    if (id.includes('premium_annual') || id.includes('premium_yearly')) return 'premium_annual';
+    if (id.includes('premium_monthly')) return 'premium_monthly';
+    if (id.includes('standard_annual') || id.includes('standard_yearly')) return 'standard_annual';
+    if (id.includes('standard_monthly')) return 'standard_monthly';
+    return null;
+}
+
+// Sadece 'standard' veya 'premium' döndüren basit tip fonksiyonu
+const getPlanType = (pkgIdentifier: string): 'standard' | 'premium' => {
+    return pkgIdentifier.includes('premium') ? 'premium' : 'standard';
 };
+
 
 export default function SubscriptionScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { show: showAlert } = useAlertStore();
 
-  // Tek ve güvenilir kaynak: Düzelttiğimiz hook'tan gelen veriler
-  const { currentPlan, isLoading: isRevenueCatLoading } = useRevenueCat();
+  // --- GÜNCELLEME: customerInfo'yu da alıyoruz ---
+  const { customerInfo, isLoading: isRevenueCatLoading } = useRevenueCat();
+
+  // Kullanıcının mevcut aktif ürün kimliğini al
+  const currentUserProductIdentifier = customerInfo?.entitlements.active.standard?.productIdentifier || customerInfo?.entitlements.active.premium?.productIdentifier || null;
 
   const [isYearly, setIsYearly] = useState(false);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
@@ -80,37 +95,34 @@ export default function SubscriptionScreen() {
   };
 
   const renderPackageCard = (pkg: PurchasesPackage) => {
-    const cardPlanType = getPlanType(pkg);
+    const cardPackageId = getPackageIdentifier(pkg);
+    if (!cardPackageId) return null; // Paketi tanıyamazsak render etme
+
+    const cardPlanType = getPlanType(cardPackageId);
     const planColor = cardPlanType === 'premium' ? '#FFD700' : theme.colors.primary;
     const planBackground = cardPlanType === 'premium' ? 'rgba(255, 215, 0, 0.1)' : theme.colors.primaryLight;
-
     const isLoading = purchasingId === pkg.identifier;
 
-    // --- Basit ve Güvenilir Karşılaştırma Mantığı ---
-    const currentUserLevel = planHierarchy[currentPlan];
-    const cardLevel = planHierarchy[cardPlanType];
+    // --- YENİ SATIN ALMA BUTONU MANTIĞI ---
+    const isCurrent = currentUserProductIdentifier === pkg.product.identifier;
+    const isMostPopular = cardPackageId === 'premium_monthly' && !isYearly;
 
-    const isCurrent = currentUserLevel === cardLevel;
-    const isUpgrade = cardLevel > currentUserLevel;
-    const isMostPopular = cardPlanType === 'premium' && !isYearly; // Premium Aylık en popüler
-
-    let buttonLabel = isUpgrade ? t('subscription.upgrade') : t('subscription.selectPlan');
+    let buttonLabel = t('subscription.selectPlan', 'Select Plan'); // Varsayılan metin
     let buttonVariant: 'primary' | 'outline' = 'outline';
-    let buttonDisabled = isLoading || !isUpgrade;
+    let buttonDisabled = isLoading;
     let buttonIcon = null;
 
-    if(isCurrent) {
-        buttonLabel = t('subscription.currentPlan');
-        buttonDisabled = true;
-        buttonIcon = <CheckCircle2 size={16} color={theme.colors.success} />;
+    if (isCurrent) {
+      buttonLabel = t('subscription.currentPlan');
+      buttonDisabled = true;
+      buttonIcon = <CheckCircle2 size={16} color={theme.colors.success} />;
+    } else {
+      // Eğer mevcut paket değilse ve en popüler ise, ana buton yap
+      if(isMostPopular) {
+          buttonVariant = 'primary';
+      }
     }
-
-    if (isUpgrade && isMostPopular) {
-        buttonVariant = 'primary';
-    } else if (isUpgrade) {
-        buttonVariant = 'primary';
-    }
-    // --- Mantık Bitişi ---
+    // --- MANTIK BİTİŞİ ---
 
     const features = {
         standard: [
@@ -188,7 +200,11 @@ export default function SubscriptionScreen() {
       ? offerings.availablePackages.filter(p => p.identifier.toLowerCase().includes('annual') || p.identifier.toLowerCase().includes('yearly'))
       : offerings.availablePackages.filter(p => p.identifier.toLowerCase().includes('monthly'));
 
-    packages.sort((a, b) => (planHierarchy[getPlanType(a)] || 0) - (planHierarchy[getPlanType(b)] || 0));
+    packages.sort((a, b) => {
+        const levelA = planHierarchy[getPackageIdentifier(a) as keyof typeof planHierarchy] || 0;
+        const levelB = planHierarchy[getPackageIdentifier(b) as keyof typeof planHierarchy] || 0;
+        return levelA - levelB;
+    });
 
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

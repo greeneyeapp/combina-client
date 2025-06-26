@@ -1,5 +1,3 @@
-// Dosya: kodlar/app/(tabs)/suggestions/index.tsx
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
@@ -30,7 +28,8 @@ import { getWeatherCondition } from '@/utils/weatherUtils';
 import { router } from 'expo-router';
 import { getOutfitSuggestion, OutfitSuggestionResponse } from '@/services/aiService';
 import { canGetSuggestion, getUserProfile } from '@/services/userService';
-import { CATEGORY_HIERARCHY } from '@/utils/constants';
+// --- DÜZELTME: Cinsiyete özel hiyerarşiyi import et ---
+import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
 import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
@@ -103,10 +102,15 @@ export default function SuggestionsScreen() {
       shoes: 2,
     };
 
+    // --- DÜZELTME: Kullanıcının cinsiyetine göre doğru hiyerarşiyi seç ---
+    const gender = userPlan?.gender === 'male' ? 'male' : 'female';
+    const hierarchy = GENDERED_CATEGORY_HIERARCHY[gender];
+
     const counts: Record<string, number> = {};
     clothing.forEach(item => {
-      for (const [mainCat, subcats] of Object.entries(CATEGORY_HIERARCHY)) {
-        if ((subcats as any).includes(item.category)) {
+      // Seçilen hiyerarşiye göre sayım yap
+      for (const [mainCat, subcats] of Object.entries(hierarchy)) {
+        if ((subcats as string[]).includes(item.category)) {
           counts[mainCat] = (counts[mainCat] || 0) + 1;
           break;
         }
@@ -124,7 +128,8 @@ export default function SuggestionsScreen() {
       hasEnough: missing.length === 0,
       missing,
     };
-  }, [clothing, t]);
+  // --- DÜZELTME: Bağımlılık dizisine userPlan.gender'ı ekle ---
+  }, [clothing, t, userPlan?.gender]);
 
   const handleLike = () => {
     if (!suggestion) return;
@@ -248,8 +253,6 @@ export default function SuggestionsScreen() {
   };
 
   const renderUsageInfo = () => {
-    // --- DÜZELTME BURADA ---
-    // Veri hala yükleniyorsa veya yoksa, bir yükleme göstergesi göster
     if (isLimitLoading || !limitInfo) {
       return (
         <View style={[styles.usageContainer, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -258,7 +261,6 @@ export default function SuggestionsScreen() {
       );
     }
     
-    // Yüklendikten sonra `limitInfo`'dan gelen doğru verileri kullan
     const usagePercentage = limitInfo.percentage;
     const isNearLimit = usagePercentage > 80;
 
@@ -378,7 +380,7 @@ export default function SuggestionsScreen() {
             <OutfitSuggestion
               outfit={suggestion}
               onLike={handleLike}
-              liked={isLiked || isAlreadyLiked}
+              liked={isAlreadyLiked}
             />
           )}
 

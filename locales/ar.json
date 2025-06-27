@@ -442,6 +442,8 @@
   },
   "subscription": {
     "title": "الاشتراك",
+    "selectPlan": "اختر الباقة",
+    "currentPlan": "الباقة الحالية",
     "notAvailable": "الاشتراكات غير متوفرة",
     "iosOnly": "الاشتراكات متاحة حاليًا على iOS فقط.",
     "loadError": "فشل تحميل خطط الاشتراك.",

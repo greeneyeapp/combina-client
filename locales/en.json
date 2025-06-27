@@ -443,6 +443,8 @@
   "subscription": {
     "title": "Subscription",
     "notAvailable": "Subscriptions Not Available",
+    "currentPlan": "Current Plan",
+    "selectPlan": "Select Plan",
     "iosOnly": "Subscriptions are currently only available on iOS.",
     "loadError": "Failed to load subscription plans.",
     "purchaseNotAvailable": "Purchase is not available on this device.",

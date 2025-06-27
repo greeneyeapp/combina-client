@@ -447,6 +447,8 @@
     "loadError": "Falha ao carregar planos de subscrição.",
     "purchaseNotAvailable": "Compra indisponível neste dispositivo.",
     "purchaseSuccessTitle": "Compra efetuada com sucesso!",
+    "selectPlan": "Selecionar Plano",
+    "currentPlan": "Plano Atual",
     "purchaseSuccessMessage": "O seu plano {{plan}} está ativo.",
     "purchaseFailTitle": "Falha na compra",
     "unexpectedError": "Ocorreu um erro inesperado. Por favor, tente novamente.",

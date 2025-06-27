@@ -446,6 +446,8 @@
     "iosOnly": "Gli abbonamenti sono attualmente disponibili solo su iOS.",
     "loadError": "Impossibile caricare i piani di abbonamento.",
     "purchaseNotAvailable": "L'acquisto non è disponibile su questo dispositivo.",
+    "selectPlan": "Seleziona Piano",
+    "currentPlan": "Piano attuale",
     "purchaseSuccessTitle": "Acquisto riuscito!",
     "purchaseSuccessMessage": "Il tuo piano {{plan}} è stato attivato.",
     "purchaseFailTitle": "Acquisto fallito",

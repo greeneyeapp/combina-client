@@ -28,7 +28,6 @@ import { getWeatherCondition } from '@/utils/weatherUtils';
 import { router } from 'expo-router';
 import { getOutfitSuggestion, OutfitSuggestionResponse } from '@/services/aiService';
 import { canGetSuggestion, getUserProfile } from '@/services/userService';
-// --- DÜZELTME: Cinsiyete özel hiyerarşiyi import et ---
 import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
@@ -80,6 +79,8 @@ export default function SuggestionsScreen() {
     setIsLiked(false);
   }, [suggestion]);
 
+  // Bu useEffect, API'den pinterest_links gelmese bile uygulamanın
+  // çökmemesini sağlar ve güvenli bir şekilde boş bir dizi atar.
   useEffect(() => {
     setPinterestLinks(suggestion?.pinterest_links || []);
   }, [suggestion]);
@@ -89,7 +90,6 @@ export default function SuggestionsScreen() {
       const timer = setTimeout(() => {
         scrollViewRef.current?.scrollTo({ y: suggestionLayoutY, animated: true });
       }, 100);
-
       return () => clearTimeout(timer);
     }
   }, [suggestionLayoutY, suggestion]);
@@ -99,16 +99,14 @@ export default function SuggestionsScreen() {
       top: 2,
       bottom: 2,
       outerwear: 2,
-      shoes: 2,
+      footwear: 2,
     };
-
-    // --- DÜZELTME: Kullanıcının cinsiyetine göre doğru hiyerarşiyi seç ---
+    
     const gender = userPlan?.gender === 'male' ? 'male' : 'female';
     const hierarchy = GENDERED_CATEGORY_HIERARCHY[gender];
 
     const counts: Record<string, number> = {};
     clothing.forEach(item => {
-      // Seçilen hiyerarşiye göre sayım yap
       for (const [mainCat, subcats] of Object.entries(hierarchy)) {
         if ((subcats as string[]).includes(item.category)) {
           counts[mainCat] = (counts[mainCat] || 0) + 1;
@@ -128,7 +126,6 @@ export default function SuggestionsScreen() {
       hasEnough: missing.length === 0,
       missing,
     };
-  // --- DÜZELTME: Bağımlılık dizisine userPlan.gender'ı ekle ---
   }, [clothing, t, userPlan?.gender]);
 
   const handleLike = () => {
@@ -156,9 +153,12 @@ export default function SuggestionsScreen() {
   };
 
   const handleGenerateSuggestion = async () => {
+    // limitInfo henüz yüklenmediyse butona basılmasını engelle
+    if (isLimitLoading || !limitInfo) return;
+    
     if (!wardrobeStatus.hasEnough || !weather) return;
 
-    if (limitInfo?.isLimitReached) {
+    if (limitInfo.isLimitReached) {
       showAlert({
         title: t('suggestions.wardrobeLimitReachedTitle'),
         message: t('suggestions.wardrobeLimitReachedMessage', {
@@ -204,9 +204,11 @@ export default function SuggestionsScreen() {
       const weatherCondition = getWeatherCondition(weather as any);
       const last5 = outfits.slice(0, 5);
 
+      // --- DEĞİŞİKLİK: API çağrısına plan bilgisini ekle ---
       const result = await getOutfitSuggestion(
         i18n.language,
         userPlan?.gender as 'female' | 'male' | undefined,
+        limitInfo.plan, // Güvenilir kaynaktan plan bilgisini gönderiyoruz
         clothing,
         last5,
         weatherCondition,
@@ -253,7 +255,7 @@ export default function SuggestionsScreen() {
   };
 
   const renderUsageInfo = () => {
-    if (isLimitLoading || !limitInfo) {
+    if (!userPlan || !userPlan.usage) {
       return (
         <View style={[styles.usageContainer, { justifyContent: 'center', alignItems: 'center' }]}>
             <ActivityIndicator color={theme.colors.primary} />
@@ -261,23 +263,24 @@ export default function SuggestionsScreen() {
       );
     }
     
-    const usagePercentage = limitInfo.percentage;
+    const usage = userPlan.usage;
+    const usagePercentage = usage.percentage_used;
     const isNearLimit = usagePercentage > 80;
 
     return (
       <View style={[styles.usageContainer, { backgroundColor: theme.colors.card }]}>
         <View style={styles.usageHeader}>
           <Text style={[styles.usageTitle, { color: theme.colors.text }]}>
-            {t('wardrobe.title')}
+            {t('suggestions.dailyUsage')}
           </Text>
-          {limitInfo.plan !== 'premium' && (
+          {userPlan.plan !== 'premium' && (
             <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
               <Text style={[styles.upgradeLink, { color: theme.colors.primary }]}>{t('profile.upgrade')} ✨</Text>
             </TouchableOpacity>
           )}
         </View>
         <Text style={[styles.usageText, { color: theme.colors.textLight }]}>
-          {t('wardrobe.limit')}: {limitInfo.currentCount} / {limitInfo.limit === Infinity ? '∞' : limitInfo.limit}
+          {t('suggestions.usageLimitInfo', { used: usage.current_usage, total: usage.daily_limit })}
         </Text>
         <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
           <View style={[styles.progressFill, { backgroundColor: isNearLimit ? theme.colors.warning : theme.colors.primary, width: `${Math.min(100, usagePercentage)}%` }]} />
@@ -318,9 +321,7 @@ export default function SuggestionsScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('suggestions.title')} />
-
       <OutfitLoadingAnimation isVisible={showLoadingAnimation} onComplete={() => setShowLoadingAnimation(false)} />
-
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollContainer}
@@ -329,7 +330,6 @@ export default function SuggestionsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {renderUsageInfo()}
-
         <View style={styles.weatherSection}>
           {weatherLoading ? (
             <ActivityIndicator color={theme.colors.primary} />
@@ -352,25 +352,21 @@ export default function SuggestionsScreen() {
             </TouchableOpacity>
           )}
         </View>
-
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('suggestions.selectOccasion')}</Text>
         <OccasionPicker selectedOccasion={selectedOccasion} onSelectOccasion={setSelectedOccasion} />
-
         <Button
           label={generating ? t('suggestions.generating') : t('suggestions.generateOutfit')}
           onPress={handleGenerateSuggestion}
           variant="primary"
           loading={generating}
           style={styles.generateButton}
-          disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion}
+          disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading}
         />
-
         {!!error && (
           <View style={[styles.errorContainer, { backgroundColor: theme.colors.errorLight }]}>
             <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
           </View>
         )}
-
         <View onLayout={(event: LayoutChangeEvent) => {
           if (event.nativeEvent.layout.y > 0 && suggestionLayoutY === 0) {
             setSuggestionLayoutY(event.nativeEvent.layout.y);
@@ -383,7 +379,6 @@ export default function SuggestionsScreen() {
               liked={isAlreadyLiked}
             />
           )}
-
           {pinterestLinks.length > 0 && (
             <View style={styles.inspirationSection}>
               <Text style={[styles.inspirationTitle, { color: theme.colors.text }]}>
@@ -419,7 +414,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     borderRadius: 12,
-    minHeight: 90, // Yükleme sırasında zıplamayı önlemek için
+    minHeight: 90,
   },
   usageHeader: {
     flexDirection: 'row',

@@ -1,5 +1,3 @@
-// Dosya: kodlar/services/purchaseService.ts (PLATFORM KONTROLÜ KALDIRILMIŞ VERSİYON)
-
 import Purchases, { PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import { updateUserPlan, getUserProfile } from '@/services/userService';
 import API_URL from '@/config';
@@ -19,17 +17,23 @@ export interface RestoreResult {
   restoredPlan?: 'free' | 'standard' | 'premium';
 }
 
+// Map RevenueCat entitlements to plan type
+const mapEntitlementsToPlan = (entitlements: any): 'free' | 'standard' | 'premium' => {
+  if (!entitlements) return 'free';
+  if (entitlements.premium_access?.isActive) return 'premium';
+  if (entitlements.standard_access?.isActive) return 'standard';
+  return 'free';
+};
+
 // Purchase a package
 export const purchasePackage = async (packageToPurchase: PurchasesPackage): Promise<PurchaseResult> => {
-  // --- DÜZELTME: Platform.OS kontrolü tamamen kaldırıldı. ---
-
   try {
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
-
+    
     const newPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
-
+    
     await syncPurchaseWithBackend(customerInfo, newPlan);
-
+    
     return {
       success: true,
       customerInfo,
@@ -37,14 +41,14 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
     };
   } catch (error: any) {
     console.error('Purchase failed:', error);
-
+    
     if (error.userCancelled) {
       return {
         success: false,
         error: 'Purchase was cancelled by user',
       };
     }
-
+    
     return {
       success: false,
       error: error.message || 'Purchase failed',
@@ -54,34 +58,30 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
 
 // Restore purchases
 export const restorePurchases = async (): Promise<RestoreResult> => {
-  // --- DÜZELTME: Platform.OS kontrolü tamamen kaldırıldı. ---
-
   try {
     const customerInfo = await Purchases.restorePurchases();
-
+    
     const restoredPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
-
-    await syncPurchaseWithBackend(customerInfo, restoredPlan);
-
+    
+    // Arka plan senkronizasyonu sadece bir plan bulunursa ve bu plan 'free' değilse yapılır.
+    if (restoredPlan !== 'free') {
+        await syncPurchaseWithBackend(customerInfo, restoredPlan);
+    }
+    
     return {
       success: true,
       customerInfo,
       restoredPlan,
     };
   } catch (error: any) {
-    console.error('Restore failed:', error);
+    console.error('Restore failed with error:', error);
+    // --- DÜZELTME BURADA ---
+    // Hatayı fırlatmak yerine, başarısız bir sonuç nesnesi döndür.
     return {
       success: false,
       error: error.message || 'Restore failed',
     };
   }
-};
-
-// Map RevenueCat entitlements to plan type
-const mapEntitlementsToPlan = (entitlements: any): 'free' | 'standard' | 'premium' => {
-  if (entitlements.premium_access?.isActive) return 'premium';
-  if (entitlements.standard_access?.isActive) return 'standard';
-  return 'free';
 };
 
 // Sync purchase with backend
@@ -127,17 +127,20 @@ export const checkSubscriptionStatus = async (): Promise<'free' | 'standard' | '
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const currentPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
-
+    
     const backendProfile = await getUserProfile();
     if (backendProfile.plan !== currentPlan) {
       await updateUserPlan(currentPlan);
     }
-
+    
     return currentPlan;
   } catch (error) {
     console.error('Subscription status check failed:', error);
-    // Hata durumunda backend'deki plana güven
-    const profile = await getUserProfile();
-    return profile.plan as 'free' | 'standard' | 'premium';
+    try {
+        const profile = await getUserProfile();
+        return profile.plan as 'free' | 'standard' | 'premium';
+    } catch(e) {
+        return 'free';
+    }
   }
 };

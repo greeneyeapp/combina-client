@@ -445,6 +445,8 @@
     "notAvailable": "सदस्यता उपलब्ध नहीं है",
     "iosOnly": "सदस्यता वर्तमान में केवल iOS पर उपलब्ध है।",
     "loadError": "सदस्यता योजनाओं को लोड करने में विफल।",
+    "selectPlan": "प्लान चुनें",
+    "currentPlan": "वर्तमान प्लान",
     "purchaseNotAvailable": "इस डिवाइस पर खरीद उपलब्ध नहीं है।",
     "purchaseSuccessTitle": "खरीद सफल!",
     "purchaseSuccessMessage": "आपकी {{plan}} योजना सक्रिय हो गई है।",

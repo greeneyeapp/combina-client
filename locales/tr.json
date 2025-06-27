@@ -444,6 +444,8 @@
     "title": "Abonelik",
     "notAvailable": "Abonelikler Mevcut Değil",
     "iosOnly": "Abonelikler şu anda sadece iOS'ta mevcuttur.",
+    "selectPlan": "Plana Geç",
+    "currentPlan": "Mevcut Planın",
     "loadError": "Abonelik planları yüklenemedi.",
     "purchaseNotAvailable": "Satın alma bu cihazda mevcut değil.",
     "purchaseSuccessTitle": "Satın Alma Başarılı!",

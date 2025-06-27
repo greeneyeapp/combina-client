@@ -448,6 +448,8 @@
     "purchaseNotAvailable": "Pembelian tidak tersedia di perangkat ini.",
     "purchaseSuccessTitle": "Pembelian Berhasil!",
     "purchaseSuccessMessage": "Paket {{plan}} Anda telah diaktifkan.",
+    "selectPlan": "Pilih Paket",
+    "currentPlan": "Paket Saat Ini",
     "purchaseFailTitle": "Pembelian Gagal",
     "unexpectedError": "Terjadi kesalahan yang tidak terduga. Silakan coba lagi.",
     "restorePurchases": "Pulihkan Pembelian",

@@ -35,7 +35,6 @@ import { getUserProfile } from '@/services/userService';
 import { restorePurchases } from '@/services/purchaseService';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
 
-// Kullanım bilgisini tutacak arayüz
 interface UsageInfo {
   daily_limit: number;
   current_usage: number;
@@ -100,14 +99,11 @@ export default function ProfileScreen() {
   }, [user]);
 
   const handleRestorePurchases = async () => {
-    // Platform kontrolü kaldırıldı. Bu fonksiyon artık hem iOS hem de Android'de çalışır.
-    // RevenueCat SDK'sı zaten platforma göre doğru işlemi yapar.
     setIsRestoring(true);
     try {
       const result = await restorePurchases();
 
       if (result.success) {
-        // Check if a plan was actually restored
         if (result.restoredPlan && result.restoredPlan !== 'free') {
           showAlert({
             title: t('subscription.restoreSuccessTitle'),
@@ -116,10 +112,8 @@ export default function ProfileScreen() {
             }),
             buttons: [{ text: t('common.ok') }]
           });
-          // Refresh data to reflect the restored plan
           refreshCustomerInfo();
         } else {
-          // No active subscription found to restore
           showAlert({
             title: t('subscription.noRestoreTitle'),
             message: t('subscription.noRestoreMessage'),
@@ -127,7 +121,6 @@ export default function ProfileScreen() {
           });
         }
       } else {
-        // Restore failed
         showAlert({
           title: t('subscription.restoreFailTitle'),
           message: result.error || t('subscription.restoreFailMessage'),
@@ -135,6 +128,7 @@ export default function ProfileScreen() {
         });
       }
     } catch (error) {
+      console.log(error);
       showAlert({
         title: t('common.error'),
         message: t('subscription.unexpectedError'),
@@ -197,22 +191,25 @@ export default function ProfileScreen() {
   const handleHelpPress = () => Linking.openURL('https://greeneyeapp.com/contact.html');
 
   const renderSubscriptionCard = () => {
-    if (isPlanLoading || isUsageLoading) {
+    if (isPlanLoading) {
       return (
-        <View style={[styles.subscriptionCard, { backgroundColor: theme.colors.card, justifyContent: 'center', alignItems: 'center', height: 150 }]}>
+        <View style={[styles.subscriptionCard, { backgroundColor: theme.colors.card, justifyContent: 'center', alignItems: 'center', height: 80 }]}>
           <ActivityIndicator color={theme.colors.primary} />
         </View>
       );
     }
     
-    if (!usageInfo) return null;
-
     return (
       <TouchableOpacity
         style={[styles.subscriptionCard, { backgroundColor: theme.colors.card }]}
         onPress={handleSubscriptionPress}
       >
-        <View style={styles.subscriptionHeader}>
+        {/* --- DÜZELTME BURADA --- */}
+        {/* Stil, planın 'free' olup olmamasına göre dinamik olarak ayarlanıyor */}
+        <View style={[
+          styles.subscriptionHeader,
+          currentPlan !== 'free' && { marginBottom: 0 } // Eğer plan 'free' değilse, alt boşluğu kaldır.
+        ]}>
           <View style={styles.planInfo}>
             {getPlanIcon(currentPlan)}
             <Text style={[styles.planName, { color: getPlanColor(currentPlan) }]}>
@@ -221,25 +218,7 @@ export default function ProfileScreen() {
           </View>
           <ChevronRight color={theme.colors.textLight} size={16} />
         </View>
-        <View style={styles.usageInfo}>
-          <Text style={[styles.usageText, { color: theme.colors.text }]}>
-            {t('profile.dailyUsage', {
-              used: usageInfo.current_usage,
-              total: usageInfo.daily_limit
-            })}
-          </Text>
-          <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  backgroundColor: getPlanColor(currentPlan),
-                  width: `${usageInfo.percentage_used}%`
-                }
-              ]}
-            />
-          </View>
-        </View>
+        
         {currentPlan === 'free' && (
           <Text style={[styles.upgradeText, { color: theme.colors.primary }]}>
             {t('profile.upgradeForMore')}
@@ -319,7 +298,6 @@ export default function ProfileScreen() {
               <ChevronRight color={theme.colors.textLight} size={16} />
             </TouchableOpacity>
 
-            {/* Restore Purchases Button */}
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
             <TouchableOpacity style={styles.settingRow} onPress={handleRestorePurchases} disabled={isRestoring}>
               <View style={styles.settingLabelContainer}>
@@ -410,7 +388,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 12, // Bu sadece 'free' planında etkili olacak
   },
   planInfo: {
     flexDirection: 'row',
@@ -421,23 +399,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 8,
     textTransform: 'capitalize',
-  },
-  usageInfo: {
-    marginBottom: 8,
-  },
-  usageText: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  progressBar: {
-    height: 6,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
   },
   upgradeText: {
     fontFamily: 'Montserrat-Medium',

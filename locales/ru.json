@@ -447,6 +447,8 @@
     "loadError": "Не удалось загрузить планы подписки.",
     "purchaseNotAvailable": "Покупка недоступна на этом устройстве.",
     "purchaseSuccessTitle": "Покупка успешна!",
+    "selectPlan": "Выбрать план",
+    "currentPlan": "Текущий план",
     "purchaseSuccessMessage": "Ваш план {{plan}} активирован.",
     "purchaseFailTitle": "Ошибка покупки",
     "unexpectedError": "Произошла ошибка. Пожалуйста, попробуйте позже.",

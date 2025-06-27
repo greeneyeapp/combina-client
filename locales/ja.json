@@ -447,6 +447,8 @@
     "loadError": "プランの読み込みに失敗しました。",
     "purchaseNotAvailable": "この端末では購入できません。",
     "purchaseSuccessTitle": "購入成功！",
+    "selectPlan": "プランを選択",
+    "currentPlan": "現在のプラン",
     "purchaseSuccessMessage": "{{plan}}プランが有効になりました。",
     "purchaseFailTitle": "購入失敗",
     "unexpectedError": "予期しないエラーが発生しました。再試行してください。",

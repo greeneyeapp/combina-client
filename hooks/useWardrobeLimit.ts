@@ -1,8 +1,6 @@
-// Dosya: kodlar/hooks/useWardrobeLimit.ts (REVENUECAT ENTEGRELİ)
-
 import { useEffect, useState } from 'react';
 import { useClothingStore } from '@/store/clothingStore';
-import { useRevenueCat } from './useRevenueCat'; // getUserProfile yerine bunu kullanıyoruz
+import { useRevenueCat } from './useRevenueCat';
 
 interface WardrobeLimitInfo {
   currentCount: number;

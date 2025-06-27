@@ -21,12 +21,13 @@ export interface OutfitSuggestionResponse {
   items: SuggestedItem[];
   description: string;
   suggestion_tip?: string;
-  pinterest_links: PinterestLink[];
+  pinterest_links?: PinterestLink[]; // API'den gelmeyebilir, opsiyonel yapalım
 }
 
 export async function getOutfitSuggestion(
   language: string,
   gender: 'female' | 'male' | undefined,
+  plan: 'free' | 'standard' | 'premium', // Yeni parametre
   wardrobe: ClothingItem[],
   last5Outfits: Outfit[],
   weatherCondition: string,
@@ -41,6 +42,7 @@ export async function getOutfitSuggestion(
       {
         language,
         gender,
+        plan, // Plan bilgisini API isteğine ekliyoruz
         wardrobe,
         last_5_outfits: last5Outfits,
         weather_condition: weatherCondition,

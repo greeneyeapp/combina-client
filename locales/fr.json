@@ -443,6 +443,8 @@
   "subscription": {
     "title": "Abonnement",
     "notAvailable": "Abonnements non disponibles",
+    "selectPlan": "Choisir ce forfait",
+    "currentPlan": "Forfait actuel",
     "iosOnly": "Les abonnements ne sont actuellement disponibles que sur iOS.",
     "loadError": "Échec du chargement des plans d'abonnement.",
     "purchaseNotAvailable": "L'achat n'est pas disponible sur cet appareil.",

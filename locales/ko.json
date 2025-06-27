@@ -449,6 +449,8 @@
     "purchaseSuccessTitle": "구매 성공!",
     "purchaseSuccessMessage": "{{plan}} 플랜이 활성화되었습니다.",
     "purchaseFailTitle": "구매 실패",
+    "selectPlan": "플랜 선택",
+    "currentPlan": "현재 플랜",
     "unexpectedError": "예기치 않은 오류가 발생했습니다. 다시 시도해 주세요.",
     "restorePurchases": "구매 복원",
     "restoreSuccessTitle": "구매가 복원되었습니다",

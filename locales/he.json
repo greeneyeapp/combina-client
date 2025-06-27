@@ -445,6 +445,8 @@
     "notAvailable": "מנויים אינם זמינים",
     "iosOnly": "מנויים זמינים כרגע רק ב-iOS.",
     "loadError": "טעינת תוכניות המנוי נכשלה.",
+    "selectPlan": "בחר תוכנית",
+    "currentPlan": "התוכנית הנוכחית",
     "purchaseNotAvailable": "הרכישה אינה זמינה במכשיר זה.",
     "purchaseSuccessTitle": "הרכישה הושלמה בהצלחה!",
     "purchaseSuccessMessage": "תוכנית ה-{{plan}} שלך הופעלה.",

@@ -442,6 +442,8 @@
   },
   "subscription": {
     "title": "Suscripción",
+    "selectPlan": "Seleccionar Plan",
+    "currentPlan": "Plan Actual",
     "notAvailable": "Suscripciones no disponibles",
     "iosOnly": "Actualmente, las suscripciones solo están disponibles en iOS.",
     "loadError": "No se pudieron cargar los planes de suscripción.",

@@ -1,5 +1,3 @@
-// Dosya: kodlar/app/(tabs)/profile/subscription.tsx
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,15 +5,7 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import {
-  ArrowLeft,
-  Crown,
-  Star,
-  CheckCircle2,
-  Sparkles,
-  Shirt,
-  TrendingUp,
-  ShieldX,
-  Heart
+  ArrowLeft, Crown, Star, CheckCircle2, Sparkles, Shirt, TrendingUp, ShieldX, Heart
 } from 'lucide-react-native';
 import Button from '@/components/common/Button';
 import Purchases, { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
@@ -24,7 +14,7 @@ import useAlertStore from '@/store/alertStore';
 import { purchasePackage } from '@/services/purchaseService';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
 
-// --- YENİ: Daha detaylı plan hiyerarşisi ---
+// --- Hiyerarşi, artık RevenueCat ID'lerine dayanıyor ---
 const planHierarchy = {
   standard_monthly: 1,
   standard_annual: 2,
@@ -32,32 +22,30 @@ const planHierarchy = {
   premium_annual: 4,
 };
 
-// --- YENİ: Paketin tam kimliğini döndüren yardımcı fonksiyon ---
+// --- DÜZELTME: Bu fonksiyon artık HER ZAMAN pkg.identifier kullanıyor ---
 const getPackageIdentifier = (pkg: PurchasesPackage): keyof typeof planHierarchy | null => {
-    const id = pkg.product.identifier.toLowerCase();
-    if (id.includes('premium_annual') || id.includes('premium_yearly')) return 'premium_annual';
+    // pkg.product.identifier yerine doğrudan pkg.identifier kullanıyoruz.
+    const id = pkg.identifier.toLowerCase();
+    
+    // RevenueCat ID'leri her zaman tutarlı olduğu için bu kontrol artık güvenli.
+    if (id.includes('premium_annual')) return 'premium_annual';
     if (id.includes('premium_monthly')) return 'premium_monthly';
-    if (id.includes('standard_annual') || id.includes('standard_yearly')) return 'standard_annual';
+    if (id.includes('standard_annual')) return 'standard_annual';
     if (id.includes('standard_monthly')) return 'standard_monthly';
     return null;
 }
 
-// Sadece 'standard' veya 'premium' döndüren basit tip fonksiyonu
 const getPlanType = (pkgIdentifier: string): 'standard' | 'premium' => {
     return pkgIdentifier.includes('premium') ? 'premium' : 'standard';
 };
-
 
 export default function SubscriptionScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { show: showAlert } = useAlertStore();
 
-  // --- GÜNCELLEME: customerInfo'yu da alıyoruz ---
-  const { customerInfo, isLoading: isRevenueCatLoading } = useRevenueCat();
-
-  // Kullanıcının mevcut aktif ürün kimliğini al
-  const currentUserProductIdentifier = customerInfo?.entitlements.active.standard?.productIdentifier || customerInfo?.entitlements.active.premium?.productIdentifier || null;
+  const { customerInfo, isLoading: isRevenueCatLoading, currentPlan } = useRevenueCat();
+  const currentUserProductIdentifier = customerInfo?.entitlements.active.standard_access?.productIdentifier || customerInfo?.entitlements.active.premium_access?.productIdentifier || null;
 
   const [isYearly, setIsYearly] = useState(false);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
@@ -96,18 +84,20 @@ export default function SubscriptionScreen() {
 
   const renderPackageCard = (pkg: PurchasesPackage) => {
     const cardPackageId = getPackageIdentifier(pkg);
-    if (!cardPackageId) return null; // Paketi tanıyamazsak render etme
+    if (!cardPackageId) return null;
 
     const cardPlanType = getPlanType(cardPackageId);
     const planColor = cardPlanType === 'premium' ? '#FFD700' : theme.colors.primary;
     const planBackground = cardPlanType === 'premium' ? 'rgba(255, 215, 0, 0.1)' : theme.colors.primaryLight;
     const isLoading = purchasingId === pkg.identifier;
-
-    // --- YENİ SATIN ALMA BUTONU MANTIĞI ---
-    const isCurrent = currentUserProductIdentifier === pkg.product.identifier;
+    
+    const isSamePlanType = currentPlan === cardPlanType;
+    const userHasYearly = !!currentUserProductIdentifier && (currentUserProductIdentifier.includes('annual') || currentUserProductIdentifier.includes('yearly'));
+    const cardIsYearly = cardPackageId.includes('annual');
+    const isCurrent = isSamePlanType && (userHasYearly === cardIsYearly);
+    
     const isMostPopular = cardPackageId === 'premium_monthly' && !isYearly;
-
-    let buttonLabel = t('subscription.selectPlan', 'Select Plan'); // Varsayılan metin
+    let buttonLabel = t('subscription.selectPlan', 'Select Plan');
     let buttonVariant: 'primary' | 'outline' = 'outline';
     let buttonDisabled = isLoading;
     let buttonIcon = null;
@@ -117,12 +107,10 @@ export default function SubscriptionScreen() {
       buttonDisabled = true;
       buttonIcon = <CheckCircle2 size={16} color={theme.colors.success} />;
     } else {
-      // Eğer mevcut paket değilse ve en popüler ise, ana buton yap
       if(isMostPopular) {
           buttonVariant = 'primary';
       }
     }
-    // --- MANTIK BİTİŞİ ---
 
     const features = {
         standard: [
@@ -154,7 +142,7 @@ export default function SubscriptionScreen() {
         </View>
         <View style={styles.priceSection}>
           <Text style={[styles.price, { color: theme.colors.text }]}>{pkg.product.priceString}</Text>
-          <Text style={[styles.priceUnit, { color: theme.colors.textLight }]}>/{t(pkg.identifier.includes('annual') || pkg.identifier.includes('yearly') ? 'subscription.year' : 'subscription.month')}</Text>
+          <Text style={[styles.priceUnit, { color: theme.colors.textLight }]}>/{t(pkg.identifier.includes('annual') ? 'subscription.year' : 'subscription.month')}</Text>
         </View>
 
         <View style={styles.featuresContainer}>
@@ -196,8 +184,9 @@ export default function SubscriptionScreen() {
       );
     }
 
+    // --- DÜZELTME: Filtrelemeyi basitleştiriyoruz ---
     const packages = isYearly
-      ? offerings.availablePackages.filter(p => p.identifier.toLowerCase().includes('annual') || p.identifier.toLowerCase().includes('yearly'))
+      ? offerings.availablePackages.filter(p => p.identifier.toLowerCase().includes('annual'))
       : offerings.availablePackages.filter(p => p.identifier.toLowerCase().includes('monthly'));
 
     packages.sort((a, b) => {
@@ -244,7 +233,6 @@ export default function SubscriptionScreen() {
   );
 }
 
-// Stiller aynı kalabilir
 const styles = StyleSheet.create({
     container: { flex: 1 },
     header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16 },

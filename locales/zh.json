@@ -449,6 +449,8 @@
     "purchaseSuccessTitle": "购买成功！",
     "purchaseSuccessMessage": "您的 {{plan}} 套餐已激活。",
     "purchaseFailTitle": "购买失败",
+    "selectPlan": "选择方案",
+    "currentPlan": "当前方案",
     "unexpectedError": "发生未知错误，请重试。",
     "restorePurchases": "恢复购买",
     "restoreSuccessTitle": "购买恢复成功",

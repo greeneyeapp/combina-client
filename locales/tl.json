@@ -447,6 +447,8 @@
     "loadError": "Nabigong i-load ang subscription plans.",
     "purchaseNotAvailable": "Hindi available ang purchase sa device na ito.",
     "purchaseSuccessTitle": "Successful ang Purchase!",
+    "selectPlan": "Piliin ang Plano",
+    "currentPlan": "Kasalukuyang Plano",
     "purchaseSuccessMessage": "Activated na ang {{plan}} plan mo.",
     "purchaseFailTitle": "Hindi nagtagumpay ang Purchase",
     "unexpectedError": "Nagkaroon ng error. Subukang muli.",

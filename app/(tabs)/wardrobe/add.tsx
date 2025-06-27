@@ -1,5 +1,4 @@
-// Dosya: kodlar/app/(tabs)/wardrobe/add.tsx (TAM KOD)
-
+// app/(tabs)/wardrobe/add.tsx (Güncellenmiş tam kod)
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +21,7 @@ import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
+import { optimizeAndSaveImage, formatFileSize } from '@/utils/optimizedImageStorage';
 
 type FormData = {
   name: string;
@@ -36,9 +36,10 @@ export default function AddClothingScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { addClothing } = useClothingStore();
-  const { userPlan } = useUserPlanStore(); // Kullanıcının cinsiyet bilgisini almak için
+  const { userPlan } = useUserPlanStore();
   const [image, setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isOptimizing, setIsOptimizing] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const { show: showAlert } = useAlertStore();
 
@@ -63,6 +64,7 @@ export default function AddClothingScreen() {
       reset({ name: '', category: '', color: '', season: [], style: [], notes: '' });
       setImage(null);
       setIsLoading(false);
+      setIsOptimizing(false);
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
   );
@@ -70,32 +72,92 @@ export default function AddClothingScreen() {
   const takePicture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      showAlert({ title: t('common.error'), message: t('permissions.cameraRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('permissions.cameraRequired'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
       return;
     }
     try {
-      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+      const result = await ImagePicker.launchCameraAsync({ 
+        allowsEditing: true, 
+        aspect: [4, 3], 
+        quality: 1.0 // En yüksek kalitede al, sonra optimize edeceğiz
+      });
       if (!result.canceled) {
-        setImage(result.assets[0].uri);
+        await processSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
       console.log('Error taking picture:', error);
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.errorTakingPhoto'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
     }
   };
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      showAlert({ title: t('common.error'), message: t('permissions.galleryRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('permissions.galleryRequired'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
       return;
     }
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [4, 3], quality: 0.7 });
+      const result = await ImagePicker.launchImageLibraryAsync({ 
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, 
+        allowsEditing: true, 
+        aspect: [4, 3], 
+        quality: 1.0 // En yüksek kalitede al, sonra optimize edeceğiz
+      });
       if (!result.canceled) {
-        setImage(result.assets[0].uri);
+        await processSelectedImage(result.assets[0].uri);
       }
     } catch (error) {
       console.log('Error picking image:', error);
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.errorPickingPhoto'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
+    }
+  };
+
+  const processSelectedImage = async (sourceUri: string) => {
+    setIsOptimizing(true);
+    try {
+      // Görseli optimize et ve kalıcı dizine kaydet
+      const result = await optimizeAndSaveImage(sourceUri);
+      
+      setImage(result.uri);
+      
+      // Kullanıcıya optimizasyon sonucunu göster
+      Toast.show({
+        type: 'success',
+        text1: t('wardrobe.imageOptimized'),
+        text2: t('wardrobe.sizeReduced', { 
+          from: formatFileSize(result.originalSize),
+          to: formatFileSize(result.compressedSize)
+        }),
+        position: 'top',
+        visibilityTime: 3000,
+        topOffset: 50,
+      });
+      
+    } catch (error) {
+      console.error('Error processing image:', error);
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.errorProcessingImage'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
+    } finally {
+      setIsOptimizing(false);
     }
   };
 
@@ -103,15 +165,27 @@ export default function AddClothingScreen() {
 
   const onSubmit = async (data: FormData) => {
     if (!image) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.imageRequired'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
       return;
     }
     if (!data.category) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.categoryRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.categoryRequired'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
       return;
     }
     if (!data.color) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.colorRequired'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.colorRequired'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
       return;
     }
 
@@ -125,9 +199,10 @@ export default function AddClothingScreen() {
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
-        imageUri: image,
+        imageUri: image, // Bu zaten optimize edilmiş ve kalıcı dizinde
         createdAt: new Date().toISOString(),
       };
+      
       await addClothing(newItem);
       Toast.show({
         type: 'success',
@@ -140,7 +215,11 @@ export default function AddClothingScreen() {
       router.back();
     } catch (error) {
       console.error('Error adding clothing item:', error);
-      showAlert({ title: t('common.error'), message: t('wardrobe.errorAddingItem'), buttons: [{ text: t('common.ok'), onPress: () => {} }] });
+      showAlert({ 
+        title: t('common.error'), 
+        message: t('wardrobe.errorAddingItem'), 
+        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -165,13 +244,34 @@ export default function AddClothingScreen() {
               </View>
             ) : (
               <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
-                <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>{t('wardrobe.addPhoto')}</Text>
+                <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
+                  {isOptimizing ? t('wardrobe.optimizingImage') : t('wardrobe.addPhoto')}
+                </Text>
               </View>
             )}
             <View style={styles.imageButtonsContainer}>
-              <Button icon={<Camera color={theme.colors.text} size={20} />} label={t('wardrobe.takePhoto')} onPress={takePicture} variant="outline" style={styles.imageButton} disabled={isLoading} />
-              <Button icon={<ImageIcon color={theme.colors.text} size={20} />} label={t('wardrobe.choosePhoto')} onPress={pickImage} variant="outline" style={styles.imageButton} disabled={isLoading} />
+              <Button 
+                icon={<Camera color={theme.colors.text} size={20} />} 
+                label={t('wardrobe.takePhoto')} 
+                onPress={takePicture} 
+                variant="outline" 
+                style={styles.imageButton} 
+                disabled={isLoading || isOptimizing} 
+              />
+              <Button 
+                icon={<ImageIcon color={theme.colors.text} size={20} />} 
+                label={t('wardrobe.choosePhoto')} 
+                onPress={pickImage} 
+                variant="outline" 
+                style={styles.imageButton} 
+                disabled={isLoading || isOptimizing} 
+              />
             </View>
+            {isOptimizing && (
+              <Text style={[styles.optimizingText, { color: theme.colors.textLight }]}>
+                {t('wardrobe.optimizingInProgress')}
+              </Text>
+            )}
           </View>
           <View style={styles.formSection}>
             <Controller
@@ -179,7 +279,15 @@ export default function AddClothingScreen() {
               name="name"
               rules={{ required: t('wardrobe.nameRequired') as string }}
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input label={t('wardrobe.name')} placeholder={t('wardrobe.namePlaceholder')} onBlur={onBlur} onChangeText={onChange} value={value} error={errors.name?.message} editable={!isLoading} />
+                <Input 
+                  label={t('wardrobe.name')} 
+                  placeholder={t('wardrobe.namePlaceholder')} 
+                  onBlur={onBlur} 
+                  onChangeText={onChange} 
+                  value={value} 
+                  error={errors.name?.message} 
+                  editable={!isLoading && !isOptimizing} 
+                />
               )}
             />
             <Controller
@@ -191,7 +299,7 @@ export default function AddClothingScreen() {
                   selectedCategory={value}
                   onSelectCategory={onChange}
                   error={errors.category?.message}
-                  gender={userPlan?.gender as 'female' | 'male' | undefined} // CİNSİYET BİLGİSİ BURADA AKTARILIYOR
+                  gender={userPlan?.gender as 'female' | 'male' | undefined}
                 />
               )}
             />
@@ -234,10 +342,27 @@ export default function AddClothingScreen() {
               control={control}
               name="notes"
               render={({ field: { onChange, onBlur, value } }) => (
-                <Input label={t('wardrobe.notes')} placeholder={t('wardrobe.notesPlaceholder')} onBlur={onBlur} onChangeText={onChange} value={value} multiline numberOfLines={4} textAlignVertical="top" editable={!isLoading} />
+                <Input 
+                  label={t('wardrobe.notes')} 
+                  placeholder={t('wardrobe.notesPlaceholder')} 
+                  onBlur={onBlur} 
+                  onChangeText={onChange} 
+                  value={value} 
+                  multiline 
+                  numberOfLines={4} 
+                  textAlignVertical="top" 
+                  editable={!isLoading && !isOptimizing} 
+                />
               )}
             />
-            <Button label={isLoading ? t('common.saving') : t('wardrobe.saveItem')} onPress={handleSubmit(onSubmit)} variant="primary" style={styles.saveButton} disabled={isLoading} />
+            <Button 
+              label={isLoading ? t('common.saving') : t('wardrobe.saveItem')} 
+              onPress={handleSubmit(onSubmit)} 
+              variant="primary" 
+              style={styles.saveButton} 
+              disabled={isLoading || isOptimizing} 
+              loading={isLoading}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -258,6 +383,13 @@ const styles = StyleSheet.create({
   imagePlaceholderText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
   imageButtonsContainer: { flexDirection: 'row', justifyContent: 'space-between' },
   imageButton: { flex: 1, marginHorizontal: 4 },
+  optimizingText: { 
+    fontFamily: 'Montserrat-Regular', 
+    fontSize: 14, 
+    textAlign: 'center', 
+    marginTop: 8,
+    fontStyle: 'italic'
+  },
   formSection: { gap: 16 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },
   errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },

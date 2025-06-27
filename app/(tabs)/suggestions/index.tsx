@@ -99,7 +99,7 @@ export default function SuggestionsScreen() {
       top: 2,
       bottom: 2,
       outerwear: 2,
-      footwear: 2,
+      shoes: 2,
     };
     
     const gender = userPlan?.gender === 'male' ? 'male' : 'female';

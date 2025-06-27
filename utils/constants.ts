@@ -10,7 +10,7 @@ export const GENDERED_CATEGORY_HIERARCHY = {
     'modest-wear': ['tunic', 'long-cardigan', 'abaya', 'hijab-shawl', 'long-skirt', 'wide-leg-trousers'],
     'beachwear': ['swimsuit', 'bikini', 'beach-dress', 'kaftan'],
     // --- DEĞİŞİKLİK BURADA ---
-    'footwear': ['sneakers', 'heels', 'boots', 'sandals', 'flats', 'loafers', 'wedges'],
+    'shoes': ['sneakers', 'heels', 'boots', 'sandals', 'flats', 'loafers', 'wedges'],
     'bags': ['handbag', 'crossbody-bag', 'backpack', 'clutch', 'tote-bag', 'fanny-pack'],
     'accessories': ['jewelry', 'scarf', 'sunglasses', 'belt', 'hat', 'beanie', 'watch']
   },
@@ -22,7 +22,7 @@ export const GENDERED_CATEGORY_HIERARCHY = {
     'suits': ['suit-jacket', 'suit-trousers', 'waistcoat'],
     'beachwear': ['swim-shorts'],
     // --- DEĞİŞİKLİK BURADA ---
-    'footwear': ['sneakers', 'boots', 'sandals', 'loafers', 'classic-shoes', 'boat-shoes'],
+    'shoes': ['sneakers', 'boots', 'sandals', 'loafers', 'classic-shoes', 'boat-shoes'],
     'bags': ['backpack', 'messenger-bag', 'briefcase', 'fanny-pack'],
     'accessories': ['sunglasses', 'belt', 'hat', 'beanie', 'watch', 'tie', 'cufflinks']
   }

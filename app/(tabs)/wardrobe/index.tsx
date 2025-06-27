@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback  } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,7 @@ import EmptyState from '@/components/common/EmptyState';
 import ClothingItem from '@/components/wardrobe/ClothingItem';
 import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface SectionData {
   title: string;
@@ -33,7 +34,6 @@ export default function WardrobeScreen() {
   const router = useRouter();
   const { userPlan: storedUserPlan } = useUserPlanStore();
   const { limitInfo, isLoading: isLimitLoading } = useWardrobeLimit();
-
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
   const [activeFilters, setActiveFilters] = useState<{
@@ -43,8 +43,29 @@ export default function WardrobeScreen() {
     styles: string[];
   }>({ categories: [], colors: [], seasons: [], styles: [] });
 
-  const { clothing } = useClothingStore();
-  
+  const { clothing, isValidated, validateAndCleanImages, isValidating } = useClothingStore();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!isValidated && !isValidating) {
+        const performValidation = async () => {
+          const result = await validateAndCleanImages();
+          if (result?.removedCount > 0) {
+            Toast.show({
+              type: 'info',
+              text1: t('wardrobe.itemsRemoved'),
+              text2: t('wardrobe.missingImagesRemoved', { count: result.removedCount }),
+              position: 'top',
+              visibilityTime: 4000,
+              topOffset: 50,
+            });
+          }
+        };
+        performValidation();
+      }
+    }, [isValidated, isValidating, validateAndCleanImages, t])
+  );
+
   const getUsageColor = () => {
     if (!limitInfo) return theme.colors.textLight;
     if (limitInfo.limit === Infinity) return theme.colors.success;
@@ -53,7 +74,7 @@ export default function WardrobeScreen() {
     if (percentage > 75) return theme.colors.warning;
     return theme.colors.success;
   };
-  
+
   function chunkArray<T>(array: T[], size: number): T[][] {
     const result: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
@@ -61,6 +82,8 @@ export default function WardrobeScreen() {
     }
     return result;
   }
+
+
 
   const filteredClothing = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -144,12 +167,12 @@ export default function WardrobeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('wardrobe.title')} />
-      
+
       <View style={styles.usageContainer}>
         {isLimitLoading ? (
           <ActivityIndicator size="small" color={theme.colors.textLight} />
         ) : (
-          limitInfo && 
+          limitInfo &&
           <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
             <Text style={[styles.usageText, { color: getUsageColor() }]}>
               {t('wardrobe.limit')}: {limitInfo.currentCount} / {limitInfo.limit === Infinity ? '∞' : limitInfo.limit}
@@ -158,7 +181,7 @@ export default function WardrobeScreen() {
           </TouchableOpacity>
         )}
       </View>
-      
+
       <View style={styles.searchContainer}>
         <Input
           placeholder={t('wardrobe.searchPlaceholder')}

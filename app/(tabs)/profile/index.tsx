@@ -34,6 +34,7 @@ import useAlertStore from '@/store/alertStore';
 import { getUserProfile } from '@/services/userService';
 import { restorePurchases } from '@/services/purchaseService';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { HardDrive } from 'lucide-react-native';
 
 interface UsageInfo {
   daily_limit: number;
@@ -48,7 +49,7 @@ export default function ProfileScreen() {
   const { show: showAlert } = useAlertStore();
 
   const { currentPlan, isLoading: isPlanLoading, refreshCustomerInfo } = useRevenueCat();
-  
+
   const [usageInfo, setUsageInfo] = useState<UsageInfo | null>(null);
   const [isUsageLoading, setIsUsageLoading] = useState(true);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -91,7 +92,7 @@ export default function ProfileScreen() {
           setIsUsageLoading(false);
         }
       } else {
-          setIsUsageLoading(false);
+        setIsUsageLoading(false);
       }
     };
 
@@ -154,7 +155,7 @@ export default function ProfileScreen() {
       default: return theme.colors.textLight;
     }
   };
-  
+
   const getLanguageName = (code: string) => languages.find(l => l.code === code)?.name || code;
   const handleLanguagePress = () => router.push('/(tabs)/profile/language');
   const handleSubscriptionPress = () => router.push('/profile/subscription' as any);
@@ -165,14 +166,16 @@ export default function ProfileScreen() {
       message: t('logout.alertMessage'),
       buttons: [
         { text: t('common.cancel') },
-        { text: t('common.continue'), onPress: () => {
+        {
+          text: t('common.continue'), onPress: () => {
             logout();
             router.replace('/(auth)');
-        }}
+          }
+        }
       ]
     });
   };
-  
+
   const handleClearData = () => {
     showAlert({
       title: t('profile.clearDataTitle'),
@@ -198,7 +201,7 @@ export default function ProfileScreen() {
         </View>
       );
     }
-    
+
     return (
       <TouchableOpacity
         style={[styles.subscriptionCard, { backgroundColor: theme.colors.card }]}
@@ -218,7 +221,7 @@ export default function ProfileScreen() {
           </View>
           <ChevronRight color={theme.colors.textLight} size={16} />
         </View>
-        
+
         {currentPlan === 'free' && (
           <Text style={[styles.upgradeText, { color: theme.colors.primary }]}>
             {t('profile.upgradeForMore')}
@@ -290,6 +293,16 @@ export default function ProfileScreen() {
             {t('profile.account')}
           </Text>
           <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
+            <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/(tabs)/profile/storage')}>
+              <View style={styles.settingLabelContainer}>
+                <HardDrive color={theme.colors.text} size={20} />
+                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('storage.title')}</Text>
+              </View>
+              <ChevronRight color={theme.colors.textLight} size={16} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+            
             <TouchableOpacity style={styles.settingRow} onPress={handleHelpPress}>
               <View style={styles.settingLabelContainer}>
                 <HelpCircle color={theme.colors.text} size={20} />

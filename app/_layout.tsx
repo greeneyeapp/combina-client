@@ -15,6 +15,7 @@ import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
+import { initializeApp } from '@/utils/appInitialization';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -22,6 +23,7 @@ function RootLayoutNav(): React.JSX.Element | null {
   const { user, loading: authLoading } = useAuth();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+  const [servicesInitialized, setServicesInitialized] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
     'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
@@ -36,7 +38,7 @@ function RootLayoutNav(): React.JSX.Element | null {
     if (!isAppReady) return;
 
     const inAuthGroup = segments[0] === '(auth)';
-    
+
     if (user) {
       if (inAuthGroup) {
         router.replace('/(tabs)/wardrobe');
@@ -46,10 +48,11 @@ function RootLayoutNav(): React.JSX.Element | null {
         router.replace('/(auth)');
       }
     }
-    
+
     SplashScreen.hideAsync();
 
   }, [user, segments, authLoading, fontsLoaded, fontError, navigationState?.key]);
+
 
   if (!fontsLoaded && !fontError) {
     return null;
@@ -93,7 +96,7 @@ export default function RootLayout(): React.JSX.Element {
             await AsyncStorage.setItem('app_language', finalLanguage);
           }
         })();
-        
+
         const purchasesPromise = (async () => {
           const apiKey = Platform.select({
             ios: 'appl_DuXXAykkepzomdHesCIharljFmd',
@@ -105,13 +108,15 @@ export default function RootLayout(): React.JSX.Element {
           }
         })();
 
-        // İki işlemin de bitmesini bekle
-        await Promise.all([langPromise, purchasesPromise]);
+        // --- YENİ: Uygulama doğrulaması ekle ---
+        const appInitPromise = initializeApp();
+
+        // Üç işlemin de bitmesini bekle
+        await Promise.all([langPromise, purchasesPromise, appInitPromise]);
 
       } catch (error) {
         console.error('Failed to initialize app services:', error);
       } finally {
-        // Her durumda, uygulamanın render edilmeye hazır olduğunu belirt
         setServicesInitialized(true);
       }
     };

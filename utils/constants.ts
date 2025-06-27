@@ -9,7 +9,7 @@ export const GENDERED_CATEGORY_HIERARCHY = {
   female: {
     'top': ['t-shirt', 'blouse', 'shirt', 'bodysuit', 'crop-top', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck'],
     'bottom': ['jeans', 'trousers', 'leggings', 'joggers', 'skirt', 'shorts', 'culottes'],
-    'sets': ['dress', 'jumpsuit', 'romper', 'co-ord-set', 'tracksuit'], // 'sets' anahtar kelimesi daha kapsayıcı
+    'sets': ['dress', 'jumpsuit', 'romper', 'co-ord-set', 'tracksuit'],
     'outerwear': ['coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'leather-jacket', 'blazer', 'vest'],
     'modest-wear': ['tunic', 'long-cardigan', 'abaya', 'hijab-shawl', 'long-skirt', 'wide-leg-trousers'],
     'beachwear': ['swimsuit', 'bikini', 'beach-dress', 'kaftan'],

@@ -513,13 +513,12 @@
     "year": "год",
     "savePercent": "Сэкономьте {{percent}}%",
     "features": {
-      "wardrobeItems": "{{count}} предметов в гардеробе",
-      "unlimitedItems": "Неограниченное количество предметов",
-      "dailySuggestions": "{{count}} предложений в день",
-      "noAds": "Без рекламы",
-      "advancedTips": "Продвинутые советы по стилю",
-      "pinterestInspiration": "Вдохновение из Pinterest",
-      "prioritySupport": "Приоритетная поддержка"
+      "wardrobeItems": "Добавляйте до {{count}} вещей в свой гардероб",
+      "unlimitedItems": "Создайте свою коллекцию с неограниченным количеством вещей",
+      "dailySuggestions": "{{count}} новых идей образов ежедневно, персонально для вас",
+      "noAds": "Полное погружение без рекламы",
+      "advancedTips": "Советы, которые выведут ваш стиль на новый уровень",
+      "pinterestInspiration": "Вдохновение с ваших досок Pinterest для совершенствования вашего стиля"
     }
   }
 }

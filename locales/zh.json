@@ -513,13 +513,12 @@
     "year": "年",
     "savePercent": "节省 {{percent}}%",
     "features": {
-      "wardrobeItems": "{{count}} 件衣物",
-      "unlimitedItems": "无限衣物数量",
-      "dailySuggestions": "每日 {{count}} 次建议",
-      "noAds": "无广告体验",
-      "advancedTips": "高级穿搭建议与反馈",
-      "pinterestInspiration": "Pinterest 风格灵感",
-      "prioritySupport": "优先客服支持"
+      "wardrobeItems": "最多可添加 {{count}} 件物品到您的衣橱",
+      "unlimitedItems": "用无限的单品打造您的个人收藏",
+      "dailySuggestions": "每日 {{count}} 个性化穿搭新思路",
+      "noAds": "流畅无广告的体验",
+      "advancedTips": "让您的风格更上一层楼的建议",
+      "pinterestInspiration": "从您的 Pinterest 看板获取灵感，提升个人风格"
     }
   }
 }

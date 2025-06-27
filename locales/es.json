@@ -513,13 +513,12 @@
     "year": "año",
     "savePercent": "Ahorra un {{percent}}%",
     "features": {
-      "wardrobeItems": "{{count}} prendas en el armario",
-      "unlimitedItems": "Prendas ilimitadas en el armario",
-      "dailySuggestions": "{{count}} sugerencias diarias",
-      "noAds": "Experiencia sin anuncios",
-      "advancedTips": "Consejos y comentarios de estilo avanzados",
-      "pinterestInspiration": "Inspiración de estilo de Pinterest",
-      "prioritySupport": "Soporte prioritario"
+      "wardrobeItems": "Añade hasta {{count}} prendas a tu armario",
+      "unlimitedItems": "Crea tu colección con prendas ilimitadas",
+      "dailySuggestions": "{{count}} ideas de outfits nuevas y personalizadas para ti cada día",
+      "noAds": "Una experiencia fluida y sin anuncios",
+      "advancedTips": "Consejos para llevar tu estilo al siguiente nivel",
+      "pinterestInspiration": "Inspiración de tus tableros de Pinterest para elevar tu estilo"
     }
   }
 }

@@ -513,13 +513,12 @@
     "year": "年",
     "savePercent": "{{percent}}%お得",
     "features": {
-      "wardrobeItems": "{{count}} アイテムまで登録可能",
-      "unlimitedItems": "アイテム登録無制限",
-      "dailySuggestions": "1日{{count}}回まで提案",
-      "noAds": "広告なしで快適",
-      "advancedTips": "高度なスタイルアドバイス",
-      "pinterestInspiration": "Pinterestからのスタイル参考",
-      "prioritySupport": "優先サポート"
+      "wardrobeItems": "ワードローブに最大{{count}}点のアイテムを追加",
+      "unlimitedItems": "無制限のアイテムで自分だけのコレクションを作成",
+      "dailySuggestions": "毎日あなたのためにパーソナライズされた、{{count}}つの新しいコーデのアイデア",
+      "noAds": "シームレスで広告のない快適な体験",
+      "advancedTips": "あなたのスタイルを次のレベルに引き上げるためのアドバイス",
+      "pinterestInspiration": "Pinterestのボードから、あなたのスタイルを格上げするインスピレーションを"
     }
   }
 }

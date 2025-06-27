@@ -513,13 +513,12 @@
     "year": "साल",
     "savePercent": "{{percent}}% बचाएं",
     "features": {
-      "wardrobeItems": "{{count}} वार्डरोब आइटम",
-      "unlimitedItems": "असीमित वार्डरोब आइटम",
-      "dailySuggestions": "{{count}} दैनिक सुझाव",
-      "noAds": "विज्ञापन-मुक्त अनुभव",
-      "advancedTips": "उन्नत स्टाइल टिप्स और फीडबैक",
-      "pinterestInspiration": "पिंटरेस्ट स्टाइल प्रेरणा",
-      "prioritySupport": "प्राथमिकता समर्थन"
+      "wardrobeItems": "अपनी अलमारी में {{count}} आइटम तक जोड़ें",
+      "unlimitedItems": "असीमित पीसेज़ के साथ अपना कलेक्शन बनाएं",
+      "dailySuggestions": "रोज़ाना आपके लिए {{count}} नए पर्सनलाइज़्ड ऑउटफिट आइडिया",
+      "noAds": "एक सहज, विज्ञापन-मुक्त अनुभव",
+      "advancedTips": "अपने स्टाइल को अगले स्तर पर ले जाने के लिए सलाह",
+      "pinterestInspiration": "अपने स्टाइल को बेहतर बनाने के लिए आपके Pinterest बोर्ड्स से प्रेरणा"
     }
   }
 }

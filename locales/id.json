@@ -513,13 +513,12 @@
     "year": "tahun",
     "savePercent": "Hemat {{percent}}%",
     "features": {
-      "wardrobeItems": "{{count}} item lemari",
-      "unlimitedItems": "Item lemari tak terbatas",
-      "dailySuggestions": "{{count}} saran harian",
-      "noAds": "Pengalaman bebas iklan",
-      "advancedTips": "Tips & umpan balik gaya tingkat lanjut",
-      "pinterestInspiration": "Inspirasi gaya Pinterest",
-      "prioritySupport": "Dukungan prioritas"
+      "wardrobeItems": "Tambahkan hingga {{count}} item ke lemari pakaian Anda",
+      "unlimitedItems": "Bangun koleksi Anda dengan item tak terbatas",
+      "dailySuggestions": "{{count}} ide pakaian baru setiap hari, khusus untuk Anda",
+      "noAds": "Pengalaman yang lancar dan bebas iklan",
+      "advancedTips": "Saran untuk meningkatkan gaya Anda ke level berikutnya",
+      "pinterestInspiration": "Inspirasi dari papan Pinterest Anda untuk menyempurnakan gaya Anda"
     }
   }
 }

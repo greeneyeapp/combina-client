@@ -513,13 +513,12 @@
     "year": "yıl",
     "savePercent": "%{{percent}} tasarruf et",
     "features": {
-      "wardrobeItems": "{{count}} parça kıyafet",
-      "unlimitedItems": "Sınırsız parça kıyafet",
-      "dailySuggestions": "{{count}} günlük öneri",
-      "noAds": "Reklamsız deneyim",
-      "advancedTips": "İleri düzey stil ipuçları ve geri bildirimler",
-      "pinterestInspiration": "Pinterest stil ilhamı",
-      "prioritySupport": "Öncelikli destek"
+      "wardrobeItems": "Gardırobuna {{count}} parça ekleme imkanı",
+      "unlimitedItems": "Sınırsız parça ile kendi koleksiyonunu yarat",
+      "dailySuggestions": "Her gün sana özel {{count}} yeni kombin fikri",
+      "noAds": "Kesintisiz ve reklamsız bir deneyim",
+      "advancedTips": "Stilini bir üst seviyeye taşıyacak tavsiyeler",
+      "pinterestInspiration": "Pinterest panolarından stilini besleyen ilhamlar"
     }
   }
 }

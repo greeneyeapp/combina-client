@@ -513,13 +513,12 @@
     "year": "년",
     "savePercent": "{{percent}}% 할인",
     "features": {
-      "wardrobeItems": "{{count}}개 아이템 등록 가능",
-      "unlimitedItems": "무제한 아이템 등록",
-      "dailySuggestions": "일일 {{count}}회 제안",
-      "noAds": "광고 없음",
-      "advancedTips": "고급 스타일 팁 및 피드백",
-      "pinterestInspiration": "Pinterest 스타일 영감",
-      "prioritySupport": "우선 지원"
+      "wardrobeItems": "옷장에 최대 {{count}}개의 아이템을 추가하세요",
+      "unlimitedItems": "무제한 아이템으로 나만의 컬렉션을 만들어보세요",
+      "dailySuggestions": "매일 당신을 위한 {{count}}개의 새로운 맞춤 코디 아이디어",
+      "noAds": "끊김 없고 광고 없는 사용 환경",
+      "advancedTips": "당신의 스타일을 한 단계 업그레이드할 조언",
+      "pinterestInspiration": "Pinterest 보드에서 당신의 스타일을 완성할 영감을 얻으세요"
     }
   }
 }

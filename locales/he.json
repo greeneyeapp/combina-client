@@ -513,13 +513,12 @@
     "year": "שנה",
     "savePercent": "חסוך {{percent}}%",
     "features": {
-      "wardrobeItems": "{{count}} פריטים במלתחה",
-      "unlimitedItems": "פריטים ללא הגבלה במלתחה",
-      "dailySuggestions": "{{count}} הצעות יומיות",
-      "noAds": "חוויה ללא פרסומות",
-      "advancedTips": "טיפים ומשוב מתקדמים על סטייל",
-      "pinterestInspiration": "השראת סטייל מפינטרסט",
-      "prioritySupport": "תמיכה בעדיפות"
+      "wardrobeItems": "הוסף עד {{count}} פריטים למלתחה שלך",
+      "unlimitedItems": "בנה את הקולקציה שלך עם פריטים ללא הגבלה",
+      "dailySuggestions": "{{count}} רעיונות לבוש חדשים, מותאמים אישית עבורך מדי יום",
+      "noAds": "חוויה חלקה וללא פרסומות",
+      "advancedTips": "טיפים לקחת את הסטייל שלך לשלב הבא",
+      "pinterestInspiration": "השראה מלוחות הפינטרסט שלך כדי לשדרג את הסטייל"
     }
   }
 }

@@ -513,13 +513,12 @@
     "year": "taon",
     "savePercent": "Makatipid ng {{percent}}%",
     "features": {
-      "wardrobeItems": "{{count}} mga item sa wardrobe",
-      "unlimitedItems": "Walang limit sa mga item",
-      "dailySuggestions": "{{count}} arawang suggestion",
-      "noAds": "Walang ads",
-      "advancedTips": "Advanced na estilo tips at feedback",
-      "pinterestInspiration": "Pinterest style inspiration",
-      "prioritySupport": "Priority support"
+      "wardrobeItems": "Magdagdag ng hanggang {{count}} item sa iyong wardrobe",
+      "unlimitedItems": "Buuin ang iyong koleksyon gamit ang walang limitasyong mga piyesa",
+      "dailySuggestions": "{{count}} bagong ideya ng outfit, personalized para sa iyo araw-araw",
+      "noAds": "Isang tuluy-tuloy at ad-free na karanasan",
+      "advancedTips": "Payo para i-level up ang iyong style",
+      "pinterestInspiration": "Inspirasyon mula sa iyong mga Pinterest board para iangat ang iyong istilo"
     }
   }
 }

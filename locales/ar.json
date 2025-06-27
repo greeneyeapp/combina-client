@@ -513,13 +513,12 @@
     "year": "سنة",
     "savePercent": "وفر {{percent}}%",
     "features": {
-      "wardrobeItems": "{{count}} قطعة في الخزانة",
-      "unlimitedItems": "قطع غير محدودة في الخزانة",
-      "dailySuggestions": "{{count}} اقتراحات يومية",
-      "noAds": "تجربة خالية من الإعلانات",
-      "advancedTips": "نصائح وملاحظات متقدمة حول الأسلوب",
-      "pinterestInspiration": "إلهام الأناقة من Pinterest",
-      "prioritySupport": "دعم ذو أولوية"
+      "wardrobeItems": "أضف ما يصل إلى {{count}} قطعة إلى خزانة ملابسك",
+      "unlimitedItems": "كوّن مجموعتك الخاصة بعدد غير محدود من القطع",
+      "dailySuggestions": "{{count}} أفكار جديدة للأزياء، مخصصة لك يوميًا",
+      "noAds": "تجربة سلسة وخالية من الإعلانات",
+      "advancedTips": "نصائح للارتقاء بأسلوبك إلى المستوى التالي",
+      "pinterestInspiration": "إلهام من لوحاتك على Pinterest للارتقاء بأسلوبك"
     }
   }
 }

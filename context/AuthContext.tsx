@@ -45,12 +45,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // JWT token'dan user bilgilerini al
           const userInfo = await getUserFromToken(jwt);
           setUser(userInfo);
-          
+
           // RevenueCat'i başlat
           if (userInfo?.uid) {
             await Purchases.logIn(userInfo.uid);
           }
-          
+
           await initializeUserProfile();
         } catch (error) {
           console.error("Failed to initialize auth:", error);
@@ -73,16 +73,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await axios.post(`${API_URL}/auth/google`, {
         access_token: accessToken
       });
-      
+
       const { access_token, user_info } = response.data;
+      console.log('🔍 Backend Response:', response.data);
+      console.log('🔍 User Info Details:', {
+        uid: user_info?.uid,
+        email: user_info?.email,
+        name: user_info?.name,
+        gender: user_info?.gender,
+        birthDate: user_info?.birthDate
+      });
+
       await setJwt(access_token);
       setUser(user_info);
-      
+
       // RevenueCat'i başlat
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      
+
       await initializeUserProfile();
       return user_info;
     } catch (error) {
@@ -98,16 +107,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         authorization_code: credential.authorizationCode,
         user_info: credential.fullName
       });
-      
+
       const { access_token, user_info } = response.data;
       await setJwt(access_token);
       setUser(user_info);
-      
+
       // RevenueCat'i başlat
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      
+
       await initializeUserProfile();
       return user_info;
     } catch (error) {

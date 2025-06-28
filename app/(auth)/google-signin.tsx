@@ -19,9 +19,10 @@ export default function GoogleSignInScreen() {
     const { show: showAlert } = useAlertStore();
     const [loading, setLoading] = useState(false);
 
-    // En basit konfigürasyon - sadece WEB client ID
+
     const [request, response, promptAsync] = Google.useAuthRequest({
-        clientId: '58339241217-603vhqddo6qagep2spcrgdt8e8vmkj0g.apps.googleusercontent.com',
+        androidClientId: '58339241217-doo7k2mr5219tonptrkmasmsrvja24k9.apps.googleusercontent.com',
+        iosClientId: '58339241217-dvfh2fl5p2hfi9a6m0vaqnuf4esf53qk.apps.googleusercontent.com',
         scopes: ['profile', 'email'],
     });
 
@@ -29,10 +30,10 @@ export default function GoogleSignInScreen() {
         console.log('=== Simple Google Auth ===');
         console.log('Request ready:', !!request);
         console.log('Response:', response);
-        
+
         if (response?.type === 'success') {
             console.log('✅ OAuth Success!');
-            
+
             if (response.authentication?.accessToken) {
                 console.log('✅ Access token received');
                 handleGoogleSignIn(response.authentication.accessToken);
@@ -46,12 +47,12 @@ export default function GoogleSignInScreen() {
             }
         } else if (response?.type === 'error') {
             console.error('❌ OAuth Error:', response.error);
-            
+
             if (response.error?.message?.includes('access_denied')) {
                 router.back();
                 return;
             }
-            
+
             showAlert({
                 title: 'Hata',
                 message: 'Google giriş hatası',
@@ -66,18 +67,25 @@ export default function GoogleSignInScreen() {
         setLoading(true);
         try {
             console.log('🔄 Sending token to backend...');
-            
+
             const userInfo = await signInWithGoogle(accessToken);
             console.log('✅ Backend success');
+            console.log('👤 User Info:', userInfo);
+
+            // Backend'den gelen user info'yu kontrol et
+            console.log('Gender:', userInfo?.gender);
+            console.log('BirthDate:', userInfo?.birthDate);
 
             if (!userInfo.gender || !userInfo.birthDate) {
-                router.replace('/(auth)/user-info');
+                console.log('❌ Missing user info, redirecting to complete-profile');
+                router.replace('/(auth)/complete-profile');
             } else {
+                console.log('✅ User info complete, redirecting to wardrobe');
                 router.replace('/(tabs)/wardrobe');
             }
         } catch (error: any) {
             console.error('❌ Backend error:', error);
-            
+
             showAlert({
                 title: 'Hata',
                 message: 'Sunucu hatası',
@@ -103,7 +111,7 @@ export default function GoogleSignInScreen() {
                     <Text style={[styles.loadingText, { color: theme.colors.text }]}>
                         {loading ? 'Backend\'e gönderiliyor...' : 'Google ile giriş yapılıyor...'}
                     </Text>
-                    
+
                     {__DEV__ && (
                         <View style={styles.debugContainer}>
                             <Text style={[styles.debugText, { color: theme.colors.text }]}>
@@ -124,11 +132,11 @@ const styles = StyleSheet.create({
     gradient: { flex: 1 },
     container: { flex: 1 },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    loadingText: { 
-        fontFamily: 'Montserrat-Medium', 
-        fontSize: 16, 
+    loadingText: {
+        fontFamily: 'Montserrat-Medium',
+        fontSize: 16,
         marginTop: 16,
-        textAlign: 'center' 
+        textAlign: 'center'
     },
     debugContainer: {
         marginTop: 20,

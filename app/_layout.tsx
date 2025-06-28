@@ -124,12 +124,7 @@ export default function RootLayout(): React.JSX.Element {
     initializeAppServices();
   }, []);
 
-  // --- YENİ KONTROL: Servisler hazır değilse, hiçbir şey render etme ---
-  if (!servicesInitialized) {
-    return null; // Veya bir yükleme ekranı
-  }
 
-  // Servisler hazır olduğunda, tüm uygulamayı render et
   return (
     <GestureHandlerRootView style={styles.container}>
       <I18nextProvider i18n={i18n}>

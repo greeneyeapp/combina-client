@@ -15,10 +15,8 @@ WebBrowser.maybeCompleteAuthSession();
 export default function GoogleSignInScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
-    const { signInWithGoogle } = useAuth();
+    const { signInWithGoogle, setAuthFlowActive } = useAuth();
     const { show: showAlert } = useAlertStore();
-    const [loading, setLoading] = useState(false);
-
 
     const [request, response, promptAsync] = Google.useAuthRequest({
         androidClientId: '58339241217-doo7k2mr5219tonptrkmasmsrvja24k9.apps.googleusercontent.com',
@@ -27,101 +25,71 @@ export default function GoogleSignInScreen() {
     });
 
     useEffect(() => {
-        console.log('=== Simple Google Auth ===');
-        console.log('Request ready:', !!request);
-        console.log('Response:', response);
-
-        if (response?.type === 'success') {
-            console.log('✅ OAuth Success!');
-
-            if (response.authentication?.accessToken) {
-                console.log('✅ Access token received');
-                handleGoogleSignIn(response.authentication.accessToken);
-            } else {
-                console.error('❌ No access token');
-                showAlert({
-                    title: 'Hata',
-                    message: 'Access token alınamadı',
-                    buttons: [{ text: 'Tamam', onPress: () => router.back() }]
-                });
-            }
-        } else if (response?.type === 'error') {
-            console.error('❌ OAuth Error:', response.error);
-
-            if (response.error?.message?.includes('access_denied')) {
-                router.back();
-                return;
-            }
-
-            showAlert({
-                title: 'Hata',
-                message: 'Google giriş hatası',
-                buttons: [{ text: 'Tamam', onPress: () => router.back() }]
-            });
-        } else if (response?.type === 'dismiss') {
-            router.back();
-        }
-    }, [response]);
-
-    const handleGoogleSignIn = async (accessToken: string) => {
-        setLoading(true);
-        try {
-            console.log('🔄 Sending token to backend...');
-
-            const userInfo = await signInWithGoogle(accessToken);
-            console.log('✅ Backend success');
-            console.log('👤 User Info:', userInfo);
-
-            // Backend'den gelen user info'yu kontrol et
-            console.log('Gender:', userInfo?.gender);
-            console.log('BirthDate:', userInfo?.birthDate);
-
-            if (!userInfo.gender || !userInfo.birthDate) {
-                console.log('❌ Missing user info, redirecting to complete-profile');
-                router.replace('/(auth)/complete-profile');
-            } else {
-                console.log('✅ User info complete, redirecting to wardrobe');
-                router.replace('/(tabs)/wardrobe');
-            }
-        } catch (error: any) {
-            console.error('❌ Backend error:', error);
-
-            showAlert({
-                title: 'Hata',
-                message: 'Sunucu hatası',
-                buttons: [{ text: 'Tamam', onPress: () => router.back() }]
-            });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
         if (request) {
-            console.log('🚀 Starting simple Google auth...');
+            console.log('🚀 Setting Auth Flow to ACTIVE and starting Google prompt...');
+            setAuthFlowActive(true);
             promptAsync();
         }
     }, [request]);
 
+    useEffect(() => {
+        if (!response) {
+            return;
+        }
+
+        console.log('✅ Google response received.');
+
+        if (response.type === 'success' && response.authentication?.accessToken) {
+            // Immediately navigate to a stable screen to prevent the 404 error.
+            // The main auth screen is a safe place to land temporarily.
+            router.replace('/(auth)');
+
+            // In the background, process the token. _layout.tsx will handle the final redirect.
+            handleGoogleSignIn(response.authentication.accessToken).finally(() => {
+                console.log('✅ Auth flow ended. Setting Auth Flow to INACTIVE.');
+                setAuthFlowActive(false);
+            });
+
+        } else if (response.type === 'error' || response.type === 'dismiss') {
+            console.log('OAuth dismissed or failed, navigating back.');
+            setAuthFlowActive(false); // End the flow
+            if (router.canGoBack()) {
+                router.back();
+            } else {
+                router.replace('/(auth)');
+            }
+        } else {
+            // Handle other unexpected responses
+            setAuthFlowActive(false);
+            showAlert({ title: 'Hata', message: 'Giriş sırasında beklenmedik bir hata oluştu.', buttons: [{ text: 'Tamam', onPress: () => router.replace('/(auth)') }] });
+        }
+    }, [response]);
+
+    const handleGoogleSignIn = async (accessToken: string) => {
+        try {
+            await signInWithGoogle(accessToken);
+            // The navigation logic is now fully handled by _layout.tsx
+            // which will react to the user state change.
+        } catch (error: any) {
+            // The user has already been sent to the '(auth)' screen,
+            // so showing an alert here is safe.
+            showAlert({ title: 'Hata', message: 'Sunucu ile iletişimde bir sorun oluştu.', buttons: [{ text: 'Tamam' }] });
+        }
+    };
+
+    // This UI will only be visible for a very short time before the Google prompt appears.
     return (
         <LinearGradient colors={[theme.colors.background, theme.colors.secondary]} style={styles.gradient}>
             <SafeAreaView style={styles.container}>
                 <View style={styles.content}>
-                    <ActivityIndicator size="large" color={theme.colors.primary} />
-                    <Text style={[styles.loadingText, { color: theme.colors.text }]}>
-                        {loading ? 'Backend\'e gönderiliyor...' : 'Google ile giriş yapılıyor...'}
-                    </Text>
-
-                    {__DEV__ && (
-                        <View style={styles.debugContainer}>
-                            <Text style={[styles.debugText, { color: theme.colors.text }]}>
-                                Method: Simple Web Client
-                            </Text>
-                            <Text style={[styles.debugText, { color: theme.colors.text }]}>
-                                Status: {response?.type || 'Waiting...'}
-                            </Text>
+                    <View style={styles.loadingContainer}>
+                        <View style={[styles.iconContainer, { backgroundColor: theme.colors.primaryLight }]}>
+                            <ActivityIndicator size="large" color={theme.colors.primary} />
                         </View>
-                    )}
+                        <Text style={[styles.mainStatus, { color: theme.colors.text }]}>
+                            Google'a yönlendiriliyor...
+                        </Text>
+                    </View>
                 </View>
             </SafeAreaView>
         </LinearGradient>
@@ -131,23 +99,9 @@ export default function GoogleSignInScreen() {
 const styles = StyleSheet.create({
     gradient: { flex: 1 },
     container: { flex: 1 },
-    content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-    loadingText: {
-        fontFamily: 'Montserrat-Medium',
-        fontSize: 16,
-        marginTop: 16,
-        textAlign: 'center'
-    },
-    debugContainer: {
-        marginTop: 20,
-        padding: 15,
-        backgroundColor: 'rgba(0,0,0,0.1)',
-        borderRadius: 8,
-    },
-    debugText: {
-        fontSize: 12,
-        opacity: 0.8,
-        marginBottom: 4,
-        textAlign: 'center',
-    }
+    content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+    loadingContainer: { alignItems: 'center', gap: 20 },
+    iconContainer: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+    mainStatus: { fontFamily: 'Montserrat-Bold', fontSize: 18, textAlign: 'center' },
+    stepText: { fontFamily: 'Montserrat-Regular', fontSize: 14, textAlign: 'center', fontStyle: 'italic' },
 });

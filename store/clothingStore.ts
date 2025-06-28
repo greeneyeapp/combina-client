@@ -77,9 +77,7 @@ export const useClothingStore = create<ClothingState>()(
         if (isValidated || isValidating) return;
         
         set({ isValidating: true });
-        
-        console.log('Validating clothing images...');
-        
+                
         try {
           if (clothing.length === 0) {
             set({ isValidated: true, isValidating: false });

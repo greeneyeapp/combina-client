@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    Alert,
+    Platform,
     ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Calendar, ChevronDown, User, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
@@ -25,24 +25,54 @@ export default function CompleteProfileScreen() {
     const { show: showAlert } = useAlertStore();
 
     const [formData, setFormData] = useState({
-        name: user?.name || '',
+        name: '',
         gender: '',
-        birthDate: new Date()
+        birthDate: new Date(2000, 0, 1)
     });
+
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState<{[key: string]: string}>({});
+
+    // Load user data on component mount
+    useEffect(() => {
+        console.log('📋 Complete Profile Screen - Current user data:', {
+            user: user,
+            name: user?.name,
+            fullname: user?.fullname,
+            displayName: user?.displayName,
+            gender: user?.gender,
+            birthDate: user?.birthDate,
+        });
+
+        if (user) {
+            const userName = user.fullname || user.name || user.displayName || '';
+            console.log('📋 Using name:', userName);
+            
+            setFormData(prev => ({
+                name: userName,
+                gender: user.gender || '',
+                birthDate: user.birthDate ? new Date(user.birthDate) : prev.birthDate
+            }));
+        }
+    }, [user]);
 
     const genderOptions = [
-        { label: 'Cinsiyet Seçin', value: '' },
-        { label: 'Erkek', value: 'male' },
-        { label: 'Kadın', value: 'female' },
-        { label: 'Belirtmek İstemiyorum', value: 'other' }
+        { label: t('gender.male'), value: 'male' },
+        { label: t('gender.female'), value: 'female' },
+        { label: t('gender.unisex'), value: 'other' }
     ];
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+        
         if (selectedDate) {
             setFormData(prev => ({ ...prev, birthDate: selectedDate }));
+            if (errors.birthDate) {
+                setErrors(prev => ({ ...prev, birthDate: '' }));
+            }
         }
     };
 
@@ -54,26 +84,22 @@ export default function CompleteProfileScreen() {
         });
     };
 
-    const validateForm = () => {
+    const validateForm = (): boolean => {
+        const newErrors: {[key: string]: string} = {};
+
+        // Name validation
         if (!formData.name.trim()) {
-            showAlert({
-                title: 'Hata',
-                message: 'Lütfen adınızı girin',
-                buttons: [{ text: 'Tamam' }]
-            });
-            return false;
+            newErrors.name = t('auth.nameRequired');
+        } else if (formData.name.trim().length < 2) {
+            newErrors.name = t('auth.nameMinLength');
         }
 
+        // Gender validation
         if (!formData.gender) {
-            showAlert({
-                title: 'Hata',
-                message: 'Lütfen cinsiyetinizi seçin',
-                buttons: [{ text: 'Tamam' }]
-            });
-            return false;
+            newErrors.gender = t('auth.genderRequired');
         }
 
-        // Yaş kontrolü (13-100 yaş arası)
+        // Age validation (13-100 years)
         const today = new Date();
         const age = today.getFullYear() - formData.birthDate.getFullYear();
         const monthDiff = today.getMonth() - formData.birthDate.getMonth();
@@ -82,33 +108,37 @@ export default function CompleteProfileScreen() {
         const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
 
         if (exactAge < 13) {
-            showAlert({
-                title: 'Yaş Sınırı',
-                message: 'Bu uygulama 13 yaş ve üzeri kullanıcılar içindir',
-                buttons: [{ text: 'Tamam' }]
-            });
-            return false;
+            newErrors.birthDate = t('auth.ageMinimum');
+        } else if (exactAge > 100) {
+            newErrors.birthDate = t('auth.ageMaximum');
         }
 
-        if (exactAge > 100) {
-            showAlert({
-                title: 'Geçersiz Tarih',
-                message: 'Lütfen geçerli bir doğum tarihi girin',
-                buttons: [{ text: 'Tamam' }]
-            });
-            return false;
-        }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
-        return true;
+    const handleGenderChange = (value: string) => {
+        setFormData(prev => ({ ...prev, gender: value }));
+        if (errors.gender) {
+            setErrors(prev => ({ ...prev, gender: '' }));
+        }
     };
 
     const handleSubmit = async () => {
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            const firstError = Object.values(errors)[0];
+            showAlert({
+                title: t('common.error'),
+                message: firstError,
+                buttons: [{ text: t('common.ok') }]
+            });
+            return;
+        }
 
         setLoading(true);
         try {
             console.log('🔄 Updating user info...');
-            
+
             await updateUserInfo({
                 name: formData.name.trim(),
                 gender: formData.gender,
@@ -116,12 +146,12 @@ export default function CompleteProfileScreen() {
             });
 
             console.log('✅ User info updated successfully');
-            
+
             showAlert({
-                title: 'Başarılı',
-                message: 'Profil bilgileriniz güncellendi!',
+                title: t('common.success'),
+                message: t('auth.profileUpdateSuccess'),
                 buttons: [{
-                    text: 'Devam Et',
+                    text: t('auth.continueButton'),
                     onPress: () => {
                         console.log('🚀 Redirecting to wardrobe...');
                         router.replace('/(tabs)/wardrobe');
@@ -132,129 +162,209 @@ export default function CompleteProfileScreen() {
         } catch (error: any) {
             console.error('❌ Update error:', error);
             showAlert({
-                title: 'Hata',
-                message: 'Profil güncellenirken bir hata oluştu. Lütfen tekrar deneyin.',
-                buttons: [{ text: 'Tamam' }]
+                title: t('common.error'),
+                message: t('auth.updateInfoError'),
+                buttons: [{ text: t('common.ok') }]
             });
         } finally {
             setLoading(false);
         }
     };
 
+    const getSelectedGenderLabel = () => {
+        const selected = genderOptions.find(option => option.value === formData.gender);
+        return selected ? selected.label : t('auth.selectGender');
+    };
+
     return (
-        <LinearGradient 
-            colors={[theme.colors.background, theme.colors.secondary]} 
+        <LinearGradient
+            colors={[theme.colors.background, theme.colors.secondary]}
             style={styles.gradient}
         >
             <SafeAreaView style={styles.container}>
-                <ScrollView contentContainerStyle={styles.scrollContent}>
+                <ScrollView 
+                    style={styles.scrollView}
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {/* Modern Header */}
                     <View style={styles.header}>
+                        <View style={[styles.progressContainer, { backgroundColor: theme.colors.surface }]}>
+                            <View style={[styles.progressBar, { backgroundColor: theme.colors.primary }]} />
+                        </View>
                         <Text style={[styles.title, { color: theme.colors.text }]}>
-                            Profili Tamamla
+                            {t('auth.completeProfile')}
                         </Text>
                         <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-                            Kişiselleştirilmiş deneyim için birkaç bilgi daha
+                            {t('auth.profileSubtitle')}
                         </Text>
                     </View>
 
-                    <View style={styles.form}>
-                        {/* Ad Soyad */}
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.colors.text }]}>
-                                Ad Soyad
-                            </Text>
-                            <View style={[styles.inputContainer, { 
-                                backgroundColor: theme.colors.surface,
-                                borderColor: theme.colors.border
-                            }]}>
-                                <Text style={[styles.input, { color: theme.colors.text }]}>
-                                    {formData.name}
+                    {/* Modern Form Cards */}
+                    <View style={styles.formContainer}>
+                        
+                        {/* Full Name Card */}
+                        <View style={[styles.formCard, { backgroundColor: theme.colors.surface }]}>
+                            <View style={styles.cardHeader}>
+                                <User color={theme.colors.primary} size={20} />
+                                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+                                    {t('register.name')}
+                                </Text>
+                                {formData.name && <CheckCircle color={theme.colors.success} size={16} />}
+                            </View>
+                            <View style={styles.cardContent}>
+                                <Text style={[styles.valueDisplay, { color: theme.colors.text }]}>
+                                    {formData.name || t('auth.noNameProvided')}
+                                </Text>
+                                <Text style={[styles.helpText, { color: theme.colors.textSecondary }]}>
+                                    This information comes from your Google account
                                 </Text>
                             </View>
                         </View>
 
-                        {/* Cinsiyet */}
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.colors.text }]}>
-                                Cinsiyet
-                            </Text>
-                            <View style={[styles.inputContainer, { 
+                        {/* Gender Card */}
+                        <View style={[
+                            styles.formCard, 
+                            { 
                                 backgroundColor: theme.colors.surface,
-                                borderColor: theme.colors.border
-                            }]}>
-                                <Picker
-                                    selectedValue={formData.gender}
-                                    onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value }))}
-                                    style={[styles.picker, { color: theme.colors.text }]}
-                                    dropdownIconColor={theme.colors.text}
-                                >
-                                    {genderOptions.map((option) => (
-                                        <Picker.Item 
-                                            key={option.value} 
-                                            label={option.label} 
-                                            value={option.value}
-                                            color={theme.colors.text}
-                                        />
-                                    ))}
-                                </Picker>
+                                borderColor: errors.gender ? theme.colors.error : 'transparent',
+                                borderWidth: errors.gender ? 1 : 0
+                            }
+                        ]}>
+                            <View style={styles.cardHeader}>
+                                <View style={[styles.genderIcon, { backgroundColor: theme.colors.primaryLight }]}>
+                                    <Text style={[styles.genderEmoji, { color: theme.colors.primary }]}>
+                                        {formData.gender === 'male' ? '👨' : formData.gender === 'female' ? '👩' : '👤'}
+                                    </Text>
+                                </View>
+                                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+                                    {t('register.gender')} <Text style={styles.required}>*</Text>
+                                </Text>
+                                {formData.gender && <CheckCircle color={theme.colors.success} size={16} />}
                             </View>
+                            
+                            <View style={styles.genderOptions}>
+                                {genderOptions.map((option) => (
+                                    <TouchableOpacity
+                                        key={option.value}
+                                        style={[
+                                            styles.genderOption,
+                                            {
+                                                backgroundColor: formData.gender === option.value 
+                                                    ? theme.colors.primaryLight 
+                                                    : theme.colors.background,
+                                                borderColor: formData.gender === option.value 
+                                                    ? theme.colors.primary 
+                                                    : theme.colors.border,
+                                            }
+                                        ]}
+                                        onPress={() => handleGenderChange(option.value)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={[
+                                            styles.genderOptionText,
+                                            {
+                                                color: formData.gender === option.value 
+                                                    ? theme.colors.primary 
+                                                    : theme.colors.text
+                                            }
+                                        ]}>
+                                            {option.label}
+                                        </Text>
+                                        {formData.gender === option.value && (
+                                            <CheckCircle color={theme.colors.primary} size={16} />
+                                        )}
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            {errors.gender && (
+                                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                                    {errors.gender}
+                                </Text>
+                            )}
                         </View>
 
-                        {/* Doğum Tarihi */}
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.colors.text }]}>
-                                Doğum Tarihi
-                            </Text>
-                            <TouchableOpacity
-                                style={[styles.inputContainer, { 
+                        {/* Birth Date Card */}
+                        <TouchableOpacity 
+                            style={[
+                                styles.formCard, 
+                                { 
                                     backgroundColor: theme.colors.surface,
-                                    borderColor: theme.colors.border
-                                }]}
-                                onPress={() => setShowDatePicker(true)}
-                            >
-                                <Text style={[styles.input, { color: theme.colors.text }]}>
+                                    borderColor: errors.birthDate ? theme.colors.error : 'transparent',
+                                    borderWidth: errors.birthDate ? 1 : 0
+                                }
+                            ]}
+                            onPress={() => setShowDatePicker(true)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={styles.cardHeader}>
+                                <Calendar color={theme.colors.primary} size={20} />
+                                <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
+                                    {t('register.birthDate')} <Text style={styles.required}>*</Text>
+                                </Text>
+                                <ChevronDown color={theme.colors.textSecondary} size={16} />
+                            </View>
+                            <View style={styles.cardContent}>
+                                <Text style={[styles.dateDisplay, { color: theme.colors.text }]}>
                                     {formatDate(formData.birthDate)}
                                 </Text>
-                            </TouchableOpacity>
-                        </View>
+                            </View>
+                            {errors.birthDate && (
+                                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                                    {errors.birthDate}
+                                </Text>
+                            )}
+                        </TouchableOpacity>
 
                         {showDatePicker && (
-                            <DateTimePicker
-                                value={formData.birthDate}
-                                mode="date"
-                                display="default"
-                                onChange={handleDateChange}
-                                maximumDate={new Date()}
-                                minimumDate={new Date(1920, 0, 1)}
-                            />
+                            <View style={[styles.datePickerContainer, { backgroundColor: theme.colors.surface }]}>
+                                <DateTimePicker
+                                    value={formData.birthDate}
+                                    mode="date"
+                                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                    onChange={handleDateChange}
+                                    maximumDate={new Date()}
+                                    minimumDate={new Date(1920, 0, 1)}
+                                />
+                                {Platform.OS === 'ios' && (
+                                    <TouchableOpacity
+                                        style={[styles.doneButton, { backgroundColor: theme.colors.primary }]}
+                                        onPress={() => setShowDatePicker(false)}
+                                    >
+                                        <Text style={styles.doneButtonText}>{t('common.done')}</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
                         )}
+                    </View>
 
-                        {/* Submit Button */}
+                    {/* Action Section */}
+                    <View style={styles.actionSection}>
+                        <View style={styles.requirementNotice}>
+                            <Text style={[styles.requirementText, { color: theme.colors.textSecondary }]}>
+                                <Text style={styles.required}>*</Text> {t('auth.requiredFields')}
+                            </Text>
+                        </View>
+
                         <TouchableOpacity
-                            style={[styles.submitButton, { 
-                                backgroundColor: theme.colors.primary,
-                                opacity: loading ? 0.7 : 1
-                            }]}
+                            style={[
+                                styles.submitButton,
+                                {
+                                    backgroundColor: theme.colors.primary,
+                                    opacity: loading ? 0.7 : 1
+                                }
+                            ]}
                             onPress={handleSubmit}
                             disabled={loading}
+                            activeOpacity={0.8}
                         >
                             {loading ? (
                                 <ActivityIndicator size="small" color="#FFFFFF" />
                             ) : (
                                 <Text style={styles.submitButtonText}>
-                                    Profili Tamamla
+                                    {t('auth.completeProfileButton')}
                                 </Text>
                             )}
-                        </TouchableOpacity>
-
-                        {/* Skip Button */}
-                        <TouchableOpacity
-                            style={styles.skipButton}
-                            onPress={() => router.replace('/(tabs)/wardrobe')}
-                        >
-                            <Text style={[styles.skipButtonText, { color: theme.colors.textSecondary }]}>
-                                Şimdilik Atla
-                            </Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>
@@ -270,18 +380,33 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    scrollView: {
+        flex: 1,
+    },
     scrollContent: {
         flexGrow: 1,
         padding: 20,
     },
     header: {
         alignItems: 'center',
-        marginBottom: 40,
-        marginTop: 20,
+        marginBottom: 32,
+        marginTop: 10,
+    },
+    progressContainer: {
+        width: 80,
+        height: 4,
+        borderRadius: 2,
+        marginBottom: 24,
+        overflow: 'hidden',
+    },
+    progressBar: {
+        width: '60%',
+        height: '100%',
+        borderRadius: 2,
     },
     title: {
         fontSize: 28,
-        fontFamily: 'Montserrat-Bold',
+        fontFamily: 'PlayfairDisplay-Bold',
         textAlign: 'center',
         marginBottom: 8,
     },
@@ -289,56 +414,133 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Montserrat-Regular',
         textAlign: 'center',
-        lineHeight: 24,
+        lineHeight: 22,
+        paddingHorizontal: 20,
     },
-    form: {
+    formContainer: {
+        flex: 1,
+        gap: 20,
+    },
+    formCard: {
+        borderRadius: 16,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 5,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 12,
+        gap: 12,
+    },
+    cardTitle: {
+        fontSize: 16,
+        fontFamily: 'Montserrat-SemiBold',
         flex: 1,
     },
-    inputGroup: {
-        marginBottom: 24,
+    cardContent: {
+        marginLeft: 32,
     },
-    label: {
+    valueDisplay: {
         fontSize: 16,
         fontFamily: 'Montserrat-Medium',
-        marginBottom: 8,
+        marginBottom: 4,
     },
-    inputContainer: {
-        borderWidth: 1,
-        borderRadius: 12,
-        minHeight: 52,
-        justifyContent: 'center',
-        paddingHorizontal: 16,
-    },
-    input: {
-        fontSize: 16,
+    helpText: {
+        fontSize: 12,
         fontFamily: 'Montserrat-Regular',
-        paddingVertical: 4,
+        fontStyle: 'italic',
     },
-    picker: {
-        fontSize: 16,
-        fontFamily: 'Montserrat-Regular',
-    },
-    submitButton: {
-        height: 52,
-        borderRadius: 12,
-        justifyContent: 'center',
+    genderIcon: {
+        width: 20,
+        height: 20,
+        borderRadius: 10,
         alignItems: 'center',
-        marginTop: 20,
-        marginBottom: 16,
+        justifyContent: 'center',
     },
-    submitButtonText: {
+    genderEmoji: {
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    genderOptions: {
+        gap: 12,
+    },
+    genderOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+    },
+    genderOptionText: {
+        fontSize: 16,
+        fontFamily: 'Montserrat-Medium',
+    },
+    dateDisplay: {
+        fontSize: 16,
+        fontFamily: 'Montserrat-Medium',
+    },
+    datePickerContainer: {
+        borderRadius: 16,
+        padding: 16,
+        marginTop: 12,
+    },
+    doneButton: {
+        marginTop: 16,
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    doneButtonText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontFamily: 'Montserrat-SemiBold',
     },
-    skipButton: {
-        height: 48,
-        justifyContent: 'center',
+    actionSection: {
+        marginTop: 32,
+        gap: 16,
+    },
+    requirementNotice: {
         alignItems: 'center',
     },
-    skipButtonText: {
-        fontSize: 14,
+    requirementText: {
+        fontSize: 12,
         fontFamily: 'Montserrat-Regular',
-        textDecorationLine: 'underline',
+    },
+    required: {
+        color: '#FF6B6B',
+        fontSize: 16,
+    },
+    submitButton: {
+        height: 56,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+        elevation: 8,
+    },
+    submitButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontFamily: 'Montserrat-Bold',
+    },
+    errorText: {
+        fontSize: 12,
+        fontFamily: 'Montserrat-Regular',
+        marginTop: 8,
+        marginLeft: 32,
     },
 });

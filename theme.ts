@@ -1,3 +1,4 @@
+// theme.ts
 export type Theme = {
   mode: 'light' | 'dark';
   colors: {
@@ -8,9 +9,11 @@ export type Theme = {
     accent: string;
     accentLight: string;
     background: string;
+    surface: string; // ✅ EKLENDI - Complete Profile'da kullanılıyor
     card: string;
     text: string;
     textLight: string;
+    textSecondary: string; // ✅ EKLENDI - Complete Profile'da kullanılıyor
     border: string;
     success: string;
     successLight: string;
@@ -53,9 +56,11 @@ export const lightTheme: Theme = {
     accent: '#F1C93B', // Gold
     accentLight: '#FCF5DA',
     background: '#FFFFFF',
+    surface: '#F8F9FA', // ✅ EKLENDI - Input alanları için
     card: '#F8F9FA',
     text: '#2D3748',
     textLight: '#718096',
+    textSecondary: '#9CA3AF', // ✅ EKLENDI - İkincil metinler için
     border: '#E2E8F0',
     success: '#48BB78',
     successLight: '#E6F6EF',
@@ -125,9 +130,11 @@ export const darkTheme: Theme = {
     accent: '#F1C93B', // Gold (same as light theme)
     accentLight: '#3A3319',
     background: '#121212',
+    surface: '#1E1E1E', // ✅ EKLENDI - Input alanları için (card ile aynı)
     card: '#1E1E1E',
     text: '#E2E8F0',
     textLight: '#A0AEC0',
+    textSecondary: '#6B7280', // ✅ EKLENDI - İkincil metinler için (dark mode'da daha koyu)
     border: '#2D3748',
     success: '#48BB78',
     successLight: '#1C3931',

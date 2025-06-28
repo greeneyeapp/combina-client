@@ -34,21 +34,9 @@ export default function CompleteProfileScreen() {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-    // Load user data on component mount
     useEffect(() => {
-        console.log('📋 Complete Profile Screen - Current user data:', {
-            user: user,
-            name: user?.name,
-            fullname: user?.fullname,
-            displayName: user?.displayName,
-            gender: user?.gender,
-            birthDate: user?.birthDate,
-        });
-
         if (user) {
             const userName = user.fullname || user.name || user.displayName || '';
-            console.log('📋 Using name:', userName);
-            
             setFormData(prev => ({
                 name: userName,
                 gender: user.gender || '',
@@ -57,10 +45,11 @@ export default function CompleteProfileScreen() {
         }
     }, [user]);
 
+    // Burada cinsiyet seçenekleri senin gender çevirilerine göre:
     const genderOptions = [
         { label: t('gender.male'), value: 'male' },
         { label: t('gender.female'), value: 'female' },
-        { label: t('gender.unisex'), value: 'other' }
+        { label: t('gender.unisex'), value: 'unisex' }
     ];
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -87,19 +76,16 @@ export default function CompleteProfileScreen() {
     const validateForm = (): boolean => {
         const newErrors: {[key: string]: string} = {};
 
-        // Name validation
         if (!formData.name.trim()) {
-            newErrors.name = t('auth.nameRequired');
+            newErrors.name = t('authFlow.errors.updateFailed');
         } else if (formData.name.trim().length < 2) {
-            newErrors.name = t('auth.nameMinLength');
+            newErrors.name = t('authFlow.errors.updateFailed');
         }
 
-        // Gender validation
         if (!formData.gender) {
-            newErrors.gender = t('auth.genderRequired');
+            newErrors.gender = t('authFlow.errors.updateFailed');
         }
 
-        // Age validation (13-100 years)
         const today = new Date();
         const age = today.getFullYear() - formData.birthDate.getFullYear();
         const monthDiff = today.getMonth() - formData.birthDate.getMonth();
@@ -108,9 +94,9 @@ export default function CompleteProfileScreen() {
         const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
 
         if (exactAge < 13) {
-            newErrors.birthDate = t('auth.ageMinimum');
+            newErrors.birthDate = t('authFlow.errors.updateFailed');
         } else if (exactAge > 100) {
-            newErrors.birthDate = t('auth.ageMaximum');
+            newErrors.birthDate = t('authFlow.errors.updateFailed');
         }
 
         setErrors(newErrors);
@@ -126,7 +112,7 @@ export default function CompleteProfileScreen() {
 
     const handleSubmit = async () => {
         if (!validateForm()) {
-            const firstError = Object.values(errors)[0];
+            const firstError = Object.values(errors)[0] || t('authFlow.errors.updateFailed');
             showAlert({
                 title: t('common.error'),
                 message: firstError,
@@ -137,43 +123,29 @@ export default function CompleteProfileScreen() {
 
         setLoading(true);
         try {
-            console.log('🔄 Updating user info...');
-
             await updateUserInfo({
                 name: formData.name.trim(),
                 gender: formData.gender,
                 birthDate: formData.birthDate.toISOString()
             });
 
-            console.log('✅ User info updated successfully');
-
             showAlert({
                 title: t('common.success'),
-                message: t('auth.profileUpdateSuccess'),
+                message: t('authFlow.completeProfile.success'),
                 buttons: [{
-                    text: t('auth.continueButton'),
-                    onPress: () => {
-                        console.log('🚀 Redirecting to wardrobe...');
-                        router.replace('/(tabs)/wardrobe');
-                    }
+                    text: t('authFlow.completeProfile.continueButton'),
+                    onPress: () => router.replace('/(tabs)/wardrobe')
                 }]
             });
-
-        } catch (error: any) {
-            console.error('❌ Update error:', error);
+        } catch (error) {
             showAlert({
                 title: t('common.error'),
-                message: t('auth.updateInfoError'),
+                message: t('authFlow.errors.updateFailed'),
                 buttons: [{ text: t('common.ok') }]
             });
         } finally {
             setLoading(false);
         }
-    };
-
-    const getSelectedGenderLabel = () => {
-        const selected = genderOptions.find(option => option.value === formData.gender);
-        return selected ? selected.label : t('auth.selectGender');
     };
 
     return (
@@ -182,28 +154,26 @@ export default function CompleteProfileScreen() {
             style={styles.gradient}
         >
             <SafeAreaView style={styles.container}>
-                <ScrollView 
+                <ScrollView
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* Modern Header */}
                     <View style={styles.header}>
                         <View style={[styles.progressContainer, { backgroundColor: theme.colors.surface }]}>
                             <View style={[styles.progressBar, { backgroundColor: theme.colors.primary }]} />
                         </View>
                         <Text style={[styles.title, { color: theme.colors.text }]}>
-                            {t('auth.completeProfile')}
+                            {t('authFlow.completeProfile.title')}
                         </Text>
                         <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-                            {t('auth.profileSubtitle')}
+                            {t('authFlow.completeProfile.subtitle')}
                         </Text>
                     </View>
 
-                    {/* Modern Form Cards */}
                     <View style={styles.formContainer}>
-                        
-                        {/* Full Name Card */}
+
+                        {/* Name */}
                         <View style={[styles.formCard, { backgroundColor: theme.colors.surface }]}>
                             <View style={styles.cardHeader}>
                                 <User color={theme.colors.primary} size={20} />
@@ -214,18 +184,18 @@ export default function CompleteProfileScreen() {
                             </View>
                             <View style={styles.cardContent}>
                                 <Text style={[styles.valueDisplay, { color: theme.colors.text }]}>
-                                    {formData.name || t('auth.noNameProvided')}
+                                    {formData.name || t('authFlow.completeProfile.noNameProvided')}
                                 </Text>
                                 <Text style={[styles.helpText, { color: theme.colors.textSecondary }]}>
-                                    This information comes from your Google account
+                                    {t('authFlow.completeProfile.nameFromAccount')}
                                 </Text>
                             </View>
                         </View>
 
-                        {/* Gender Card */}
+                        {/* Gender */}
                         <View style={[
-                            styles.formCard, 
-                            { 
+                            styles.formCard,
+                            {
                                 backgroundColor: theme.colors.surface,
                                 borderColor: errors.gender ? theme.colors.error : 'transparent',
                                 borderWidth: errors.gender ? 1 : 0
@@ -242,19 +212,19 @@ export default function CompleteProfileScreen() {
                                 </Text>
                                 {formData.gender && <CheckCircle color={theme.colors.success} size={16} />}
                             </View>
-                            
+
                             <View style={styles.genderOptions}>
-                                {genderOptions.map((option) => (
+                                {genderOptions.map(option => (
                                     <TouchableOpacity
                                         key={option.value}
                                         style={[
                                             styles.genderOption,
                                             {
-                                                backgroundColor: formData.gender === option.value 
-                                                    ? theme.colors.primaryLight 
+                                                backgroundColor: formData.gender === option.value
+                                                    ? theme.colors.primaryLight
                                                     : theme.colors.background,
-                                                borderColor: formData.gender === option.value 
-                                                    ? theme.colors.primary 
+                                                borderColor: formData.gender === option.value
+                                                    ? theme.colors.primary
                                                     : theme.colors.border,
                                             }
                                         ]}
@@ -264,8 +234,8 @@ export default function CompleteProfileScreen() {
                                         <Text style={[
                                             styles.genderOptionText,
                                             {
-                                                color: formData.gender === option.value 
-                                                    ? theme.colors.primary 
+                                                color: formData.gender === option.value
+                                                    ? theme.colors.primary
                                                     : theme.colors.text
                                             }
                                         ]}>
@@ -284,11 +254,11 @@ export default function CompleteProfileScreen() {
                             )}
                         </View>
 
-                        {/* Birth Date Card */}
-                        <TouchableOpacity 
+                        {/* Birth Date */}
+                        <TouchableOpacity
                             style={[
-                                styles.formCard, 
-                                { 
+                                styles.formCard,
+                                {
                                     backgroundColor: theme.colors.surface,
                                     borderColor: errors.birthDate ? theme.colors.error : 'transparent',
                                     borderWidth: errors.birthDate ? 1 : 0
@@ -306,7 +276,11 @@ export default function CompleteProfileScreen() {
                             </View>
                             <View style={styles.cardContent}>
                                 <Text style={[styles.dateDisplay, { color: theme.colors.text }]}>
-                                    {formatDate(formData.birthDate)}
+                                    {formData.birthDate.toLocaleDateString('tr-TR', {
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    })}
                                 </Text>
                             </View>
                             {errors.birthDate && (
@@ -331,21 +305,16 @@ export default function CompleteProfileScreen() {
                                         style={[styles.doneButton, { backgroundColor: theme.colors.primary }]}
                                         onPress={() => setShowDatePicker(false)}
                                     >
-                                        <Text style={styles.doneButtonText}>{t('common.done')}</Text>
+                                        <Text style={styles.doneButtonText}>{t('authFlow.completeProfile.done')}</Text>
                                     </TouchableOpacity>
                                 )}
                             </View>
                         )}
+
                     </View>
 
-                    {/* Action Section */}
+                    {/* Submit Button */}
                     <View style={styles.actionSection}>
-                        <View style={styles.requirementNotice}>
-                            <Text style={[styles.requirementText, { color: theme.colors.textSecondary }]}>
-                                <Text style={styles.required}>*</Text> {t('auth.requiredFields')}
-                            </Text>
-                        </View>
-
                         <TouchableOpacity
                             style={[
                                 styles.submitButton,
@@ -362,7 +331,7 @@ export default function CompleteProfileScreen() {
                                 <ActivityIndicator size="small" color="#FFFFFF" />
                             ) : (
                                 <Text style={styles.submitButtonText}>
-                                    {t('auth.completeProfileButton')}
+                                    {t('authFlow.completeProfile.title')}
                                 </Text>
                             )}
                         </TouchableOpacity>
@@ -507,17 +476,6 @@ const styles = StyleSheet.create({
         marginTop: 32,
         gap: 16,
     },
-    requirementNotice: {
-        alignItems: 'center',
-    },
-    requirementText: {
-        fontSize: 12,
-        fontFamily: 'Montserrat-Regular',
-    },
-    required: {
-        color: '#FF6B6B',
-        fontSize: 16,
-    },
     submitButton: {
         height: 56,
         borderRadius: 16,
@@ -542,5 +500,9 @@ const styles = StyleSheet.create({
         fontFamily: 'Montserrat-Regular',
         marginTop: 8,
         marginLeft: 32,
+    },
+    required: {
+        color: '#FF6B6B',
+        fontSize: 16,
     },
 });

@@ -18,6 +18,10 @@ export default function GoogleSignInScreen() {
     const { signInWithGoogle, setAuthFlowActive } = useAuth();
     const { show: showAlert } = useAlertStore();
 
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [statusMessage, setStatusMessage] = useState(t('authFlow.googleSignIn.redirecting'));
+    const [promptStarted, setPromptStarted] = useState(false);
+
     const [request, response, promptAsync] = Google.useAuthRequest({
         androidClientId: '58339241217-doo7k2mr5219tonptrkmasmsrvja24k9.apps.googleusercontent.com',
         iosClientId: '58339241217-dvfh2fl5p2hfi9a6m0vaqnuf4esf53qk.apps.googleusercontent.com',
@@ -25,59 +29,74 @@ export default function GoogleSignInScreen() {
     });
 
     useEffect(() => {
-        if (request) {
+        if (request && !promptStarted && !isProcessing) {
             console.log('🚀 Setting Auth Flow to ACTIVE and starting Google prompt...');
             setAuthFlowActive(true);
+            setPromptStarted(true);
             promptAsync();
         }
-    }, [request]);
+    }, [request, promptStarted, isProcessing]);
 
     useEffect(() => {
         if (!response) {
             return;
         }
 
-        console.log('✅ Google response received.');
+        console.log('✅ Google response received:', response.type);
 
         if (response.type === 'success' && response.authentication?.accessToken) {
-            // Immediately navigate to a stable screen to prevent the 404 error.
-            // The main auth screen is a safe place to land temporarily.
-            router.replace('/(auth)');
+            setIsProcessing(true);
+            setStatusMessage(t('authFlow.googleSignIn.processing'));
+            handleGoogleSignIn(response.authentication.accessToken);
 
-            // In the background, process the token. _layout.tsx will handle the final redirect.
-            handleGoogleSignIn(response.authentication.accessToken).finally(() => {
-                console.log('✅ Auth flow ended. Setting Auth Flow to INACTIVE.');
-                setAuthFlowActive(false);
-            });
-
-        } else if (response.type === 'error' || response.type === 'dismiss') {
-            console.log('OAuth dismissed or failed, navigating back.');
-            setAuthFlowActive(false); // End the flow
-            if (router.canGoBack()) {
-                router.back();
-            } else {
-                router.replace('/(auth)');
-            }
-        } else {
-            // Handle other unexpected responses
+        } else if (response.type === 'error') {
+            console.log('OAuth error:', response.error);
             setAuthFlowActive(false);
-            showAlert({ title: 'Hata', message: 'Giriş sırasında beklenmedik bir hata oluştu.', buttons: [{ text: 'Tamam', onPress: () => router.replace('/(auth)') }] });
+            router.replace('/(auth)');
+            
+        } else if (response.type === 'dismiss') {
+            console.log('OAuth dismissed by user');
+            setAuthFlowActive(false);
+            router.replace('/(auth)');
+            
+        } else {
+            console.log('Unexpected OAuth response:', response);
+            setAuthFlowActive(false);
+            router.replace('/(auth)');
         }
     }, [response]);
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
+            setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
+            
             await signInWithGoogle(accessToken);
-            // The navigation logic is now fully handled by _layout.tsx
-            // which will react to the user state change.
+            
+            // Success! The navigation logic is handled by _layout.tsx
+            // which will react to the user state change and redirect appropriately
+            setStatusMessage(t('authFlow.googleSignIn.success'));
+            
         } catch (error: any) {
-            // The user has already been sent to the '(auth)' screen,
-            // so showing an alert here is safe.
-            showAlert({ title: 'Hata', message: 'Sunucu ile iletişimde bir sorun oluştu.', buttons: [{ text: 'Tamam' }] });
+            console.error('Google sign-in error:', error);
+            
+            setIsProcessing(false);
+            setAuthFlowActive(false);
+            
+            const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
+                ? t('authFlow.errors.networkError')
+                : t('authFlow.errors.signInFailed');
+            
+            showAlert({ 
+                title: t('common.error'), 
+                message: errorMessage, 
+                buttons: [{ 
+                    text: t('common.ok'), 
+                    onPress: () => router.replace('/(auth)') 
+                }] 
+            });
         }
     };
 
-    // This UI will only be visible for a very short time before the Google prompt appears.
     return (
         <LinearGradient colors={[theme.colors.background, theme.colors.secondary]} style={styles.gradient}>
             <SafeAreaView style={styles.container}>
@@ -87,8 +106,13 @@ export default function GoogleSignInScreen() {
                             <ActivityIndicator size="large" color={theme.colors.primary} />
                         </View>
                         <Text style={[styles.mainStatus, { color: theme.colors.text }]}>
-                            Google'a yönlendiriliyor...
+                            {statusMessage}
                         </Text>
+                        {isProcessing && (
+                            <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>
+                                {t('authFlow.googleSignIn.pleaseWait')}
+                            </Text>
+                        )}
                     </View>
                 </View>
             </SafeAreaView>

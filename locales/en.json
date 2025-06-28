@@ -1,4 +1,34 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Redirecting to Google...",
+      "processing": "Signing in...",
+      "gettingProfile": "Getting profile information...",
+      "success": "Sign in successful! Redirecting...",
+      "pleaseWait": "Please wait..."
+    },
+    "appleSignIn": {
+      "processing": "Signing in with Apple...",
+      "success": "Sign in successful! Redirecting...",
+      "pleaseWait": "Please wait..."
+    },
+    "completeProfile": {
+      "title": "Complete Your Profile",
+      "subtitle": "We need a few details to personalize your experience and create better outfit suggestions for you.",
+      "nameFromAccount": "This information comes from your account",
+      "noNameProvided": "No name provided",
+      "selectDate": "Select Date",
+      "done": "Done",
+      "success": "Profile updated successfully",
+      "continueButton": "Continue"
+    },
+    "errors": {
+      "signInFailed": "Sign in failed. Please try again.",
+      "networkError": "Cannot connect to server. Please check your internet connection.",
+      "updateFailed": "Failed to update profile. Please try again.",
+      "unexpectedError": "An unexpected error occurred during sign in."
+    }
+  },
   "common": {
     "done": "Done",
     "cancel": "Cancel",

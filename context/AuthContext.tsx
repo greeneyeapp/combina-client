@@ -78,25 +78,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [isReady, jwt, skipInitialize]);
 
   const signInWithGoogle = async (accessToken: string) => {
-    setLoading(true); setSkipInitialize(true);
+    setLoading(true);
+    setSkipInitialize(true);
+
     try {
+      console.log('🔄 Processing Google sign-in...');
+
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
+
       const completeUserInfo = {
-        uid: user_info?.uid, name: user_info?.name || '', fullname: user_info?.name || '', displayName: user_info?.name || '',
-        email: user_info?.email || '', gender: user_info?.gender || null, birthDate: user_info?.birthDate || null,
-        plan: user_info?.plan || 'free', provider: 'google', isAnonymous: false
+        uid: user_info?.uid,
+        name: user_info?.name || '',
+        fullname: user_info?.name || '',
+        displayName: user_info?.name || '',
+        email: user_info?.email || '',
+        gender: user_info?.gender || null,
+        birthDate: user_info?.birthDate || null,
+        plan: user_info?.plan || 'free',
+        provider: 'google',
+        isAnonymous: false
       };
+
       setUser(completeUserInfo);
       await setJwt(access_token);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
-      if (user_info?.uid) await Purchases.logIn(user_info.uid);
+
+      if (user_info?.uid) {
+        await Purchases.logIn(user_info.uid);
+      }
+
       await initializeUserProfile();
+
+      console.log('✅ Google sign-in completed successfully');
+
+      // Auth flow'u sonlandır - _layout.tsx yönlendirmeyi üstlenecek
+      setAuthFlowActive(false);
       setLoading(false);
+
       return completeUserInfo;
+
     } catch (error) {
-      setLoading(false); setSkipInitialize(false);
-      console.error('❌ GOOGLE SIGN-IN ERROR:', error); throw error;
+      console.error('❌ GOOGLE SIGN-IN ERROR:', error);
+      setLoading(false);
+      setSkipInitialize(false);
+      setAuthFlowActive(false); // Hata durumunda da auth flow'u sonlandır
+      throw error;
     }
   };
 

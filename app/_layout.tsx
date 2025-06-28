@@ -36,22 +36,42 @@ function RootLayoutNav(): React.JSX.Element | null {
     const isAppReady = (fontsLoaded || fontError) && !authLoading && navigationState?.key;
     if (!isAppReady) return;
 
-    // EĞER BİR GİRİŞ AKIŞI AKTİFSE, YÖNLENDİRME MANTIĞINI TAMAMEN ATLA
-    if (isAuthFlowActive) {
-      console.log('Auth flow is active, preventing all navigation redirects.');
-      SplashScreen.hideAsync(); // Splash screen'i yine de gizle
-      return;
-    }
+    console.log('🔍 Navigation check - Current segments:', segments);
+    console.log('🔍 Navigation check - User:', !!user);
+    console.log('🔍 Navigation check - Auth flow active:', isAuthFlowActive);
 
     const inAuthGroup = segments[0] === '(auth)';
+    const isNotFoundPage = segments.includes('+not-found');
+
+    // Not-found sayfasındaysak, hemen doğru yere yönlendir
+    if (isNotFoundPage) {
+      console.log('🔄 User on not-found page, redirecting...');
+      
+      if (user) {
+        const hasGender = user.gender && user.gender !== null && user.gender !== '';
+        const hasBirthDate = user.birthDate && user.birthDate !== null && user.birthDate !== '';
+        if (!hasGender || !hasBirthDate) {
+          router.replace('/(auth)/complete-profile');
+        } else {
+          router.replace('/(tabs)/wardrobe');
+        }
+      } else {
+        router.replace('/(auth)');
+      }
+      SplashScreen.hideAsync();
+      return;
+    }
 
     if (user) {
       const hasGender = user.gender && user.gender !== null && user.gender !== '';
       const hasBirthDate = user.birthDate && user.birthDate !== null && user.birthDate !== '';
+      
       if (inAuthGroup) {
         if (!hasGender || !hasBirthDate) {
+          console.log('🔄 User logged in but profile incomplete, redirecting to complete-profile');
           router.replace('/(auth)/complete-profile');
         } else {
+          console.log('🔄 User logged in and profile complete, redirecting to wardrobe');
           router.replace('/(tabs)/wardrobe');
         }
       }
@@ -61,6 +81,7 @@ function RootLayoutNav(): React.JSX.Element | null {
         router.replace('/(auth)');
       }
     }
+    
     SplashScreen.hideAsync();
   }, [user, segments, authLoading, fontsLoaded, fontError, navigationState?.key, isAuthFlowActive]);
 

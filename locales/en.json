@@ -1,5 +1,6 @@
 {
   "common": {
+    "done": "Done",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "delete": "Delete",
@@ -24,6 +25,18 @@
     "minutesAgo_one": "{{count}} minute ago",
     "minutesAgo_other": "{{count}} minutes ago",
     "justNow": "Just now"
+  },
+  "auth": {
+    "signInWithGoogle": "Sign in with Google",
+    "signInWithApple": "Sign in with Apple",
+    "continueAsGuest": "Continue as Guest",
+    "signingInWithGoogle": "Signing in with Google...",
+    "signingInWithApple": "Signing in with Apple...",
+    "signInError": "Sign in failed. Please try again.",
+    "completeProfile": "Complete Your Profile",
+    "profileSubtitle": "We need a few details to personalize your experience.",
+    "updateInfoError": "Failed to update profile. Please try again.",
+    "continueButton": "Continue"
   },
   "login": {
     "title": "Login",

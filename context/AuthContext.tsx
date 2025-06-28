@@ -1,16 +1,17 @@
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
-import { User, onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/firebaseConfig';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { initializeUserProfile } from '@/services/userService';
 import axios from 'axios';
 import API_URL from '@/config';
-import Purchases from 'react-native-purchases'; // RevenueCat import'u
+import Purchases from 'react-native-purchases';
 
 interface AuthContextType {
-  user: User | null;
+  user: any | null; // Artık Firebase User değil, kendi user objemiz
   loading: boolean;
+  signInWithGoogle: (accessToken: string) => Promise<any>;
+  signInWithApple: (credential: any) => Promise<any>;
+  updateUserInfo: (info: { name: string; gender: string; birthDate: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
 }
@@ -26,9 +27,9 @@ export function useAuth() {
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const { setJwt, clearJwt, loadJwt, isReady } = useApiAuthStore();
+  const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
 
   useEffect(() => {
@@ -38,58 +39,111 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!isReady) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-
-      if (currentUser && !currentUser.isAnonymous) {
+    const initializeAuth = async () => {
+      if (jwt) {
         try {
-          // --- YENİ MANTIK BURADA BAŞLIYOR ---
-          // Kullanıcı giriş yaptığında, RevenueCat'teki anonim ID'yi
-          // Firebase'deki kalıcı UID ile birleştir.
-          await Purchases.logIn(currentUser.uid);
-          console.log(`RevenueCat user logged in with UID: ${currentUser.uid}`);
-          // --- YENİ MANTIK BİTİŞİ ---
-
-          const idToken = await currentUser.getIdToken();
-          const response = await axios.post(`${API_URL}/token`, { id_token: idToken });
-          await setJwt(response.data.access_token);
-          await initializeUserProfile();
+          // JWT token'dan user bilgilerini al
+          const userInfo = await getUserFromToken(jwt);
+          setUser(userInfo);
           
+          // RevenueCat'i başlat
+          if (userInfo?.uid) {
+            await Purchases.logIn(userInfo.uid);
+          }
+          
+          await initializeUserProfile();
         } catch (error) {
-          console.error("Failed to initialize user session or log in to RevenueCat:", error);
+          console.error("Failed to initialize auth:", error);
           await clearJwt();
           clearUserPlan();
+          setUser(null);
         }
       } else {
-        // Kullanıcı çıkış yaptığında veya anonimse, RevenueCat oturumunu da kapat.
-        try {
-            await Purchases.logOut();
-            console.log("RevenueCat user logged out.");
-        } catch (e) {
-            console.error("Error logging out from RevenueCat", e);
-        }
-        await clearJwt();
+        setUser(null);
         clearUserPlan();
       }
-
       setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
-  }, [isReady, setJwt, clearJwt, clearUserPlan]);
+    initializeAuth();
+  }, [isReady, jwt]);
+
+  const signInWithGoogle = async (accessToken: string) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/google`, {
+        access_token: accessToken
+      });
+      
+      const { access_token, user_info } = response.data;
+      await setJwt(access_token);
+      setUser(user_info);
+      
+      // RevenueCat'i başlat
+      if (user_info?.uid) {
+        await Purchases.logIn(user_info.uid);
+      }
+      
+      await initializeUserProfile();
+      return user_info;
+    } catch (error) {
+      console.error('Google sign in error:', error);
+      throw error;
+    }
+  };
+
+  const signInWithApple = async (credential: any) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/apple`, {
+        identity_token: credential.identityToken,
+        authorization_code: credential.authorizationCode,
+        user_info: credential.fullName
+      });
+      
+      const { access_token, user_info } = response.data;
+      await setJwt(access_token);
+      setUser(user_info);
+      
+      // RevenueCat'i başlat
+      if (user_info?.uid) {
+        await Purchases.logIn(user_info.uid);
+      }
+      
+      await initializeUserProfile();
+      return user_info;
+    } catch (error) {
+      console.error('Apple sign in error:', error);
+      throw error;
+    }
+  };
+
+  const updateUserInfo = async (info: { name: string; gender: string; birthDate: string }) => {
+    try {
+      await axios.post(`${API_URL}/api/users/update-info`, {
+        ...info
+      }, {
+        headers: { Authorization: `Bearer ${jwt}` }
+      });
+
+      await refreshUserProfile();
+    } catch (error) {
+      console.error('Update user info error:', error);
+      throw error;
+    }
+  };
 
   const logout = async () => {
     try {
-      await firebaseSignOut(auth);
-      // Çıkış yapıldığında AuthContext'teki onAuthStateChanged tetikleneceği için
-      // RevenueCat'ten çıkış yapma ve state temizleme işlemleri orada halledilir.
+      await Purchases.logOut();
+      await clearJwt();
+      setUser(null);
+      clearUserPlan();
     } catch (error) {
       console.error("Logout Error:", error);
     }
   };
 
   const refreshUserProfile = async () => {
-    if (user && !user.isAnonymous) {
+    if (user) {
       try {
         await initializeUserProfile();
       } catch (error) {
@@ -98,9 +152,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const getUserFromToken = async (token: string) => {
+    try {
+      // JWT token'ı decode et (basit versiyonu)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return { uid: payload.sub, isAnonymous: false };
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      return null;
+    }
+  };
+
   const value = {
     user,
     loading,
+    signInWithGoogle,
+    signInWithApple,
+    updateUserInfo,
     logout,
     refreshUserProfile
   };

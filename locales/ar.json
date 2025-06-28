@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "جارٍ إعادة التوجيه إلى Google...",
+      "processing": "جارٍ تسجيل الدخول...",
+      "gettingProfile": "جارٍ الحصول على معلومات الملف الشخصي...",
+      "success": "تم تسجيل الدخول بنجاح! جارٍ إعادة التوجيه...",
+      "pleaseWait": "الرجاء الانتظار..."
+    },
+    "appleSignIn": {
+      "processing": "جارٍ تسجيل الدخول باستخدام Apple...",
+      "success": "تم تسجيل الدخول بنجاح! جارٍ إعادة التوجيه...",
+      "pleaseWait": "الرجاء الانتظار..."
+    },
+    "completeProfile": {
+      "title": "أكمل ملفك الشخصي",
+      "subtitle": "نحتاج إلى بعض التفاصيل لتخصيص تجربتك وإنشاء اقتراحات ملابس أفضل لك.",
+      "nameFromAccount": "هذه المعلومات مأخوذة من حسابك",
+      "noNameProvided": "لم يتم تقديم اسم",
+      "selectDate": "اختر التاريخ",
+      "done": "تم",
+      "success": "تم تحديث الملف الشخصي بنجاح",
+      "continueButton": "متابعة"
+    },
+    "errors": {
+      "signInFailed": "فشل تسجيل الدخول. الرجاء المحاولة مرة أخرى.",
+      "networkError": "لا يمكن الاتصال بالخادم. يرجى التحقق من اتصالك بالإنترنت.",
+      "updateFailed": "فشل تحديث الملف الشخصي. الرجاء المحاولة مرة أخرى.",
+      "unexpectedError": "حدث خطأ غير متوقع أثناء تسجيل الدخول."
+    }
+  },
   "common": {
+    "done": "تم",
     "cancel": "إلغاء",
     "confirm": "تأكيد",
     "delete": "حذف",
@@ -12,9 +43,9 @@
     "searchPlaceholder": "بحث...",
     "apply": "تطبيق",
     "goBack": "العودة",
-    "error": "حدث خطأ غير متوقع.",
-    "tryAgain": "يرجى المحاولة مرة أخرى.",
-    "saving": "جاري الحفظ...",
+    "error": "خطأ",
+    "tryAgain": "الرجاء المحاولة مرة أخرى.",
+    "saving": "جارٍ الحفظ...",
     "today": "اليوم",
     "yesterday": "أمس",
     "daysAgo_one": "قبل يوم واحد",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "قبل دقيقة واحدة",
     "minutesAgo_other": "قبل {{count}} دقائق",
     "justNow": "الآن"
+  },
+  "auth": {
+    "signInWithGoogle": "تسجيل الدخول باستخدام Google",
+    "signInWithApple": "تسجيل الدخول باستخدام Apple",
+    "continueAsGuest": "المتابعة كضيف",
+    "signingInWithGoogle": "جارٍ تسجيل الدخول باستخدام Google...",
+    "signingInWithApple": "جارٍ تسجيل الدخول باستخدام Apple...",
+    "signInError": "فشل تسجيل الدخول. الرجاء المحاولة مرة أخرى.",
+    "completeProfile": "أكمل ملفك الشخصي",
+    "profileSubtitle": "نحتاج إلى بعض التفاصيل لتخصيص تجربتك وإنشاء اقتراحات ملابس أفضل لك.",
+    "updateInfoError": "فشل تحديث الملف الشخصي. الرجاء المحاولة مرة أخرى.",
+    "continueButton": "متابعة",
+    "completeProfileButton": "إكمال الملف الشخصي",
+    "selectGender": "اختر الجنس",
+    "nameRequired": "الاسم الكامل مطلوب",
+    "nameMinLength": "يجب أن يتكون الاسم من حرفين على الأقل",
+    "genderRequired": "الرجاء اختيار جنسك",
+    "ageMinimum": "يجب أن يكون عمرك 13 عامًا على الأقل لاستخدام هذا التطبيق",
+    "ageMaximum": "الرجاء إدخال تاريخ ميلاد صالح",
+    "requiredFields": "الحقول المطلوبة",
+    "profileUpdateSuccess": "تم تحديث ملفك الشخصي بنجاح!",
+    "requiredInformation": "المعلومات المطلوبة",
+    "noNameProvided": "لم يتم تقديم اسم"
   },
   "login": {
     "title": "تسجيل الدخول",

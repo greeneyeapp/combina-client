@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Redirigiendo a Google...",
+      "processing": "Iniciando sesión...",
+      "gettingProfile": "Obteniendo información del perfil...",
+      "success": "¡Inicio de sesión exitoso! Redirigiendo...",
+      "pleaseWait": "Por favor, espere..."
+    },
+    "appleSignIn": {
+      "processing": "Iniciando sesión con Apple...",
+      "success": "¡Inicio de sesión exitoso! Redirigiendo...",
+      "pleaseWait": "Por favor, espere..."
+    },
+    "completeProfile": {
+      "title": "Completa tu perfil",
+      "subtitle": "Necesitamos algunos detalles para personalizar tu experiencia y crear mejores sugerencias de atuendos para ti.",
+      "nameFromAccount": "Esta información proviene de tu cuenta",
+      "noNameProvided": "No se proporcionó ningún nombre",
+      "selectDate": "Seleccionar fecha",
+      "done": "Hecho",
+      "success": "Perfil actualizado correctamente",
+      "continueButton": "Continuar"
+    },
+    "errors": {
+      "signInFailed": "Error al iniciar sesión. Por favor, inténtalo de nuevo.",
+      "networkError": "No se puede conectar al servidor. Por favor, comprueba tu conexión a internet.",
+      "updateFailed": "Error al actualizar el perfil. Por favor, inténtalo de nuevo.",
+      "unexpectedError": "Ocurrió un error inesperado durante el inicio de sesión."
+    }
+  },
   "common": {
+    "done": "Hecho",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
     "delete": "Eliminar",
@@ -12,7 +43,7 @@
     "searchPlaceholder": "Buscar...",
     "apply": "Aplicar",
     "goBack": "Volver",
-    "error": "Ocurrió un error inesperado.",
+    "error": "Error",
     "tryAgain": "Por favor, inténtalo de nuevo.",
     "saving": "Guardando...",
     "today": "Hoy",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "hace {{count}} minuto",
     "minutesAgo_other": "hace {{count}} minutos",
     "justNow": "Ahora mismo"
+  },
+  "auth": {
+    "signInWithGoogle": "Iniciar sesión con Google",
+    "signInWithApple": "Iniciar sesión con Apple",
+    "continueAsGuest": "Continuar como invitado",
+    "signingInWithGoogle": "Iniciando sesión con Google...",
+    "signingInWithApple": "Iniciando sesión con Apple...",
+    "signInError": "Error al iniciar sesión. Por favor, inténtalo de nuevo.",
+    "completeProfile": "Completa tu perfil",
+    "profileSubtitle": "Necesitamos algunos detalles para personalizar tu experiencia y crear mejores sugerencias de atuendos para ti.",
+    "updateInfoError": "Error al actualizar el perfil. Por favor, inténtalo de nuevo.",
+    "continueButton": "Continuar",
+    "completeProfileButton": "Completar perfil",
+    "selectGender": "Seleccionar género",
+    "nameRequired": "El nombre completo es obligatorio",
+    "nameMinLength": "El nombre debe tener al menos 2 caracteres",
+    "genderRequired": "Por favor, selecciona tu género",
+    "ageMinimum": "Debes tener al menos 13 años para usar esta aplicación",
+    "ageMaximum": "Por favor, introduce una fecha de nacimiento válida",
+    "requiredFields": "Campos obligatorios",
+    "profileUpdateSuccess": "¡Tu perfil ha sido actualizado correctamente!",
+    "requiredInformation": "Información requerida",
+    "noNameProvided": "No se proporcionó ningún nombre"
   },
   "login": {
     "title": "Iniciar sesión",

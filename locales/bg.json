@@ -1,18 +1,49 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Пренасочване към Google...",
+      "processing": "Влизане в профила...",
+      "gettingProfile": "Получаване на информация за профила...",
+      "success": "Влизането е успешно! Пренасочване...",
+      "pleaseWait": "Моля, изчакайте..."
+    },
+    "appleSignIn": {
+      "processing": "Влизане с Apple...",
+      "success": "Влизането е успешно! Пренасочване...",
+      "pleaseWait": "Моля, изчакайте..."
+    },
+    "completeProfile": {
+      "title": "Завършете своя профил",
+      "subtitle": "Нуждаем се от няколко детайла, за да персонализираме вашето изживяване и да създадем по-добри предложения за облекло за вас.",
+      "nameFromAccount": "Тази информация идва от вашия акаунт",
+      "noNameProvided": "Не е посочено име",
+      "selectDate": "Изберете дата",
+      "done": "Готово",
+      "success": "Профилът е актуализиран успешно",
+      "continueButton": "Продължи"
+    },
+    "errors": {
+      "signInFailed": "Влизането е неуспешно. Моля, опитайте отново.",
+      "networkError": "Не може да се свърже със сървъра. Моля, проверете вашата интернет връзка.",
+      "updateFailed": "Неуспешно актуализиране на профила. Моля, опитайте отново.",
+      "unexpectedError": "Възникна неочаквана грешка при влизане."
+    }
+  },
   "common": {
+    "done": "Готово",
     "cancel": "Отказ",
     "confirm": "Потвърди",
     "delete": "Изтрий",
     "success": "Успех",
-    "ok": "Добре",
+    "ok": "ОК",
     "reset": "Нулиране",
     "save": "Запази",
-    "select": "Избери...",
+    "select": "Изберете...",
     "continue": "Продължи",
     "searchPlaceholder": "Търсене...",
     "apply": "Приложи",
-    "goBack": "Назад",
-    "error": "Възникна неочаквана грешка.",
+    "goBack": "Върни се",
+    "error": "Грешка",
     "tryAgain": "Моля, опитайте отново.",
     "saving": "Запазване...",
     "today": "Днес",
@@ -23,7 +54,30 @@
     "hoursAgo_other": "преди {{count}} часа",
     "minutesAgo_one": "преди {{count}} минута",
     "minutesAgo_other": "преди {{count}} минути",
-    "justNow": "Току-що"
+    "justNow": "Току що"
+  },
+  "auth": {
+    "signInWithGoogle": "Вход с Google",
+    "signInWithApple": "Вход с Apple",
+    "continueAsGuest": "Продължи като гост",
+    "signingInWithGoogle": "Влизане с Google...",
+    "signingInWithApple": "Влизане с Apple...",
+    "signInError": "Влизането е неуспешно. Моля, опитайте отново.",
+    "completeProfile": "Завършете своя профил",
+    "profileSubtitle": "Нуждаем се от няколко детайла, за да персонализираме вашето изживяване и да създадем по-добри предложения за облекло за вас.",
+    "updateInfoError": "Неуспешно актуализиране на профила. Моля, опитайте отново.",
+    "continueButton": "Продължи",
+    "completeProfileButton": "Завършване на профила",
+    "selectGender": "Изберете пол",
+    "nameRequired": "Изисква се пълно име",
+    "nameMinLength": "Името трябва да е поне 2 знака",
+    "genderRequired": "Моля, изберете вашия пол",
+    "ageMinimum": "Трябва да сте на поне 13 години, за да използвате това приложение",
+    "ageMaximum": "Моля, въведете валидна дата на раждане",
+    "requiredFields": "Задължителни полета",
+    "profileUpdateSuccess": "Профилът ви е актуализиран успешно!",
+    "requiredInformation": "Задължителна информация",
+    "noNameProvided": "Не е посочено име"
   },
   "login": {
     "title": "Вход",

@@ -87,6 +87,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
 
+      console.log('📦 Received user info:', user_info);
+
       const completeUserInfo = {
         uid: user_info?.uid,
         name: user_info?.name || '',
@@ -100,29 +102,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAnonymous: false
       };
 
+      console.log('💾 Setting user and saving to storage...');
       setUser(completeUserInfo);
       await setJwt(access_token);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
 
       if (user_info?.uid) {
+        console.log('🔑 Logging into RevenueCat...');
         await Purchases.logIn(user_info.uid);
       }
 
+      console.log('🎯 Initializing user profile...');
       await initializeUserProfile();
 
       console.log('✅ Google sign-in completed successfully');
 
-      // Auth flow'u sonlandır - _layout.tsx yönlendirmeyi üstlenecek
-      setAuthFlowActive(false);
+      // DÜZELTME: Tüm flag'leri sırası ile temizle
       setLoading(false);
+      setSkipInitialize(false);
+      setAuthFlowActive(false);
+
+      console.log('🔄 Auth flow completed, flags cleared');
 
       return completeUserInfo;
 
     } catch (error) {
       console.error('❌ GOOGLE SIGN-IN ERROR:', error);
+
+      // Hata durumunda tüm flag'leri temizle
       setLoading(false);
       setSkipInitialize(false);
-      setAuthFlowActive(false); // Hata durumunda da auth flow'u sonlandır
+      setAuthFlowActive(false);
+
       throw error;
     }
   };

@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/locales/i18n';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { useOnboardingStore } from '@/store/onboardingStore';
 import CustomAlert from '@/components/common/CustomAlert';
 import Toast, { BaseToastProps } from 'react-native-toast-message';
 import CustomToast from '@/components/common/CustomToast';
@@ -21,6 +22,7 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav(): React.JSX.Element | null {
   const { user, loading: authLoading, isAuthFlowActive } = useAuth();
+  const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
 
@@ -42,9 +44,17 @@ function RootLayoutNav(): React.JSX.Element | null {
 
     const inAuthGroup = segments[0] === '(auth)';
     const isNotFoundPage = segments.includes('+not-found');
+    const isGoogleSignIn = segments.includes('google-signin');
+    const isCompleteProfile = segments.includes('complete-profile');
 
-    // Not-found sayfasındaysak, hemen doğru yere yönlendir
-    if (isNotFoundPage) {
+    // Google sign-in sayfasındayken auth flow aktifse navigation'ı engelle
+    if (isGoogleSignIn && isAuthFlowActive) {
+      console.log('⏸️ On Google sign-in page with active auth flow, waiting...');
+      return;
+    }
+
+    // Not-found sayfasındaysak ve auth flow aktif değilse yönlendir
+    if (isNotFoundPage && !isAuthFlowActive) {
       console.log('🔄 User on not-found page, redirecting...');
       
       if (user) {
@@ -66,13 +76,32 @@ function RootLayoutNav(): React.JSX.Element | null {
       const hasGender = user.gender && user.gender !== null && user.gender !== '';
       const hasBirthDate = user.birthDate && user.birthDate !== null && user.birthDate !== '';
       
-      if (inAuthGroup) {
+      // Complete profile sayfasındaysa navigation'ı engelle
+      if (isCompleteProfile) {
+        console.log('📝 On complete-profile page, staying here');
+        return;
+      }
+      
+      if (inAuthGroup && !isGoogleSignIn && !isCompleteProfile) {
         if (!hasGender || !hasBirthDate) {
           console.log('🔄 User logged in but profile incomplete, redirecting to complete-profile');
           router.replace('/(auth)/complete-profile');
         } else {
           console.log('🔄 User logged in and profile complete, redirecting to wardrobe');
           router.replace('/(tabs)/wardrobe');
+          
+          // Onboarding kontrolü
+          setTimeout(async () => {
+            try {
+              const isCompleted = await checkIfOnboardingCompleted();
+              if (!isCompleted) {
+                console.log('🎯 Starting onboarding for first time user');
+                startOnboarding();
+              }
+            } catch (error) {
+              console.error('Error checking onboarding:', error);
+            }
+          }, 1000);
         }
       }
     } else {

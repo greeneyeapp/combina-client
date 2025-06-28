@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Reindirizzamento a Google...",
+      "processing": "Accesso in corso...",
+      "gettingProfile": "Recupero delle informazioni del profilo...",
+      "success": "Accesso riuscito! Reindirizzamento...",
+      "pleaseWait": "Attendere prego..."
+    },
+    "appleSignIn": {
+      "processing": "Accesso con Apple...",
+      "success": "Accesso riuscito! Reindirizzamento...",
+      "pleaseWait": "Attendere prego..."
+    },
+    "completeProfile": {
+      "title": "Completa il tuo profilo",
+      "subtitle": "Abbiamo bisogno di alcuni dettagli per personalizzare la tua esperienza e creare suggerimenti di outfit migliori per te.",
+      "nameFromAccount": "Queste informazioni provengono dal tuo account",
+      "noNameProvided": "Nessun nome fornito",
+      "selectDate": "Seleziona data",
+      "done": "Fatto",
+      "success": "Profilo aggiornato con successo",
+      "continueButton": "Continua"
+    },
+    "errors": {
+      "signInFailed": "Accesso non riuscito. Riprova.",
+      "networkError": "Impossibile connettersi al server. Controlla la tua connessione internet.",
+      "updateFailed": "Aggiornamento del profilo non riuscito. Riprova.",
+      "unexpectedError": "Si è verificato un errore imprevisto durante l'accesso."
+    }
+  },
   "common": {
+    "done": "Fatto",
     "cancel": "Annulla",
     "confirm": "Conferma",
     "delete": "Elimina",
@@ -12,7 +43,7 @@
     "searchPlaceholder": "Cerca...",
     "apply": "Applica",
     "goBack": "Indietro",
-    "error": "Si è verificato un errore imprevisto.",
+    "error": "Errore",
     "tryAgain": "Riprova.",
     "saving": "Salvataggio...",
     "today": "Oggi",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "{{count}} minuto fa",
     "minutesAgo_other": "{{count}} minuti fa",
     "justNow": "Poco fa"
+  },
+  "auth": {
+    "signInWithGoogle": "Accedi con Google",
+    "signInWithApple": "Accedi con Apple",
+    "continueAsGuest": "Continua come ospite",
+    "signingInWithGoogle": "Accesso con Google...",
+    "signingInWithApple": "Accesso con Apple...",
+    "signInError": "Accesso non riuscito. Riprova.",
+    "completeProfile": "Completa il tuo profilo",
+    "profileSubtitle": "Abbiamo bisogno di alcuni dettagli per personalizzare la tua esperienza e creare suggerimenti di outfit migliori per te.",
+    "updateInfoError": "Aggiornamento del profilo non riuscito. Riprova.",
+    "continueButton": "Continua",
+    "completeProfileButton": "Completa profilo",
+    "selectGender": "Seleziona genere",
+    "nameRequired": "Il nome completo è obbligatorio",
+    "nameMinLength": "Il nome deve contenere almeno 2 caratteri",
+    "genderRequired": "Seleziona il tuo genere",
+    "ageMinimum": "Devi avere almeno 13 anni per usare questa app",
+    "ageMaximum": "Inserisci una data di nascita valida",
+    "requiredFields": "Campi obbligatori",
+    "profileUpdateSuccess": "Il tuo profilo è stato aggiornato con successo!",
+    "requiredInformation": "Informazioni richieste",
+    "noNameProvided": "Nessun nome fornito"
   },
   "login": {
     "title": "Accedi",

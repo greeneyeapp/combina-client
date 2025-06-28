@@ -5,11 +5,13 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 
 export default function AuthIndexScreen() {
   const { t } = useTranslation();
   const { theme, themeMode } = useTheme();
+  const { isAuthFlowActive } = useAuth();
 
   return (
     <LinearGradient
@@ -39,6 +41,7 @@ export default function AuthIndexScreen() {
             variant="outline"
             style={styles.button}
             icon="google"
+            disabled={isAuthFlowActive}
           />
           
           {Platform.OS === 'ios' && (
@@ -47,13 +50,23 @@ export default function AuthIndexScreen() {
               onPress={() => router.push('/(auth)/apple-signin')}
               variant="primary"
               style={styles.button}
+              disabled={isAuthFlowActive}
             />
           )}
         </View>
 
         <View style={styles.footer}>
-          <TouchableOpacity onPress={() => router.push({ pathname: '/(auth)/language' })}>
-            <Text style={[styles.languageSelector, { color: theme.colors.primary }]}>
+          <TouchableOpacity 
+            onPress={() => router.push({ pathname: '/(auth)/language' })}
+            disabled={isAuthFlowActive}
+          >
+            <Text style={[
+              styles.languageSelector, 
+              { 
+                color: isAuthFlowActive ? theme.colors.textLight : theme.colors.primary,
+                opacity: isAuthFlowActive ? 0.5 : 1
+              }
+            ]}>
               {t('login.changeLanguage')}
             </Text>
           </TouchableOpacity>

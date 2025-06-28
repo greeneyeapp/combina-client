@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Googleにリダイレクト中...",
+      "processing": "サインインしています...",
+      "gettingProfile": "プロフィール情報を取得中...",
+      "success": "サインインに成功しました！リダイレクトしています...",
+      "pleaseWait": "お待ちください..."
+    },
+    "appleSignIn": {
+      "processing": "Appleでサインインしています...",
+      "success": "サインインに成功しました！リダイレクトしています...",
+      "pleaseWait": "お待ちください..."
+    },
+    "completeProfile": {
+      "title": "プロフィールを完成させる",
+      "subtitle": "あなたに合った体験を提供し、より良い服装の提案を作成するために、いくつかの詳細情報が必要です。",
+      "nameFromAccount": "この情報はアカウントから取得されます",
+      "noNameProvided": "名前が提供されていません",
+      "selectDate": "日付を選択",
+      "done": "完了",
+      "success": "プロフィールが正常に更新されました",
+      "continueButton": "続ける"
+    },
+    "errors": {
+      "signInFailed": "サインインに失敗しました。もう一度お試しください。",
+      "networkError": "サーバーに接続できません。インターネット接続を確認してください。",
+      "updateFailed": "プロフィールの更新に失敗しました。もう一度お試しください。",
+      "unexpectedError": "サインイン中に予期しないエラーが発生しました。"
+    }
+  },
   "common": {
+    "done": "完了",
     "cancel": "キャンセル",
     "confirm": "確認",
     "delete": "削除",
@@ -7,12 +38,12 @@
     "ok": "OK",
     "reset": "リセット",
     "save": "保存",
-    "select": "選択してください...",
+    "select": "選択...",
     "continue": "続ける",
     "searchPlaceholder": "検索...",
     "apply": "適用",
     "goBack": "戻る",
-    "error": "予期しないエラーが発生しました。",
+    "error": "エラー",
     "tryAgain": "もう一度お試しください。",
     "saving": "保存中...",
     "today": "今日",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "{{count}}分前",
     "minutesAgo_other": "{{count}}分前",
     "justNow": "たった今"
+  },
+  "auth": {
+    "signInWithGoogle": "Googleでサインイン",
+    "signInWithApple": "Appleでサインイン",
+    "continueAsGuest": "ゲストとして続ける",
+    "signingInWithGoogle": "Googleでサインインしています...",
+    "signingInWithApple": "Appleでサインインしています...",
+    "signInError": "サインインに失敗しました。もう一度お試しください。",
+    "completeProfile": "プロフィールを完成させる",
+    "profileSubtitle": "あなたに合った体験を提供し、より良い服装の提案を作成するために、いくつかの詳細情報が必要です。",
+    "updateInfoError": "プロフィールの更新に失敗しました。もう一度お試しください。",
+    "continueButton": "続ける",
+    "completeProfileButton": "プロフィールを完成",
+    "selectGender": "性別を選択",
+    "nameRequired": "氏名を入力してください",
+    "nameMinLength": "名前は2文字以上である必要があります",
+    "genderRequired": "性別を選択してください",
+    "ageMinimum": "このアプリを使用するには13歳以上である必要があります",
+    "ageMaximum": "有効な生年月日を入力してください",
+    "requiredFields": "必須項目",
+    "profileUpdateSuccess": "プロフィールが正常に更新されました！",
+    "requiredInformation": "必須情報",
+    "noNameProvided": "名前が提供されていません"
   },
   "login": {
     "title": "ログイン",

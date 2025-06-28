@@ -1,20 +1,51 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Google पर रीडायरेक्ट किया जा रहा है...",
+      "processing": "साइन इन किया जा रहा है...",
+      "gettingProfile": "प्रोफ़ाइल जानकारी प्राप्त हो रही है...",
+      "success": "साइन इन सफल! रीडायरेक्ट किया जा रहा है...",
+      "pleaseWait": "कृपया प्रतीक्षा करें..."
+    },
+    "appleSignIn": {
+      "processing": "Apple के साथ साइन इन किया जा रहा है...",
+      "success": "साइन इन सफल! रीडायरेक्ट किया जा रहा है...",
+      "pleaseWait": "कृपया प्रतीक्षा करें..."
+    },
+    "completeProfile": {
+      "title": "अपनी प्रोफ़ाइल पूरी करें",
+      "subtitle": "आपके अनुभव को व्यक्तिगत बनाने और आपके लिए बेहतर पोशाक सुझाव बनाने के लिए हमें कुछ विवरणों की आवश्यकता है।",
+      "nameFromAccount": "यह जानकारी आपके खाते से आती है",
+      "noNameProvided": "कोई नाम प्रदान नहीं किया गया",
+      "selectDate": "तिथि चुनें",
+      "done": "हो गया",
+      "success": "प्रोफ़ाइल सफलतापूर्वक अपडेट की गई",
+      "continueButton": "जारी रखें"
+    },
+    "errors": {
+      "signInFailed": "साइन इन विफल। कृपया पुनः प्रयास करें।",
+      "networkError": "सर्वर से कनेक्ट नहीं हो सकता। कृपया अपना इंटरनेट कनेक्शन जांचें।",
+      "updateFailed": "प्रोफ़ाइल अपडेट करने में विफल। कृपया पुनः प्रयास करें।",
+      "unexpectedError": "साइन इन के दौरान एक अप्रत्याशित त्रुटि हुई।"
+    }
+  },
   "common": {
+    "done": "हो गया",
     "cancel": "रद्द करें",
     "confirm": "पुष्टि करें",
     "delete": "हटाएं",
     "success": "सफलता",
     "ok": "ठीक है",
     "reset": "रीसेट करें",
-    "save": "सेव करें",
+    "save": "सहेजें",
     "select": "चुनें...",
     "continue": "जारी रखें",
     "searchPlaceholder": "खोजें...",
     "apply": "लागू करें",
     "goBack": "वापस जाएं",
-    "error": "एक अप्रत्याशित त्रुटि हुई।",
+    "error": "त्रुटि",
     "tryAgain": "कृपया पुनः प्रयास करें।",
-    "saving": "सेव हो रहा है...",
+    "saving": "सहेजा जा रहा है...",
     "today": "आज",
     "yesterday": "कल",
     "daysAgo_one": "{{count}} दिन पहले",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "{{count}} मिनट पहले",
     "minutesAgo_other": "{{count}} मिनट पहले",
     "justNow": "अभी-अभी"
+  },
+  "auth": {
+    "signInWithGoogle": "Google के साथ साइन इन करें",
+    "signInWithApple": "Apple के साथ साइन इन करें",
+    "continueAsGuest": "अतिथि के रूप में जारी रखें",
+    "signingInWithGoogle": "Google के साथ साइन इन किया जा रहा है...",
+    "signingInWithApple": "Apple के साथ साइन इन किया जा रहा है...",
+    "signInError": "साइन इन विफल। कृपया पुनः प्रयास करें।",
+    "completeProfile": "अपनी प्रोफ़ाइल पूरी करें",
+    "profileSubtitle": "आपके अनुभव को व्यक्तिगत बनाने और आपके लिए बेहतर पोशाक सुझाव बनाने के लिए हमें कुछ विवरणों की आवश्यकता है।",
+    "updateInfoError": "प्रोफ़ाइल अपडेट करने में विफल। कृपया पुनः प्रयास करें।",
+    "continueButton": "जारी रखें",
+    "completeProfileButton": "प्रोफ़ाइल पूरी करें",
+    "selectGender": "लिंग चुनें",
+    "nameRequired": "पूरा नाम आवश्यक है",
+    "nameMinLength": "नाम कम से कम 2 अक्षरों का होना चाहिए",
+    "genderRequired": "कृपया अपना लिंग चुनें",
+    "ageMinimum": "इस ऐप का उपयोग करने के लिए आपकी आयु कम से कम 13 वर्ष होनी चाहिए",
+    "ageMaximum": "कृपया एक वैध जन्म तिथि दर्ज करें",
+    "requiredFields": "आवश्यक फ़ील्ड",
+    "profileUpdateSuccess": "आपकी प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई है!",
+    "requiredInformation": "आवश्यक जानकारी",
+    "noNameProvided": "कोई नाम प्रदान नहीं किया गया"
   },
   "login": {
     "title": "लॉग इन करें",

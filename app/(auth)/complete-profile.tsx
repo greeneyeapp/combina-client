@@ -17,12 +17,14 @@ import { Calendar, ChevronDown, User, CheckCircle } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
+import { useOnboardingStore } from '@/store/onboardingStore';
 
 export default function CompleteProfileScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
     const { updateUserInfo, user } = useAuth();
     const { show: showAlert } = useAlertStore();
+    const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
 
     const [formData, setFormData] = useState({
         name: '',
@@ -32,7 +34,7 @@ export default function CompleteProfileScreen() {
 
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<{[key: string]: string}>({});
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     useEffect(() => {
         if (user) {
@@ -56,7 +58,7 @@ export default function CompleteProfileScreen() {
         if (Platform.OS === 'android') {
             setShowDatePicker(false);
         }
-        
+
         if (selectedDate) {
             setFormData(prev => ({ ...prev, birthDate: selectedDate }));
             if (errors.birthDate) {
@@ -74,7 +76,7 @@ export default function CompleteProfileScreen() {
     };
 
     const validateForm = (): boolean => {
-        const newErrors: {[key: string]: string} = {};
+        const newErrors: { [key: string]: string } = {};
 
         if (!formData.name.trim()) {
             newErrors.name = t('authFlow.errors.updateFailed');
@@ -90,7 +92,7 @@ export default function CompleteProfileScreen() {
         const age = today.getFullYear() - formData.birthDate.getFullYear();
         const monthDiff = today.getMonth() - formData.birthDate.getMonth();
         const dayDiff = today.getDate() - formData.birthDate.getDate();
-        
+
         const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
 
         if (exactAge < 13) {
@@ -134,7 +136,22 @@ export default function CompleteProfileScreen() {
                 message: t('authFlow.completeProfile.success'),
                 buttons: [{
                     text: t('authFlow.completeProfile.continueButton'),
-                    onPress: () => router.replace('/(tabs)/wardrobe')
+                    onPress: async () => {
+                        router.replace('/(tabs)/wardrobe');
+
+                        // ONBOARDING KONTROLÜ BURADA YAP - ALERT KAPANDIKTAN SONRA
+                        setTimeout(async () => {
+                            try {
+                                const isCompleted = await checkIfOnboardingCompleted();
+                                if (!isCompleted) {
+                                    console.log('🎯 Starting onboarding after profile completion');
+                                    startOnboarding();
+                                }
+                            } catch (error) {
+                                console.error('Error checking onboarding:', error);
+                            }
+                        }, 500);
+                    }
                 }]
             });
         } catch (error) {

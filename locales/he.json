@@ -1,18 +1,49 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "מעביר אותך ל-Google...",
+      "processing": "מתחבר...",
+      "gettingProfile": "מאחזר פרטי פרופיל...",
+      "success": "ההתחברות הצליחה! מעביר אותך...",
+      "pleaseWait": "אנא המתן..."
+    },
+    "appleSignIn": {
+      "processing": "מתחבר עם Apple...",
+      "success": "ההתחברות הצליחה! מעביר אותך...",
+      "pleaseWait": "אנא המתן..."
+    },
+    "completeProfile": {
+      "title": "השלם את הפרופיל שלך",
+      "subtitle": "אנו זקוקים לכמה פרטים כדי להתאים אישית את החוויה שלך וליצור עבורך הצעות לבוש טובות יותר.",
+      "nameFromAccount": "המידע הזה מגיע מהחשבון שלך",
+      "noNameProvided": "לא סופק שם",
+      "selectDate": "בחר תאריך",
+      "done": "סיום",
+      "success": "הפרופיל עודכן בהצלחה",
+      "continueButton": "המשך"
+    },
+    "errors": {
+      "signInFailed": "ההתחברות נכשלה. אנא נסה שוב.",
+      "networkError": "אין אפשרות להתחבר לשרת. אנא בדוק את חיבור האינטרנט שלך.",
+      "updateFailed": "עדכון הפרופיל נכשל. אנא נסה שוב.",
+      "unexpectedError": "אירעה שגיאה בלתי צפויה במהלך ההתחברות."
+    }
+  },
   "common": {
+    "done": "סיום",
     "cancel": "ביטול",
     "confirm": "אישור",
-    "delete": "מחיקה",
+    "delete": "מחק",
     "success": "הצלחה",
     "ok": "אישור",
     "reset": "איפוס",
-    "save": "שמירה",
-    "select": "בחירה...",
+    "save": "שמור",
+    "select": "בחר...",
     "continue": "המשך",
     "searchPlaceholder": "חיפוש...",
     "apply": "החל",
-    "goBack": "חזרה",
-    "error": "אירעה שגיאה בלתי צפויה.",
+    "goBack": "חזור",
+    "error": "שגיאה",
     "tryAgain": "אנא נסה שוב.",
     "saving": "שומר...",
     "today": "היום",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "לפני דקה",
     "minutesAgo_other": "לפני {{count}} דקות",
     "justNow": "ממש עכשיו"
+  },
+  "auth": {
+    "signInWithGoogle": "התחבר עם Google",
+    "signInWithApple": "התחבר עם Apple",
+    "continueAsGuest": "המשך כאורח",
+    "signingInWithGoogle": "מתחבר עם Google...",
+    "signingInWithApple": "מתחבר עם Apple...",
+    "signInError": "ההתחברות נכשלה. אנא נסה שוב.",
+    "completeProfile": "השלם את הפרופיל שלך",
+    "profileSubtitle": "אנו זקוקים לכמה פרטים כדי להתאים אישית את החוויה שלך וליצור עבורך הצעות לבוש טובות יותר.",
+    "updateInfoError": "עדכון הפרופיל נכשל. אנא נסה שוב.",
+    "continueButton": "המשך",
+    "completeProfileButton": "השלמת פרופיל",
+    "selectGender": "בחר מין",
+    "nameRequired": "נדרש שם מלא",
+    "nameMinLength": "השם חייב להכיל לפחות 2 תווים",
+    "genderRequired": "אנא בחר את מינך",
+    "ageMinimum": "עליך להיות בן 13 לפחות כדי להשתמש באפליקציה זו",
+    "ageMaximum": "אנא הזן תאריך לידה חוקי",
+    "requiredFields": "שדות חובה",
+    "profileUpdateSuccess": "הפרופיל שלך עודכן בהצלחה!",
+    "requiredInformation": "מידע נדרש",
+    "noNameProvided": "לא סופק שם"
   },
   "login": {
     "title": "התחברות",

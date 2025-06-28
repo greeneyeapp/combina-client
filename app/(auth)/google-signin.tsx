@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native'; // Platform eklendi
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -9,8 +9,15 @@ import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import Constants from 'expo-constants';
 
 WebBrowser.maybeCompleteAuthSession();
+
+if (!Constants.expoConfig?.extra?.googleAuth) {
+    throw new Error("Google Auth konfigürasyonu app.json dosyasında eksik! Lütfen kontrol edin.");
+}
+
+const { androidClientIdDev, androidClientIdProd, iosClientId } = Constants.expoConfig.extra.googleAuth;
 
 export default function GoogleSignInScreen() {
     const { t } = useTranslation();
@@ -23,13 +30,13 @@ export default function GoogleSignInScreen() {
     const [promptStarted, setPromptStarted] = useState(false);
 
     const [request, response, promptAsync] = Google.useAuthRequest({
-        androidClientId: '58339241217-doo7k2mr5219tonptrkmasmsrvja24k9.apps.googleusercontent.com',
-        iosClientId: '58339241217-dvfh2fl5p2hfi9a6m0vaqnuf4esf53qk.apps.googleusercontent.com',
+        androidClientId: __DEV__ ? androidClientIdDev : androidClientIdProd,
+        iosClientId: iosClientId,
         scopes: ['profile', 'email'],
     });
 
     useEffect(() => {
-        if (request && !promptStarted && !isProcessing) {
+        if (Platform.OS !== 'web' && request && !promptStarted && !isProcessing) {
             console.log('🚀 Setting Auth Flow to ACTIVE and starting Google prompt...');
             setAuthFlowActive(true);
             setPromptStarted(true);
@@ -38,9 +45,7 @@ export default function GoogleSignInScreen() {
     }, [request, promptStarted, isProcessing]);
 
     useEffect(() => {
-        if (!response) {
-            return;
-        }
+        if (!response) return;
 
         console.log('✅ Google response received:', response.type);
 
@@ -48,51 +53,51 @@ export default function GoogleSignInScreen() {
             setIsProcessing(true);
             setStatusMessage(t('authFlow.googleSignIn.processing'));
             handleGoogleSignIn(response.authentication.accessToken);
-
-        } else if (response.type === 'error') {
-            console.log('OAuth error:', response.error);
-            setAuthFlowActive(false);
-            router.replace('/(auth)');
-            
-        } else if (response.type === 'dismiss') {
-            console.log('OAuth dismissed by user');
-            setAuthFlowActive(false);
-            router.replace('/(auth)');
-            
         } else {
-            console.log('Unexpected OAuth response:', response);
-            setAuthFlowActive(false);
-            router.replace('/(auth)');
+            console.log('Google auth failed or cancelled:', response.type);
+            handleError();
         }
     }, [response]);
+
+    const handleError = () => {
+        console.log('🔄 Cleaning up auth flow and redirecting...');
+        setAuthFlowActive(false);
+        setIsProcessing(false);
+        setTimeout(() => {
+            router.replace('/(auth)');
+        }, 100);
+    };
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-            
+
+            console.log('🔑 Starting signInWithGoogle...');
             await signInWithGoogle(accessToken);
-            
-            // Success! The navigation logic is handled by _layout.tsx
-            // which will react to the user state change and redirect appropriately
+            console.log('✅ signInWithGoogle completed, cleaning up...');
+
             setStatusMessage(t('authFlow.googleSignIn.success'));
-            
-        } catch (error: any) {
-            console.error('Google sign-in error:', error);
-            
             setIsProcessing(false);
+
+            console.log('🧹 Cleaning auth flow and redirecting...');
             setAuthFlowActive(false);
-            
+
+            setTimeout(() => {
+                router.replace('/(auth)');
+            }, 200);
+
+        } catch (error: any) {
+            console.error('❌ Google sign-in error:', error);
+            handleError();
+
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
                 ? t('authFlow.errors.networkError')
                 : t('authFlow.errors.signInFailed');
-            
-            showAlert({ 
-                title: t('common.error'), 
-                message: errorMessage, 
-                buttons: [{ 
-                    text: t('common.ok'), 
-                    onPress: () => router.replace('/(auth)') 
-                }] 
+
+            showAlert({
+                title: t('common.error'),
+                message: errorMessage,
+                buttons: [{ text: t('common.ok') }]
             });
         }
     };

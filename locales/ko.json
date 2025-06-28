@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Google로 리디렉션하는 중...",
+      "processing": "로그인하는 중...",
+      "gettingProfile": "프로필 정보를 가져오는 중...",
+      "success": "로그인 성공! 리디렉션하는 중...",
+      "pleaseWait": "잠시만 기다려 주세요..."
+    },
+    "appleSignIn": {
+      "processing": "Apple로 로그인하는 중...",
+      "success": "로그인 성공! 리디렉션하는 중...",
+      "pleaseWait": "잠시만 기다려 주세요..."
+    },
+    "completeProfile": {
+      "title": "프로필 완성하기",
+      "subtitle": "개인화된 경험을 제공하고 더 나은 의상 제안을 만들기 위해 몇 가지 정보가 필요합니다.",
+      "nameFromAccount": "이 정보는 계정에서 가져온 것입니다",
+      "noNameProvided": "이름이 제공되지 않음",
+      "selectDate": "날짜 선택",
+      "done": "완료",
+      "success": "프로필이 성공적으로 업데이트되었습니다",
+      "continueButton": "계속"
+    },
+    "errors": {
+      "signInFailed": "로그인에 실패했습니다. 다시 시도해 주세요.",
+      "networkError": "서버에 연결할 수 없습니다. 인터넷 연결을 확인해 주세요.",
+      "updateFailed": "프로필 업데이트에 실패했습니다. 다시 시도해 주세요.",
+      "unexpectedError": "로그인 중 예상치 못한 오류가 발생했습니다."
+    }
+  },
   "common": {
+    "done": "완료",
     "cancel": "취소",
     "confirm": "확인",
     "delete": "삭제",
@@ -7,13 +38,13 @@
     "ok": "확인",
     "reset": "초기화",
     "save": "저장",
-    "select": "선택하세요...",
+    "select": "선택...",
     "continue": "계속",
     "searchPlaceholder": "검색...",
     "apply": "적용",
-    "goBack": "뒤로가기",
-    "error": "예기치 않은 오류가 발생했습니다.",
-    "tryAgain": "다시 시도해주세요.",
+    "goBack": "뒤로 가기",
+    "error": "오류",
+    "tryAgain": "다시 시도해 주세요.",
     "saving": "저장 중...",
     "today": "오늘",
     "yesterday": "어제",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "{{count}}분 전",
     "minutesAgo_other": "{{count}}분 전",
     "justNow": "방금 전"
+  },
+  "auth": {
+    "signInWithGoogle": "Google로 로그인",
+    "signInWithApple": "Apple로 로그인",
+    "continueAsGuest": "게스트로 계속하기",
+    "signingInWithGoogle": "Google로 로그인하는 중...",
+    "signingInWithApple": "Apple로 로그인하는 중...",
+    "signInError": "로그인에 실패했습니다. 다시 시도해 주세요.",
+    "completeProfile": "프로필 완성하기",
+    "profileSubtitle": "개인화된 경험을 제공하고 더 나은 의상 제안을 만들기 위해 몇 가지 정보가 필요합니다.",
+    "updateInfoError": "프로필 업데이트에 실패했습니다. 다시 시도해 주세요.",
+    "continueButton": "계속",
+    "completeProfileButton": "프로필 완성",
+    "selectGender": "성별 선택",
+    "nameRequired": "전체 이름이 필요합니다",
+    "nameMinLength": "이름은 2자 이상이어야 합니다",
+    "genderRequired": "성별을 선택해 주세요",
+    "ageMinimum": "이 앱을 사용하려면 만 13세 이상이어야 합니다",
+    "ageMaximum": "유효한 생년월일을 입력해 주세요",
+    "requiredFields": "필수 입력 항목",
+    "profileUpdateSuccess": "프로필이 성공적으로 업데이트되었습니다!",
+    "requiredInformation": "필수 정보",
+    "noNameProvided": "이름이 제공되지 않음"
   },
   "login": {
     "title": "로그인",

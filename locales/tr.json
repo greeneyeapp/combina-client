@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Google'a yönlendiriliyor...",
+      "processing": "Oturum açılıyor...",
+      "gettingProfile": "Profil bilgileri alınıyor...",
+      "success": "Oturum açma başarılı! Yönlendiriliyorsunuz...",
+      "pleaseWait": "Lütfen bekleyin..."
+    },
+    "appleSignIn": {
+      "processing": "Apple ile oturum açılıyor...",
+      "success": "Oturum açma başarılı! Yönlendiriliyorsunuz...",
+      "pleaseWait": "Lütfen bekleyin..."
+    },
+    "completeProfile": {
+      "title": "Profilini Tamamla",
+      "subtitle": "Deneyiminizi kişiselleştirmek ve size daha iyi kıyafet önerileri sunmak için birkaç detaya ihtiyacımız var.",
+      "nameFromAccount": "Bu bilgi hesabınızdan alınmıştır",
+      "noNameProvided": "İsim belirtilmemiş",
+      "selectDate": "Tarih Seç",
+      "done": "Bitti",
+      "success": "Profil başarıyla güncellendi",
+      "continueButton": "Devam Et"
+    },
+    "errors": {
+      "signInFailed": "Oturum açılamadı. Lütfen tekrar deneyin.",
+      "networkError": "Sunucuya bağlanılamıyor. Lütfen internet bağlantınızı kontrol edin.",
+      "updateFailed": "Profil güncellenemedi. Lütfen tekrar deneyin.",
+      "unexpectedError": "Oturum açma sırasında beklenmedik bir hata oluştu."
+    }
+  },
   "common": {
+    "done": "Bitti",
     "cancel": "İptal",
     "confirm": "Onayla",
     "delete": "Sil",
@@ -11,8 +42,8 @@
     "continue": "Devam Et",
     "searchPlaceholder": "Ara...",
     "apply": "Uygula",
-    "goBack": "Geri Dön",
-    "error": "Beklenmedik bir hata oluştu.",
+    "goBack": "Geri Git",
+    "error": "Hata",
     "tryAgain": "Lütfen tekrar deneyin.",
     "saving": "Kaydediliyor...",
     "today": "Bugün",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "{{count}} dakika önce",
     "minutesAgo_other": "{{count}} dakika önce",
     "justNow": "Az önce"
+  },
+  "auth": {
+    "signInWithGoogle": "Google ile Giriş Yap",
+    "signInWithApple": "Apple ile Giriş Yap",
+    "continueAsGuest": "Misafir Olarak Devam Et",
+    "signingInWithGoogle": "Google ile oturum açılıyor...",
+    "signingInWithApple": "Apple ile oturum açılıyor...",
+    "signInError": "Giriş yapılamadı. Lütfen tekrar deneyin.",
+    "completeProfile": "Profilini Tamamla",
+    "profileSubtitle": "Deneyiminizi kişiselleştirmek ve size daha iyi kıyafet önerileri sunmak için birkaç detaya ihtiyacımız var.",
+    "updateInfoError": "Profil güncellenemedi. Lütfen tekrar deneyin.",
+    "continueButton": "Devam Et",
+    "completeProfileButton": "Profili Tamamla",
+    "selectGender": "Cinsiyet Seç",
+    "nameRequired": "Ad soyad gerekli",
+    "nameMinLength": "İsim en az 2 karakter olmalıdır",
+    "genderRequired": "Lütfen cinsiyetinizi seçin",
+    "ageMinimum": "Uygulamayı kullanmak için en az 13 yaşında olmalısınız",
+    "ageMaximum": "Lütfen geçerli bir doğum tarihi girin",
+    "requiredFields": "Gerekli alanlar",
+    "profileUpdateSuccess": "Profiliniz başarıyla güncellendi!",
+    "requiredInformation": "Gerekli Bilgiler",
+    "noNameProvided": "İsim belirtilmemiş"
   },
   "login": {
     "title": "Giriş Yap",

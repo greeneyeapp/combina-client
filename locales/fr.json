@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Redirection vers Google...",
+      "processing": "Connexion en cours...",
+      "gettingProfile": "Récupération des informations du profil...",
+      "success": "Connexion réussie ! Redirection...",
+      "pleaseWait": "Veuillez patienter..."
+    },
+    "appleSignIn": {
+      "processing": "Connexion avec Apple...",
+      "success": "Connexion réussie ! Redirection...",
+      "pleaseWait": "Veuillez patienter..."
+    },
+    "completeProfile": {
+      "title": "Complétez votre profil",
+      "subtitle": "Nous avons besoin de quelques détails pour personnaliser votre expérience et créer de meilleures suggestions de tenues pour vous.",
+      "nameFromAccount": "Cette information provient de votre compte",
+      "noNameProvided": "Aucun nom fourni",
+      "selectDate": "Sélectionner une date",
+      "done": "Terminé",
+      "success": "Profil mis à jour avec succès",
+      "continueButton": "Continuer"
+    },
+    "errors": {
+      "signInFailed": "La connexion a échoué. Veuillez réessayer.",
+      "networkError": "Impossible de se connecter au serveur. Veuillez vérifier votre connexion internet.",
+      "updateFailed": "La mise à jour du profil a échoué. Veuillez réessayer.",
+      "unexpectedError": "Une erreur inattendue est survenue lors de la connexion."
+    }
+  },
   "common": {
+    "done": "Terminé",
     "cancel": "Annuler",
     "confirm": "Confirmer",
     "delete": "Supprimer",
@@ -12,7 +43,7 @@
     "searchPlaceholder": "Rechercher...",
     "apply": "Appliquer",
     "goBack": "Retour",
-    "error": "Une erreur inattendue est survenue.",
+    "error": "Erreur",
     "tryAgain": "Veuillez réessayer.",
     "saving": "Enregistrement...",
     "today": "Aujourd'hui",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "il y a {{count}} minute",
     "minutesAgo_other": "il y a {{count}} minutes",
     "justNow": "À l'instant"
+  },
+  "auth": {
+    "signInWithGoogle": "Se connecter avec Google",
+    "signInWithApple": "Se connecter avec Apple",
+    "continueAsGuest": "Continuer en tant qu'invité",
+    "signingInWithGoogle": "Connexion avec Google...",
+    "signingInWithApple": "Connexion avec Apple...",
+    "signInError": "La connexion a échoué. Veuillez réessayer.",
+    "completeProfile": "Complétez votre profil",
+    "profileSubtitle": "Nous avons besoin de quelques détails pour personnaliser votre expérience et créer de meilleures suggestions de tenues pour vous.",
+    "updateInfoError": "La mise à jour du profil a échoué. Veuillez réessayer.",
+    "continueButton": "Continuer",
+    "completeProfileButton": "Compléter le profil",
+    "selectGender": "Sélectionner le genre",
+    "nameRequired": "Le nom complet est requis",
+    "nameMinLength": "Le nom doit comporter au moins 2 caractères",
+    "genderRequired": "Veuillez sélectionner votre genre",
+    "ageMinimum": "Vous devez avoir au moins 13 ans pour utiliser cette application",
+    "ageMaximum": "Veuillez saisir une date de naissance valide",
+    "requiredFields": "Champs obligatoires",
+    "profileUpdateSuccess": "Votre profil a été mis à jour avec succès !",
+    "requiredInformation": "Informations requises",
+    "noNameProvided": "Aucun nom fourni"
   },
   "login": {
     "title": "Connexion",

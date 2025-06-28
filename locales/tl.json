@@ -1,29 +1,83 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Nire-redirect sa Google...",
+      "processing": "Nag-sa-sign in...",
+      "gettingProfile": "Kinukuha ang impormasyon ng profile...",
+      "success": "Matagumpay ang pag-sign in! Nire-redirect...",
+      "pleaseWait": "Pakiusap, maghintay..."
+    },
+    "appleSignIn": {
+      "processing": "Nag-sa-sign in gamit ang Apple...",
+      "success": "Matagumpay ang pag-sign in! Nire-redirect...",
+      "pleaseWait": "Pakiusap, maghintay..."
+    },
+    "completeProfile": {
+      "title": "Kumpetuhin ang Iyong Profile",
+      "subtitle": "Kailangan namin ng ilang detalye para i-personalize ang iyong karanasan at gumawa ng mas mahusay na mga suhestiyon ng damit para sa iyo.",
+      "nameFromAccount": "Ang impormasyong ito ay galing sa iyong account",
+      "noNameProvided": "Walang pangalang ibinigay",
+      "selectDate": "Pumili ng Petsa",
+      "done": "Tapos na",
+      "success": "Matagumpay na na-update ang profile",
+      "continueButton": "Magpatuloy"
+    },
+    "errors": {
+      "signInFailed": "Nabigo ang pag-sign in. Pakisubukang muli.",
+      "networkError": "Hindi makakonekta sa server. Pakisuri ang iyong koneksyon sa internet.",
+      "updateFailed": "Nabigong i-update ang profile. Pakisubukang muli.",
+      "unexpectedError": "May naganap na hindi inaasahang error habang nag-sa-sign in."
+    }
+  },
   "common": {
+    "done": "Tapos na",
     "cancel": "Kanselahin",
     "confirm": "Kumpirmahin",
-    "delete": "Tanggalin",
-    "success": "Matagumpay",
+    "delete": "Burahin",
+    "success": "Tagumpay",
     "ok": "OK",
     "reset": "I-reset",
     "save": "I-save",
     "select": "Pumili...",
     "continue": "Magpatuloy",
     "searchPlaceholder": "Maghanap...",
-    "apply": "I-apply",
+    "apply": "Ilapat",
     "goBack": "Bumalik",
-    "error": "May nangyaring hindi inaasahang error.",
-    "tryAgain": "Paki-try muli.",
-    "saving": "Nagsi-save...",
+    "error": "Error",
+    "tryAgain": "Pakisubukang muli.",
+    "saving": "Sine-save...",
     "today": "Ngayon",
     "yesterday": "Kahapon",
     "daysAgo_one": "{{count}} araw ang nakalipas",
-    "daysAgo_other": "{{count}} araw ang nakalipas",
+    "daysAgo_other": "{{count}} na araw ang nakalipas",
     "hoursAgo_one": "{{count}} oras ang nakalipas",
-    "hoursAgo_other": "{{count}} oras ang nakalipas",
+    "hoursAgo_other": "{{count}} na oras ang nakalipas",
     "minutesAgo_one": "{{count}} minuto ang nakalipas",
-    "minutesAgo_other": "{{count}} minuto ang nakalipas",
-    "justNow": "Kakawala lang"
+    "minutesAgo_other": "{{count}} na minuto ang nakalipas",
+    "justNow": "Ngayon lang"
+  },
+  "auth": {
+    "signInWithGoogle": "Mag-sign in gamit ang Google",
+    "signInWithApple": "Mag-sign in gamit ang Apple",
+    "continueAsGuest": "Magpatuloy bilang Bisita",
+    "signingInWithGoogle": "Nag-sa-sign in gamit ang Google...",
+    "signingInWithApple": "Nag-sa-sign in gamit ang Apple...",
+    "signInError": "Nabigo ang pag-sign in. Pakisubukang muli.",
+    "completeProfile": "Kumpetuhin ang Iyong Profile",
+    "profileSubtitle": "Kailangan namin ng ilang detalye para i-personalize ang iyong karanasan at gumawa ng mas mahusay na mga suhestiyon ng damit para sa iyo.",
+    "updateInfoError": "Nabigong i-update ang profile. Pakisubukang muli.",
+    "continueButton": "Magpatuloy",
+    "completeProfileButton": "Kumpletuhin ang Profile",
+    "selectGender": "Pumili ng Kasarian",
+    "nameRequired": "Kailangan ang buong pangalan",
+    "nameMinLength": "Ang pangalan ay dapat may hindi bababa sa 2 karakter",
+    "genderRequired": "Pakiusap, piliin ang iyong kasarian",
+    "ageMinimum": "Dapat ay hindi bababa sa 13 taong gulang ka para magamit ang app na ito",
+    "ageMaximum": "Pakiusap, maglagay ng wastong petsa ng kapanganakan",
+    "requiredFields": "Mga kinakailangang field",
+    "profileUpdateSuccess": "Matagumpay na na-update ang iyong profile!",
+    "requiredInformation": "Kinakailangang Impormasyon",
+    "noNameProvided": "Walang pangalang ibinigay"
   },
   "login": {
     "title": "Mag-login",

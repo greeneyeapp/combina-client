@@ -1,18 +1,49 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Mengarahkan ke Google...",
+      "processing": "Masuk...",
+      "gettingProfile": "Mendapatkan informasi profil...",
+      "success": "Berhasil masuk! Mengarahkan...",
+      "pleaseWait": "Harap tunggu..."
+    },
+    "appleSignIn": {
+      "processing": "Masuk dengan Apple...",
+      "success": "Berhasil masuk! Mengarahkan...",
+      "pleaseWait": "Harap tunggu..."
+    },
+    "completeProfile": {
+      "title": "Lengkapi Profil Anda",
+      "subtitle": "Kami memerlukan beberapa detail untuk mempersonalisasi pengalaman Anda dan membuat saran pakaian yang lebih baik untuk Anda.",
+      "nameFromAccount": "Informasi ini berasal dari akun Anda",
+      "noNameProvided": "Tidak ada nama yang diberikan",
+      "selectDate": "Pilih Tanggal",
+      "done": "Selesai",
+      "success": "Profil berhasil diperbarui",
+      "continueButton": "Lanjutkan"
+    },
+    "errors": {
+      "signInFailed": "Gagal masuk. Silakan coba lagi.",
+      "networkError": "Tidak dapat terhubung ke server. Periksa koneksi internet Anda.",
+      "updateFailed": "Gagal memperbarui profil. Silakan coba lagi.",
+      "unexpectedError": "Terjadi kesalahan tak terduga saat masuk."
+    }
+  },
   "common": {
+    "done": "Selesai",
     "cancel": "Batal",
     "confirm": "Konfirmasi",
     "delete": "Hapus",
     "success": "Sukses",
-    "ok": "OKE",
-    "reset": "Atur Ulang",
+    "ok": "OK",
+    "reset": "Setel ulang",
     "save": "Simpan",
     "select": "Pilih...",
     "continue": "Lanjutkan",
     "searchPlaceholder": "Cari...",
     "apply": "Terapkan",
     "goBack": "Kembali",
-    "error": "Terjadi kesalahan yang tidak terduga.",
+    "error": "Kesalahan",
     "tryAgain": "Silakan coba lagi.",
     "saving": "Menyimpan...",
     "today": "Hari ini",
@@ -24,6 +55,29 @@
     "minutesAgo_one": "{{count}} menit yang lalu",
     "minutesAgo_other": "{{count}} menit yang lalu",
     "justNow": "Baru saja"
+  },
+  "auth": {
+    "signInWithGoogle": "Masuk dengan Google",
+    "signInWithApple": "Masuk dengan Apple",
+    "continueAsGuest": "Lanjutkan sebagai Tamu",
+    "signingInWithGoogle": "Masuk dengan Google...",
+    "signingInWithApple": "Masuk dengan Apple...",
+    "signInError": "Gagal masuk. Silakan coba lagi.",
+    "completeProfile": "Lengkapi Profil Anda",
+    "profileSubtitle": "Kami memerlukan beberapa detail untuk mempersonalisasi pengalaman Anda dan membuat saran pakaian yang lebih baik untuk Anda.",
+    "updateInfoError": "Gagal memperbarui profil. Silakan coba lagi.",
+    "continueButton": "Lanjutkan",
+    "completeProfileButton": "Lengkapi Profil",
+    "selectGender": "Pilih Jenis Kelamin",
+    "nameRequired": "Nama lengkap wajib diisi",
+    "nameMinLength": "Nama harus terdiri dari minimal 2 karakter",
+    "genderRequired": "Silakan pilih jenis kelamin Anda",
+    "ageMinimum": "Anda harus berusia minimal 13 tahun untuk menggunakan aplikasi ini",
+    "ageMaximum": "Silakan masukkan tanggal lahir yang valid",
+    "requiredFields": "Bidang wajib diisi",
+    "profileUpdateSuccess": "Profil Anda berhasil diperbarui!",
+    "requiredInformation": "Informasi yang Diperlukan",
+    "noNameProvided": "Tidak ada nama yang diberikan"
   },
   "login": {
     "title": "Masuk",

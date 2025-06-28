@@ -1,5 +1,36 @@
 {
+  "authFlow": {
+    "googleSignIn": {
+      "redirecting": "Weiterleitung zu Google...",
+      "processing": "Anmeldung läuft...",
+      "gettingProfile": "Profilinformationen werden abgerufen...",
+      "success": "Anmeldung erfolgreich! Du wirst weitergeleitet...",
+      "pleaseWait": "Bitte warten..."
+    },
+    "appleSignIn": {
+      "processing": "Anmeldung mit Apple...",
+      "success": "Anmeldung erfolgreich! Du wirst weitergeleitet...",
+      "pleaseWait": "Bitte warten..."
+    },
+    "completeProfile": {
+      "title": "Vervollständige dein Profil",
+      "subtitle": "Wir benötigen einige Details, um deine Erfahrung zu personalisieren und bessere Outfit-Vorschläge für dich zu erstellen.",
+      "nameFromAccount": "Diese Information stammt aus deinem Konto",
+      "noNameProvided": "Kein Name angegeben",
+      "selectDate": "Datum auswählen",
+      "done": "Fertig",
+      "success": "Profil erfolgreich aktualisiert",
+      "continueButton": "Weiter"
+    },
+    "errors": {
+      "signInFailed": "Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
+      "networkError": "Verbindung zum Server nicht möglich. Bitte überprüfe deine Internetverbindung.",
+      "updateFailed": "Aktualisierung des Profils fehlgeschlagen. Bitte versuche es erneut.",
+      "unexpectedError": "Während der Anmeldung ist ein unerwarteter Fehler aufgetreten."
+    }
+  },
   "common": {
+    "done": "Fertig",
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
     "delete": "Löschen",
@@ -12,18 +43,41 @@
     "searchPlaceholder": "Suchen...",
     "apply": "Anwenden",
     "goBack": "Zurück",
-    "error": "Ein unerwarteter Fehler ist aufgetreten.",
+    "error": "Fehler",
     "tryAgain": "Bitte versuche es erneut.",
     "saving": "Wird gespeichert...",
     "today": "Heute",
     "yesterday": "Gestern",
-    "daysAgo_one": "Vor {{count}} Tag",
-    "daysAgo_other": "Vor {{count}} Tagen",
-    "hoursAgo_one": "Vor {{count}} Stunde",
-    "hoursAgo_other": "Vor {{count}} Stunden",
-    "minutesAgo_one": "Vor {{count}} Minute",
-    "minutesAgo_other": "Vor {{count}} Minuten",
+    "daysAgo_one": "vor {{count}} Tag",
+    "daysAgo_other": "vor {{count}} Tagen",
+    "hoursAgo_one": "vor {{count}} Stunde",
+    "hoursAgo_other": "vor {{count}} Stunden",
+    "minutesAgo_one": "vor {{count}} Minute",
+    "minutesAgo_other": "vor {{count}} Minuten",
     "justNow": "Gerade eben"
+  },
+  "auth": {
+    "signInWithGoogle": "Mit Google anmelden",
+    "signInWithApple": "Mit Apple anmelden",
+    "continueAsGuest": "Als Gast fortfahren",
+    "signingInWithGoogle": "Anmeldung mit Google...",
+    "signingInWithApple": "Anmeldung mit Apple...",
+    "signInError": "Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
+    "completeProfile": "Vervollständige dein Profil",
+    "profileSubtitle": "Wir benötigen einige Details, um deine Erfahrung zu personalisieren und bessere Outfit-Vorschläge für dich zu erstellen.",
+    "updateInfoError": "Aktualisierung des Profils fehlgeschlagen. Bitte versuche es erneut.",
+    "continueButton": "Weiter",
+    "completeProfileButton": "Profil vervollständigen",
+    "selectGender": "Geschlecht auswählen",
+    "nameRequired": "Vollständiger Name ist erforderlich",
+    "nameMinLength": "Der Name muss mindestens 2 Zeichen lang sein",
+    "genderRequired": "Bitte wähle dein Geschlecht aus",
+    "ageMinimum": "Du musst mindestens 13 Jahre alt sein, um diese App zu nutzen",
+    "ageMaximum": "Bitte gib ein gültiges Geburtsdatum ein",
+    "requiredFields": "Erforderliche Felder",
+    "profileUpdateSuccess": "Dein Profil wurde erfolgreich aktualisiert!",
+    "requiredInformation": "Benötigte Informationen",
+    "noNameProvided": "Kein Name angegeben"
   },
   "login": {
     "title": "Anmelden",

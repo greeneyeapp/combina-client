@@ -1,12 +1,7 @@
-// store/clothingStore.ts (Güncellenmiş tam kod)
+// store/clothingStore.ts (Güncellenmiş - Galeri referansı tabanlı)
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { 
-  validateClothingImages, 
-  deleteImageFile,
-  cleanupMissingImages 
-} from '@/utils/optimizedImageStorage';
 
 export type ClothingItem = {
   id: string;
@@ -16,22 +11,43 @@ export type ClothingItem = {
   season: string[];
   style: string;
   notes: string;
-  imageUri: string;
+  imageUri: string; // Galeri referansı
   createdAt: string;
 };
 
 interface ClothingState {
   clothing: ClothingItem[];
-  isValidated: boolean; // Görsellerin doğrulanıp doğrulanmadığını takip et
-  isValidating: boolean; // Doğrulama işlemi devam ediyor mu
+  isValidated: boolean;
+  isValidating: boolean;
   addClothing: (item: ClothingItem) => void;
   removeClothing: (id: string) => void;
   updateClothing: (id: string, updatedItem: Partial<ClothingItem>) => void;
   clearAllClothing: () => void;
-  validateAndCleanImages: () => Promise<void>;
+  validateClothingImages: () => Promise<{ removedCount: number } | void>;
   setValidated: (validated: boolean) => void;
   setValidating: (validating: boolean) => void;
 }
+
+// Görsel URI'sinin hala geçerli olup olmadığını kontrol et
+const checkImageExists = async (imageUri: string): Promise<boolean> => {
+  try {
+    // HTTP/HTTPS URL'leri için
+    if (imageUri.startsWith('http')) {
+      return true; // Network URL'leri için varsayılan olarak true döndür
+    }
+    
+    // File system URI'leri için basit bir kontrol
+    if (imageUri.startsWith('file://')) {
+      const response = await fetch(imageUri, { method: 'HEAD' });
+      return response.ok;
+    }
+    
+    return false;
+  } catch (error) {
+    console.error(`Error checking image exists for URI: ${imageUri}`, error);
+    return false;
+  }
+};
 
 export const useClothingStore = create<ClothingState>()(
   persist(
@@ -44,17 +60,9 @@ export const useClothingStore = create<ClothingState>()(
         return { clothing: [...state.clothing, item] };
       }),
       
-      removeClothing: (id) => set((state) => {
-        // Kaldırılan öğenin görselini de sil
-        const itemToRemove = state.clothing.find(item => item.id === id);
-        if (itemToRemove) {
-          deleteImageFile(itemToRemove.imageUri).catch(console.error);
-        }
-        
-        return {
-          clothing: state.clothing.filter((item) => item.id !== id)
-        };
-      }),
+      removeClothing: (id) => set((state) => ({
+        clothing: state.clothing.filter((item) => item.id !== id)
+      })),
       
       updateClothing: (id, updatedItem) => set((state) => ({
         clothing: state.clothing.map((item) =>
@@ -70,10 +78,9 @@ export const useClothingStore = create<ClothingState>()(
       setValidated: (validated) => set({ isValidated: validated }),
       setValidating: (validating) => set({ isValidating: validating }),
       
-      validateAndCleanImages: async () => {
+      validateClothingImages: async () => {
         const { clothing, isValidated, isValidating } = get();
         
-        // Eğer zaten doğrulanmışsa veya doğrulama devam ediyorsa, çık
         if (isValidated || isValidating) return;
         
         set({ isValidating: true });
@@ -84,20 +91,25 @@ export const useClothingStore = create<ClothingState>()(
             return;
           }
           
-          const validItems = await cleanupMissingImages(clothing);
+          const validItems: ClothingItem[] = [];
+          let removedCount = 0;
           
-          if (validItems.length !== clothing.length) {
-            const removedCount = clothing.length - validItems.length;
-            console.warn(`Removing ${removedCount} items with missing images`);
-            
-            // Geçerli öğeleri store'da tut
+          for (const item of clothing) {
+            const exists = await checkImageExists(item.imageUri);
+            if (exists) {
+              validItems.push(item);
+            } else {
+              removedCount++;
+              console.warn(`Removing item ${item.name} - image no longer exists`);
+            }
+          }
+          
+          if (removedCount > 0) {
             set({ 
               clothing: validItems,
               isValidated: true,
               isValidating: false 
             });
-            
-            // Kullanıcıya toast bildirimi göster (bu fonksiyon çağrıldığında gösterilecek)
             return { removedCount };
           } else {
             set({ 
@@ -120,7 +132,6 @@ export const useClothingStore = create<ClothingState>()(
       name: 'clothing-storage',
       storage: createJSONStorage(() => AsyncStorage),
       
-      // Store yüklendiğinde görsel doğrulamayı sıfırla
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.isValidated = false;

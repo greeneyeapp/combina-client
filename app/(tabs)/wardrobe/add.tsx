@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/add.tsx (Güncellenmiş tam kod)
+// app/(tabs)/wardrobe/add.tsx (Güncellenmiş - Galeri referansı tabanlı)
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { Camera, Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library'; // Sadece kamera fotoğrafları için
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
@@ -21,7 +22,6 @@ import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import { optimizeAndSaveImage, formatFileSize } from '@/utils/optimizedImageStorage';
 
 type FormData = {
   name: string;
@@ -39,7 +39,6 @@ export default function AddClothingScreen() {
   const { userPlan } = useUserPlanStore();
   const [image, setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const { show: showAlert } = useAlertStore();
 
@@ -59,12 +58,11 @@ export default function AddClothingScreen() {
     },
   });
 
-  useFocusEffect(
+    useFocusEffect(
     useCallback(() => {
       reset({ name: '', category: '', color: '', season: [], style: [], notes: '' });
       setImage(null);
       setIsLoading(false);
-      setIsOptimizing(false);
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
   );
@@ -83,10 +81,10 @@ export default function AddClothingScreen() {
       const result = await ImagePicker.launchCameraAsync({ 
         allowsEditing: true, 
         aspect: [4, 3], 
-        quality: 1.0 // En yüksek kalitede al, sonra optimize edeceğiz
+        quality: 0.8 // Düşük kalite kullan, zaten referans olarak saklayacağız
       });
       if (!result.canceled) {
-        await processSelectedImage(result.assets[0].uri);
+        await processSelectedImage(result.assets[0].uri, true); // true = kameradan geldi
       }
     } catch (error) {
       console.log('Error taking picture:', error);
@@ -113,10 +111,10 @@ export default function AddClothingScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images, 
         allowsEditing: true, 
         aspect: [4, 3], 
-        quality: 1.0 // En yüksek kalitede al, sonra optimize edeceğiz
+        quality: 0.8 // Düşük kalite yeterli
       });
       if (!result.canceled) {
-        await processSelectedImage(result.assets[0].uri);
+        await processSelectedImage(result.assets[0].uri, false); // false = galeriden geldi
       }
     } catch (error) {
       console.log('Error picking image:', error);
@@ -128,27 +126,30 @@ export default function AddClothingScreen() {
     }
   };
 
-  const processSelectedImage = async (sourceUri: string) => {
-    setIsOptimizing(true);
+  const processSelectedImage = async (sourceUri: string, isFromCamera: boolean = false) => {
     try {
-      // Görseli optimize et ve kalıcı dizine kaydet
-      const result = await optimizeAndSaveImage(sourceUri);
+      let finalUri = sourceUri;
       
-      setImage(result.uri);
+      // Kamera fotoğrafıysa galeriye kaydet
+      if (isFromCamera) {
+        try {
+          // Sadece galeriye kaydetmek için minimal izin iste
+          const { status } = await MediaLibrary.requestPermissionsAsync(false); // false = sadece yazmak için
+          if (status === 'granted') {
+            const asset = await MediaLibrary.createAssetAsync(sourceUri);
+            finalUri = asset.uri;
+            console.log('📸 Camera photo saved to gallery:', finalUri);
+          } else {
+            console.log('⚠️ Gallery permission denied, using temp URI');
+            // İzin verilmezse geçici URI'yi kullan (risk var ama çalışır)
+          }
+        } catch (error) {
+          console.log('⚠️ Could not save to gallery:', error);
+          // Hata durumunda geçici URI'yi kullan
+        }
+      }
       
-      // Kullanıcıya optimizasyon sonucunu göster
-      Toast.show({
-        type: 'success',
-        text1: t('wardrobe.imageOptimized'),
-        text2: t('wardrobe.sizeReduced', { 
-          from: formatFileSize(result.originalSize),
-          to: formatFileSize(result.compressedSize)
-        }),
-        position: 'top',
-        visibilityTime: 3000,
-        topOffset: 50,
-      });
-      
+      setImage(finalUri);
     } catch (error) {
       console.error('Error processing image:', error);
       showAlert({ 
@@ -156,12 +157,12 @@ export default function AddClothingScreen() {
         message: t('wardrobe.errorProcessingImage'), 
         buttons: [{ text: t('common.ok'), onPress: () => {} }] 
       });
-    } finally {
-      setIsOptimizing(false);
     }
   };
 
-  const removeImage = () => setImage(null);
+  const removeImage = () => {
+    setImage(null);
+  };
 
   const onSubmit = async (data: FormData) => {
     if (!image) {
@@ -199,7 +200,7 @@ export default function AddClothingScreen() {
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
-        imageUri: image, // Bu zaten optimize edilmiş ve kalıcı dizinde
+        imageUri: image, // Doğrudan galeri URI'sini kullan
         createdAt: new Date().toISOString(),
       };
       
@@ -245,7 +246,7 @@ export default function AddClothingScreen() {
             ) : (
               <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
                 <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
-                  {isOptimizing ? t('wardrobe.optimizingImage') : t('wardrobe.addPhoto')}
+                  {t('wardrobe.addPhoto')}
                 </Text>
               </View>
             )}
@@ -256,7 +257,7 @@ export default function AddClothingScreen() {
                 onPress={takePicture} 
                 variant="outline" 
                 style={styles.imageButton} 
-                disabled={isLoading || isOptimizing} 
+                disabled={isLoading} 
               />
               <Button 
                 icon={<ImageIcon color={theme.colors.text} size={20} />} 
@@ -264,14 +265,9 @@ export default function AddClothingScreen() {
                 onPress={pickImage} 
                 variant="outline" 
                 style={styles.imageButton} 
-                disabled={isLoading || isOptimizing} 
+                disabled={isLoading} 
               />
             </View>
-            {isOptimizing && (
-              <Text style={[styles.optimizingText, { color: theme.colors.textLight }]}>
-                {t('wardrobe.optimizingInProgress')}
-              </Text>
-            )}
           </View>
           <View style={styles.formSection}>
             <Controller
@@ -286,7 +282,7 @@ export default function AddClothingScreen() {
                   onChangeText={onChange} 
                   value={value} 
                   error={errors.name?.message} 
-                  editable={!isLoading && !isOptimizing} 
+                  editable={!isLoading} 
                 />
               )}
             />
@@ -351,7 +347,7 @@ export default function AddClothingScreen() {
                   multiline 
                   numberOfLines={4} 
                   textAlignVertical="top" 
-                  editable={!isLoading && !isOptimizing} 
+                  editable={!isLoading} 
                 />
               )}
             />
@@ -360,7 +356,7 @@ export default function AddClothingScreen() {
               onPress={handleSubmit(onSubmit)} 
               variant="primary" 
               style={styles.saveButton} 
-              disabled={isLoading || isOptimizing} 
+              disabled={isLoading} 
               loading={isLoading}
             />
           </View>
@@ -383,13 +379,6 @@ const styles = StyleSheet.create({
   imagePlaceholderText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
   imageButtonsContainer: { flexDirection: 'row', justifyContent: 'space-between' },
   imageButton: { flex: 1, marginHorizontal: 4 },
-  optimizingText: { 
-    fontFamily: 'Montserrat-Regular', 
-    fontSize: 14, 
-    textAlign: 'center', 
-    marginTop: 8,
-    fontStyle: 'italic'
-  },
   formSection: { gap: 16 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },
   errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },

@@ -1,4 +1,5 @@
-import React from 'react';
+// app/(tabs)/wardrobe/[id].tsx (Güncellenmiş - Depolama yönetimi kaldırıldı)
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -10,7 +11,6 @@ import HeaderBar from '@/components/common/HeaderBar';
 import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
-import * as FileSystem from 'expo-file-system';
 
 export default function ClothingDetailScreen() {
   const { t, i18n } = useTranslation();
@@ -21,27 +21,17 @@ export default function ClothingDetailScreen() {
 
   const item = clothing.find((item) => item.id === id);
 
+  // Item silinmişse otomatik olarak wardrobe'a yönlendir
+  useEffect(() => {
+    if (!item && id) {
+      console.log('🚨 Item not found, redirecting to wardrobe');
+      router.replace('/(tabs)/wardrobe');
+    }
+  }, [item, id]);
+
+  // Item yoksa hiçbir şey render etme (yönlendirme olacak)
   if (!item) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <HeaderBar
-          title={t('wardrobe.itemDetails')}
-          leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-          onLeftPress={() => router.back()}
-        />
-        <View style={styles.notFound}>
-          <Text style={[styles.notFoundText, { color: theme.colors.text }]}>
-            {t('wardrobe.itemNotFound')}
-          </Text>
-          <Button
-            label={t('common.goBack')}
-            onPress={() => router.back()}
-            variant="primary"
-            style={styles.backButton}
-          />
-        </View>
-      </SafeAreaView>
-    );
+    return null;
   }
   
   const stylesArray = item.style ? item.style.split(',') : [];
@@ -58,15 +48,17 @@ export default function ClothingDetailScreen() {
             { text: t('common.cancel'), onPress: () => {}, variant: 'outline' },
             {
               text: t('common.delete'),
-              onPress: async () => {
+              onPress: () => {
                 try {
-                    // Cihaz hafızasından resmi sil
-                    if (item.imageUri.startsWith(FileSystem.documentDirectory || '')) {
-                        await FileSystem.deleteAsync(item.imageUri, { idempotent: true });
-                    }
-                    // Store'dan ürünü kaldır
+                    console.log('🗑️ Deleting item:', id);
+                    // Store'dan kaldır
                     removeClothing(id);
-                    router.back();
+                    console.log('✅ Item removed from store');
+                    
+                    // HEMEN wardrobe sayfasına git (alert kapanmadan önce)
+                    router.push('/(tabs)/wardrobe');
+                    console.log('🔄 Navigated to wardrobe');
+                    
                 } catch (error) {
                     console.error("Error deleting item:", error);
                     showAlert({title: t('common.error'), message: "Failed to delete item.", buttons: [{text: t('common.ok')}]})

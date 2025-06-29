@@ -1,3 +1,4 @@
+// app/(tabs)/profile/index.tsx (Güncellenmiş - Storage kısmı kaldırıldı)
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -34,7 +35,6 @@ import useAlertStore from '@/store/alertStore';
 import { getUserProfile } from '@/services/userService';
 import { restorePurchases } from '@/services/purchaseService';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
-import { HardDrive } from 'lucide-react-native';
 
 interface UsageInfo {
   daily_limit: number;
@@ -167,9 +167,24 @@ export default function ProfileScreen() {
       buttons: [
         { text: t('common.cancel') },
         {
-          text: t('common.continue'), onPress: () => {
-            logout();
-            router.replace('/(auth)');
+          text: t('common.continue'),
+          onPress: async () => {
+            try {
+              console.log('🚪 Logout button pressed');
+              await logout();
+              console.log('✅ Logout completed, navigating...');
+
+              // Navigation'ı logout'tan sonra yap
+              setTimeout(() => {
+                router.replace('/(auth)');
+                console.log('🔄 Navigated to auth screen');
+              }, 100);
+
+            } catch (error) {
+              console.error('🚨 Logout failed:', error);
+              // Hata olsa bile auth'a yönlendir
+              router.replace('/(auth)');
+            }
           }
         }
       ]
@@ -207,11 +222,9 @@ export default function ProfileScreen() {
         style={[styles.subscriptionCard, { backgroundColor: theme.colors.card }]}
         onPress={handleSubscriptionPress}
       >
-        {/* --- DÜZELTME BURADA --- */}
-        {/* Stil, planın 'free' olup olmamasına göre dinamik olarak ayarlanıyor */}
         <View style={[
           styles.subscriptionHeader,
-          currentPlan !== 'free' && { marginBottom: 0 } // Eğer plan 'free' değilse, alt boşluğu kaldır.
+          currentPlan !== 'free' && { marginBottom: 0 }
         ]}>
           <View style={styles.planInfo}>
             {getPlanIcon(currentPlan)}
@@ -293,16 +306,6 @@ export default function ProfileScreen() {
             {t('profile.account')}
           </Text>
           <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
-            <TouchableOpacity style={styles.settingRow} onPress={() => router.push('/(tabs)/profile/storage')}>
-              <View style={styles.settingLabelContainer}>
-                <HardDrive color={theme.colors.text} size={20} />
-                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('storage.title')}</Text>
-              </View>
-              <ChevronRight color={theme.colors.textLight} size={16} />
-            </TouchableOpacity>
-
-            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-            
             <TouchableOpacity style={styles.settingRow} onPress={handleHelpPress}>
               <View style={styles.settingLabelContainer}>
                 <HelpCircle color={theme.colors.text} size={20} />
@@ -401,7 +404,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12, // Bu sadece 'free' planında etkili olacak
+    marginBottom: 12,
   },
   planInfo: {
     flexDirection: 'row',

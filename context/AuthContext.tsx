@@ -1,3 +1,4 @@
+// context/AuthContext.tsx (Düzeltilmiş - Logout navigation sorunu)
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
@@ -175,10 +176,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      await Purchases.logOut(); await clearJwt(); setUser(null);
-      clearUserPlan(); await AsyncStorage.removeItem(USER_CACHE_KEY);
+      console.log('🚪 Starting logout process...');
+      
+      // 1. State'i hemen temizle (navigation için)
+      setUser(null);
+      console.log('✅ User state cleared');
+      
+      // 2. Stores'ları temizle
+      clearUserPlan();
+      console.log('✅ UserPlan store cleared');
+      
+      // 3. JWT'yi temizle
+      await clearJwt();
+      console.log('✅ JWT cleared');
+      
+      // 4. Cache'i temizle
+      await AsyncStorage.removeItem(USER_CACHE_KEY);
+      console.log('✅ User cache cleared');
+      
+      // 5. RevenueCat'i temizle (hata olabilir ama devam et)
+      try {
+        await Purchases.logOut();
+        console.log('✅ RevenueCat logout successful');
+      } catch (revenueCatError) {
+        console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
+        // RevenueCat hatası önemli değil, devam et
+      }
+      
+      console.log('🎉 Logout completed successfully');
+      
     } catch (error) {
-      console.error("Logout Error:", error);
+      console.error("🚨 Logout Error:", error);
+      // Hata olsa bile user state'i null yap
+      setUser(null);
+      clearUserPlan();
+      await AsyncStorage.removeItem(USER_CACHE_KEY);
     }
   };
 

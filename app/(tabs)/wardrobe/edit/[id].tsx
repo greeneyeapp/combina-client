@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx (Güncellenmiş tam kod)
+// app/(tabs)/wardrobe/edit/[id].tsx (Güncellenmiş - Galeri referansı tabanlı)
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { Camera, Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library'; // Sadece kamera fotoğrafları için
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
@@ -19,7 +20,6 @@ import SeasonPicker from '@/components/wardrobe/SeasonPicker';
 import StylePicker from '@/components/wardrobe/StylePicker';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import { optimizeAndSaveImage, deleteImageFile, formatFileSize } from '@/utils/optimizedImageStorage';
 
 type FormData = {
   name: string;
@@ -41,7 +41,6 @@ export default function EditClothingScreen() {
   const itemToEdit = clothing.find(item => item.id === id);
   const [image, setImage] = useState<string | null>(itemToEdit?.imageUri || null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isOptimizing, setIsOptimizing] = useState(false);
 
   const {
     control,
@@ -86,10 +85,10 @@ export default function EditClothingScreen() {
       const result = await ImagePicker.launchCameraAsync({ 
         allowsEditing: true, 
         aspect: [4, 3], 
-        quality: 1.0 
+        quality: 0.8 
       });
       if (!result.canceled) { 
-        await processSelectedImage(result.assets[0].uri);
+        await processSelectedImage(result.assets[0].uri, true); // true = kameradan geldi
       }
     } catch (error) { 
       console.log('Error taking picture:', error);
@@ -116,10 +115,10 @@ export default function EditClothingScreen() {
         mediaTypes: ImagePicker.MediaTypeOptions.Images, 
         allowsEditing: true, 
         aspect: [4, 3], 
-        quality: 1.0 
+        quality: 0.8 
       });
       if (!result.canceled) { 
-        await processSelectedImage(result.assets[0].uri);
+        await processSelectedImage(result.assets[0].uri, false); // false = galeriden geldi
       }
     } catch (error) { 
       console.log('Error picking image:', error);
@@ -131,27 +130,30 @@ export default function EditClothingScreen() {
     }
   };
 
-  const processSelectedImage = async (sourceUri: string) => {
-    setIsOptimizing(true);
+  const processSelectedImage = async (sourceUri: string, isFromCamera: boolean = false) => {
     try {
-      // Görseli optimize et ve kalıcı dizine kaydet
-      const result = await optimizeAndSaveImage(sourceUri);
+      let finalUri = sourceUri;
       
-      setImage(result.uri);
+      // Kamera fotoğrafıysa galeriye kaydet
+      if (isFromCamera) {
+        try {
+          // Sadece galeriye kaydetmek için minimal izin iste
+          const { status } = await MediaLibrary.requestPermissionsAsync(false); // false = sadece yazmak için
+          if (status === 'granted') {
+            const asset = await MediaLibrary.createAssetAsync(sourceUri);
+            finalUri = asset.uri;
+            console.log('📸 Camera photo saved to gallery:', finalUri);
+          } else {
+            console.log('⚠️ Gallery permission denied, using temp URI');
+            // İzin verilmezse geçici URI'yi kullan (risk var ama çalışır)
+          }
+        } catch (error) {
+          console.log('⚠️ Could not save to gallery:', error);
+          // Hata durumunda geçici URI'yi kullan
+        }
+      }
       
-      // Kullanıcıya optimizasyon sonucunu göster
-      Toast.show({
-        type: 'success',
-        text1: t('wardrobe.imageOptimized'),
-        text2: t('wardrobe.sizeReduced', { 
-          from: formatFileSize(result.originalSize),
-          to: formatFileSize(result.compressedSize)
-        }),
-        position: 'top',
-        visibilityTime: 3000,
-        topOffset: 50,
-      });
-      
+      setImage(finalUri);
     } catch (error) {
       console.error('Error processing image:', error);
       showAlert({ 
@@ -159,12 +161,12 @@ export default function EditClothingScreen() {
         message: t('wardrobe.errorProcessingImage'), 
         buttons: [{ text: t('common.ok') }] 
       });
-    } finally {
-      setIsOptimizing(false);
     }
   };
 
-  const removeImage = () => setImage(null);
+  const removeImage = () => {
+    setImage(null);
+  };
 
   const onSubmit = async (data: FormData) => {
     if (!image) {
@@ -179,32 +181,13 @@ export default function EditClothingScreen() {
 
     setIsLoading(true);
     try {
-      let finalImageUri = image;
-      let oldImageToDelete: string | null = null;
-
-      // Eğer görsel değiştirilmişse
-      if (image !== itemToEdit.imageUri) {
-        // Eski görseli silinecekler listesine ekle
-        if (itemToEdit.imageUri.includes('wardrobe_images/')) {
-          oldImageToDelete = itemToEdit.imageUri;
-        }
-        // Yeni görsel zaten optimize edilmiş ve kalıcı dizinde
-        finalImageUri = image;
-      }
-      
-      // Önce store'u güncelle
+      // Store'u güncelle - artık görsel silme işlemi yok
       updateClothing(id, {
         ...itemToEdit,
         ...data,
-        imageUri: finalImageUri,
+        imageUri: image, // Doğrudan galeri URI'sini kullan
         style: data.style.join(','),
       });
-      
-      // Sonra eski dosyayı sil (eğer varsa)
-      if (oldImageToDelete) {
-        await deleteImageFile(oldImageToDelete);
-        console.log(`🗑️ Deleted old image after update: ${oldImageToDelete}`);
-      }
       
       Toast.show({
         type: 'success',
@@ -256,7 +239,7 @@ export default function EditClothingScreen() {
             ) : (
               <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
                 <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
-                  {isOptimizing ? t('wardrobe.optimizingImage') : t('wardrobe.addPhoto')}
+                  {t('wardrobe.addPhoto')}
                 </Text>
               </View>
             )}
@@ -267,7 +250,7 @@ export default function EditClothingScreen() {
                 onPress={takePicture} 
                 variant="outline" 
                 style={styles.imageButton} 
-                disabled={isLoading || isOptimizing}
+                disabled={isLoading}
               />
               <Button 
                 icon={<ImageIcon color={theme.colors.text} size={20} />} 
@@ -275,14 +258,9 @@ export default function EditClothingScreen() {
                 onPress={pickImage} 
                 variant="outline" 
                 style={styles.imageButton} 
-                disabled={isLoading || isOptimizing}
+                disabled={isLoading}
               />
             </View>
-            {isOptimizing && (
-              <Text style={[styles.optimizingText, { color: theme.colors.textLight }]}>
-                {t('wardrobe.optimizingInProgress')}
-              </Text>
-            )}
           </View>
 
           <View style={styles.formSection}>
@@ -298,7 +276,7 @@ export default function EditClothingScreen() {
                   onChangeText={onChange} 
                   value={value} 
                   error={errors.name?.message} 
-                  editable={!isLoading && !isOptimizing}
+                  editable={!isLoading}
                 />
               )}
             />
@@ -363,7 +341,7 @@ export default function EditClothingScreen() {
                   multiline 
                   numberOfLines={4} 
                   textAlignVertical="top" 
-                  editable={!isLoading && !isOptimizing}
+                  editable={!isLoading}
                 />
               )}
             />
@@ -372,7 +350,7 @@ export default function EditClothingScreen() {
               onPress={handleSubmit(onSubmit)} 
               variant="primary" 
               style={styles.saveButton} 
-              disabled={isLoading || isOptimizing}
+              disabled={isLoading}
               loading={isLoading}
             />
           </View>
@@ -395,13 +373,6 @@ const styles = StyleSheet.create({
   imagePlaceholderText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
   imageButtonsContainer: { flexDirection: 'row', justifyContent: 'space-between' },
   imageButton: { flex: 1, marginHorizontal: 4 },
-  optimizingText: { 
-    fontFamily: 'Montserrat-Regular', 
-    fontSize: 14, 
-    textAlign: 'center', 
-    marginTop: 8,
-    fontStyle: 'italic'
-  },
   formSection: { gap: 16 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },
   errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },

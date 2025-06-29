@@ -1,6 +1,8 @@
+// hooks/useWardrobeLimit.ts (Düzeltilmiş - Auth state sync)
 import { useEffect, useState } from 'react';
 import { useClothingStore } from '@/store/clothingStore';
 import { useRevenueCat } from './useRevenueCat';
+import { useAuth } from '@/context/AuthContext';
 
 interface WardrobeLimitInfo {
   currentCount: number;
@@ -16,6 +18,7 @@ export const useWardrobeLimit = () => {
   // Plan bilgisini doğrudan RevenueCat'ten alıyoruz
   const { currentPlan, isLoading: isPlanLoading } = useRevenueCat();
   const { clothing } = useClothingStore();
+  const { user } = useAuth(); // Auth state'ini izle
   const [limitInfo, setLimitInfo] = useState<WardrobeLimitInfo | null>(null);
 
   const WARDROBE_LIMITS = {
@@ -24,7 +27,22 @@ export const useWardrobeLimit = () => {
     premium: Infinity,
   };
 
+  // User logout olduysa state'i temizle
   useEffect(() => {
+    if (!user) {
+      console.log('🧹 User logged out, clearing wardrobe limit state');
+      setLimitInfo(null);
+      return;
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // User yoksa hiçbir şey yapma
+    if (!user) {
+      setLimitInfo(null);
+      return;
+    }
+
     // Plan bilgisi yüklendiğinde limitleri hesapla
     if (!isPlanLoading) {
       const currentCount = clothing.length;
@@ -43,11 +61,18 @@ export const useWardrobeLimit = () => {
         canAdd,
         plan: currentPlan,
       });
-    }
-  }, [clothing.length, currentPlan, isPlanLoading]);
 
-  // Yükleme durumu olarak hem planın yüklenmesini hem de limit bilgisinin hesaplanmasını bekliyoruz
-  const isLoading = isPlanLoading || limitInfo === null;
+      console.log('📊 Wardrobe limit updated:', {
+        currentCount,
+        limit,
+        plan: currentPlan,
+        user: !!user
+      });
+    }
+  }, [clothing.length, currentPlan, isPlanLoading, user]); // user'ı dependency'ye ekle
+
+  // Yükleme durumu: user yoksa loading false, user varsa normal logic
+  const isLoading = !user ? false : (isPlanLoading || limitInfo === null);
 
   return { limitInfo, isLoading };
 };

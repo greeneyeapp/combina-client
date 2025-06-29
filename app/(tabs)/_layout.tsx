@@ -74,8 +74,6 @@ export default function TabLayout() {
       <Tabs.Screen name="wardrobe/edit/[id]" options={{ href: null }} />
       <Tabs.Screen name="profile/language" options={{ href: null }} />
       <Tabs.Screen name="profile/subscription" options={{ href: null }} />
-      <Tabs.Screen name="profile/storage" options={{ href: null }} />
-
     </Tabs>
   );
 }

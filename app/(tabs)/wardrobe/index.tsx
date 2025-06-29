@@ -1,3 +1,4 @@
+// app/(tabs)/wardrobe/index.tsx (Güncellenmiş - Galeri referansı tabanlı)
 import React, { useState, useMemo, useCallback  } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ import ClothingItem from '@/components/wardrobe/ClothingItem';
 import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
 import { useFocusEffect } from '@react-navigation/native';
+import Toast from 'react-native-toast-message';
 
 interface SectionData {
   title: string;
@@ -43,13 +45,13 @@ export default function WardrobeScreen() {
     styles: string[];
   }>({ categories: [], colors: [], seasons: [], styles: [] });
 
-  const { clothing, isValidated, validateAndCleanImages, isValidating } = useClothingStore();
+  const { clothing, isValidated, validateClothingImages, isValidating } = useClothingStore();
 
   useFocusEffect(
     useCallback(() => {
       if (!isValidated && !isValidating) {
         const performValidation = async () => {
-          const result = await validateAndCleanImages();
+          const result = await validateClothingImages();
           if (result?.removedCount > 0) {
             Toast.show({
               type: 'info',
@@ -63,7 +65,7 @@ export default function WardrobeScreen() {
         };
         performValidation();
       }
-    }, [isValidated, isValidating, validateAndCleanImages, t])
+    }, [isValidated, isValidating, validateClothingImages, t])
   );
 
   const getUsageColor = () => {
@@ -82,8 +84,6 @@ export default function WardrobeScreen() {
     }
     return result;
   }
-
-
 
   const filteredClothing = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -132,7 +132,6 @@ export default function WardrobeScreen() {
       id: mainCat,
     }));
   }, [filteredClothing, t, storedUserPlan?.gender]);
-
 
   const handleAddItem = () => router.push('/wardrobe/add');
   const handleItemPress = (id: string) => router.push(`/wardrobe/${id}`);

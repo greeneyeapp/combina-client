@@ -1,3 +1,4 @@
+// app/_layout.tsx (Düzeltilmiş navigation logic)
 import React, { useEffect, useState } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -25,14 +26,7 @@ function RootLayoutNav(): React.JSX.Element | null {
   const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
-
-  const [fontsLoaded, fontError] = useFonts({
-    'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
-    'Montserrat-Medium': require('../assets/fonts/Montserrat-Medium.ttf'),
-    'Montserrat-Bold': require('../assets/fonts/Montserrat-Bold.ttf'),
-    'PlayfairDisplay-Regular': require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
-    'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
-  });
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
     const isAppReady = (fontsLoaded || fontError) && !authLoading && navigationState?.key;
@@ -41,15 +35,68 @@ function RootLayoutNav(): React.JSX.Element | null {
     console.log('🔍 Navigation check - Current segments:', segments);
     console.log('🔍 Navigation check - User:', !!user);
     console.log('🔍 Navigation check - Auth flow active:', isAuthFlowActive);
+    console.log('🔍 Navigation check - Has navigated:', hasNavigated);
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
     const isNotFoundPage = segments.includes('+not-found');
     const isGoogleSignIn = segments.includes('google-signin');
+    const isAppleSignIn = segments.includes('apple-signin');
     const isCompleteProfile = segments.includes('complete-profile');
 
-    // Google sign-in sayfasındayken auth flow aktifse navigation'ı engelle
-    if (isGoogleSignIn && isAuthFlowActive) {
-      console.log('⏸️ On Google sign-in page with active auth flow, waiting...');
+    // Auth flow sırasında navigation'ı engelle
+    if ((isGoogleSignIn || isAppleSignIn) && isAuthFlowActive) {
+      console.log('⏸️ On sign-in page with active auth flow, waiting...');
+      return;
+    }
+
+    // Eğer user varsa ve auth sayfalarındaysa
+    if (user && inAuthGroup && !isCompleteProfile && !isGoogleSignIn && !isAppleSignIn) {
+      const hasGender = user.gender && user.gender !== null && user.gender !== '';
+      const hasBirthDate = user.birthDate && user.birthDate !== null && user.birthDate !== '';
+      
+      if (!hasGender || !hasBirthDate) {
+        console.log('🔄 User logged in but profile incomplete, redirecting to complete-profile');
+        if (!hasNavigated) {
+          router.replace('/(auth)/complete-profile');
+          setHasNavigated(true);
+        }
+      } else {
+        console.log('🔄 User logged in and profile complete, redirecting to wardrobe');
+        if (!hasNavigated) {
+          router.replace('/(tabs)/wardrobe');
+          setHasNavigated(true);
+          
+          // Onboarding kontrolü
+          setTimeout(async () => {
+            try {
+              const isCompleted = await checkIfOnboardingCompleted();
+              if (!isCompleted) {
+                console.log('🎯 Starting onboarding for first time user');
+                startOnboarding();
+              }
+            } catch (error) {
+              console.error('Error checking onboarding:', error);
+            }
+          }, 1000);
+        }
+      }
+      return;
+    }
+
+    // Complete profile sayfasındaysa navigation'ı engelle
+    if (isCompleteProfile && user) {
+      console.log('📝 On complete-profile page, staying here');
+      return;
+    }
+
+    // User yoksa ve auth sayfalarında değilse
+    if (!user && !inAuthGroup && !authLoading) {
+      console.log('🔄 No user, redirecting to auth index');
+      if (!hasNavigated) {
+        router.replace('/(auth)');
+        setHasNavigated(true);
+      }
       return;
     }
 
@@ -68,51 +115,29 @@ function RootLayoutNav(): React.JSX.Element | null {
       } else {
         router.replace('/(auth)');
       }
-      SplashScreen.hideAsync();
       return;
     }
 
-    if (user) {
-      const hasGender = user.gender && user.gender !== null && user.gender !== '';
-      const hasBirthDate = user.birthDate && user.birthDate !== null && user.birthDate !== '';
-      
-      // Complete profile sayfasındaysa navigation'ı engelle
-      if (isCompleteProfile) {
-        console.log('📝 On complete-profile page, staying here');
-        return;
-      }
-      
-      if (inAuthGroup && !isGoogleSignIn && !isCompleteProfile) {
-        if (!hasGender || !hasBirthDate) {
-          console.log('🔄 User logged in but profile incomplete, redirecting to complete-profile');
-          router.replace('/(auth)/complete-profile');
-        } else {
-          console.log('🔄 User logged in and profile complete, redirecting to wardrobe');
-          router.replace('/(tabs)/wardrobe');
-          
-          // Onboarding kontrolü
-          setTimeout(async () => {
-            try {
-              const isCompleted = await checkIfOnboardingCompleted();
-              if (!isCompleted) {
-                console.log('🎯 Starting onboarding for first time user');
-                startOnboarding();
-              }
-            } catch (error) {
-              console.error('Error checking onboarding:', error);
-            }
-          }, 1000);
-        }
-      }
-    } else {
-      if (!inAuthGroup && !authLoading) {
-        console.log('🔄 No user, redirecting to auth index');
-        router.replace('/(auth)');
-      }
+    // Navigation tamamlandıysa state'i reset et
+    if (hasNavigated && (inTabsGroup || (inAuthGroup && segments.length > 1))) {
+      setHasNavigated(false);
     }
     
     SplashScreen.hideAsync();
-  }, [user, segments, authLoading, fontsLoaded, fontError, navigationState?.key, isAuthFlowActive]);
+  }, [user, segments, authLoading, fontsLoaded, fontError, navigationState?.key, isAuthFlowActive, hasNavigated]);
+
+  // User değiştiğinde navigation state'ini reset et
+  useEffect(() => {
+    setHasNavigated(false);
+  }, [user?.uid]); // User UID'sine göre reset et
+
+  const [fontsLoaded, fontError] = useFonts({
+    'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
+    'Montserrat-Medium': require('../assets/fonts/Montserrat-Medium.ttf'),
+    'Montserrat-Bold': require('../assets/fonts/Montserrat-Bold.ttf'),
+    'PlayfairDisplay-Regular': require('../assets/fonts/PlayfairDisplay-Regular.ttf'),
+    'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
+  });
 
   if (!fontsLoaded && !fontError) {
     return null;

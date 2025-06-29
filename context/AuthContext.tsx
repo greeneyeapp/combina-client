@@ -1,4 +1,5 @@
-// context/AuthContext.tsx (Düzeltilmiş - Logout navigation sorunu)
+// kodlar/context/AuthContext.tsx
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
@@ -83,13 +84,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSkipInitialize(true);
 
     try {
-      console.log('🔄 Processing Google sign-in...');
-
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
-
-      console.log('📦 Received user info:', user_info);
-
       const completeUserInfo = {
         uid: user_info?.uid,
         name: user_info?.name || '',
@@ -102,39 +98,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         provider: 'google',
         isAnonymous: false
       };
-
-      console.log('💾 Setting user and saving to storage...');
       setUser(completeUserInfo);
       await setJwt(access_token);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
-
       if (user_info?.uid) {
-        console.log('🔑 Logging into RevenueCat...');
         await Purchases.logIn(user_info.uid);
       }
-
-      console.log('🎯 Initializing user profile...');
       await initializeUserProfile();
-
-      console.log('✅ Google sign-in completed successfully');
-
-      // DÜZELTME: Tüm flag'leri sırası ile temizle
       setLoading(false);
       setSkipInitialize(false);
-      setAuthFlowActive(false);
-
-      console.log('🔄 Auth flow completed, flags cleared');
-
       return completeUserInfo;
-
     } catch (error) {
-      console.error('❌ GOOGLE SIGN-IN ERROR:', error);
-
-      // Hata durumunda tüm flag'leri temizle
       setLoading(false);
       setSkipInitialize(false);
-      setAuthFlowActive(false);
-
+      console.error('❌ GOOGLE SIGN-IN ERROR:', error);
       throw error;
     }
   };
@@ -158,7 +135,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       return completeUserInfo;
     } catch (error) {
-      setLoading(false); console.error('Apple sign in error:', error); throw error;
+      setLoading(false);
+      console.error('Apple sign in error:', error);
+      throw error;
     }
   };
 
@@ -177,37 +156,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       console.log('🚪 Starting logout process...');
-      
-      // 1. State'i hemen temizle (navigation için)
       setUser(null);
       console.log('✅ User state cleared');
-      
-      // 2. Stores'ları temizle
       clearUserPlan();
       console.log('✅ UserPlan store cleared');
-      
-      // 3. JWT'yi temizle
       await clearJwt();
       console.log('✅ JWT cleared');
-      
-      // 4. Cache'i temizle
       await AsyncStorage.removeItem(USER_CACHE_KEY);
       console.log('✅ User cache cleared');
-      
-      // 5. RevenueCat'i temizle (hata olabilir ama devam et)
       try {
         await Purchases.logOut();
         console.log('✅ RevenueCat logout successful');
       } catch (revenueCatError) {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
-        // RevenueCat hatası önemli değil, devam et
       }
-      
       console.log('🎉 Logout completed successfully');
-      
     } catch (error) {
       console.error("🚨 Logout Error:", error);
-      // Hata olsa bile user state'i null yap
       setUser(null);
       clearUserPlan();
       await AsyncStorage.removeItem(USER_CACHE_KEY);

@@ -1,7 +1,8 @@
+// kodlar/app/(auth)/google-signin.tsx
+
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native'; // Platform eklendi
+import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
@@ -27,7 +28,6 @@ export default function GoogleSignInScreen() {
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusMessage, setStatusMessage] = useState(t('authFlow.googleSignIn.redirecting'));
-    const [promptStarted, setPromptStarted] = useState(false);
 
     const [request, response, promptAsync] = Google.useAuthRequest({
         androidClientId: __DEV__ ? androidClientIdDev : androidClientIdProd,
@@ -35,70 +35,48 @@ export default function GoogleSignInScreen() {
         scopes: ['profile', 'email'],
     });
 
+    // Google giriş ekranını tetikle
     useEffect(() => {
-        if (Platform.OS !== 'web' && request && !promptStarted && !isProcessing) {
-            console.log('🚀 Setting Auth Flow to ACTIVE and starting Google prompt...');
+        if (request) {
             setAuthFlowActive(true);
-            setPromptStarted(true);
-            promptAsync();
+            promptAsync().catch(error => {
+                console.error("promptAsync error:", error);
+                setAuthFlowActive(false); // Hata olursa akışı bitir
+            });
         }
-    }, [request, promptStarted, isProcessing]);
+    }, [request]);
 
+    // Google'dan gelen cevabı işle
     useEffect(() => {
         if (!response) return;
 
-        console.log('✅ Google response received:', response.type);
-
         if (response.type === 'success' && response.authentication?.accessToken) {
             setIsProcessing(true);
-            setStatusMessage(t('authFlow.googleSignIn.processing'));
             handleGoogleSignIn(response.authentication.accessToken);
         } else {
             console.log('Google auth failed or cancelled:', response.type);
-            handleError();
+            setAuthFlowActive(false); // İptal veya hata durumunda akışı sonlandır
         }
     }, [response]);
-
-    const handleError = () => {
-        console.log('🔄 Cleaning up auth flow and redirecting...');
-        setAuthFlowActive(false);
-        setIsProcessing(false);
-        setTimeout(() => {
-            router.replace('/(auth)');
-        }, 100);
-    };
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-
-            console.log('🔑 Starting signInWithGoogle...');
             await signInWithGoogle(accessToken);
-            console.log('✅ signInWithGoogle completed, cleaning up...');
-
-            setStatusMessage(t('authFlow.googleSignIn.success'));
-            setIsProcessing(false);
-
-            console.log('🧹 Cleaning auth flow and redirecting...');
-            setAuthFlowActive(false);
-
-            setTimeout(() => {
-                router.replace('/(auth)');
-            }, 200);
-
+            console.log('✅ signInWithGoogle completed. RootLayout will handle navigation.');
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
-            handleError();
-
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
                 ? t('authFlow.errors.networkError')
                 : t('authFlow.errors.signInFailed');
-
             showAlert({
                 title: t('common.error'),
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
+        } finally {
+            // Başarılı veya başarısız, her durumda auth akışını bitiriyoruz.
+            setAuthFlowActive(false);
         }
     };
 

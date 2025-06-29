@@ -1,3 +1,5 @@
+// kodlar/app/(tabs)/profile/subscription.tsx
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,7 +7,7 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import {
-  ArrowLeft, Crown, Star, CheckCircle2, Sparkles, Shirt, TrendingUp, ShieldX, Heart
+  ArrowLeft, Crown, Star, CheckCircle2, Sparkles, Shirt, TrendingUp, ShieldX, Heart, Zap
 } from 'lucide-react-native';
 import Button from '@/components/common/Button';
 import Purchases, { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
@@ -24,10 +26,7 @@ const planHierarchy = {
 
 // --- DÜZELTME: Bu fonksiyon artık HER ZAMAN pkg.identifier kullanıyor ---
 const getPackageIdentifier = (pkg: PurchasesPackage): keyof typeof planHierarchy | null => {
-    // pkg.product.identifier yerine doğrudan pkg.identifier kullanıyoruz.
     const id = pkg.identifier.toLowerCase();
-    
-    // RevenueCat ID'leri her zaman tutarlı olduğu için bu kontrol artık güvenli.
     if (id.includes('premium_annual')) return 'premium_annual';
     if (id.includes('premium_monthly')) return 'premium_monthly';
     if (id.includes('standard_annual')) return 'standard_annual';
@@ -166,6 +165,36 @@ export default function SubscriptionScreen() {
       </View>
     );
   };
+  
+  // --- YENİ FONKSİYON: MEVCUT FREE PLANI GÖSTEREN KUTU ---
+  const renderCurrentFreePlanInfo = () => {
+    // Eğer mevcut plan free değilse, bu kutuyu hiç gösterme.
+    if (currentPlan !== 'free') {
+      return null;
+    }
+
+    // Çeviri dosyasından özellikleri bir dizi olarak alıyoruz.
+    const freeFeatures = t('subscription.free.features', { returnObjects: true }) as string[];
+
+    return (
+      <View style={[styles.freePlanContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <View style={styles.freePlanHeader}>
+          <Zap size={18} color={theme.colors.textLight} />
+          <Text style={[styles.freePlanTitle, { color: theme.colors.text }]}>
+            {t('subscription.free.title')}
+          </Text>
+        </View>
+        <View style={styles.freePlanFeatures}>
+          {freeFeatures.map((feature, index) => (
+            <Text key={index} style={[styles.freePlanFeatureText, { color: theme.colors.textLight }]}>
+              • {feature}
+            </Text>
+          ))}
+        </View>
+      </View>
+    );
+  };
+
 
   const renderContent = () => {
     if (loading || isRevenueCatLoading) {
@@ -184,7 +213,6 @@ export default function SubscriptionScreen() {
       );
     }
 
-    // --- DÜZELTME: Filtrelemeyi basitleştiriyoruz ---
     const packages = isYearly
       ? offerings.availablePackages.filter(p => p.identifier.toLowerCase().includes('annual'))
       : offerings.availablePackages.filter(p => p.identifier.toLowerCase().includes('monthly'));
@@ -197,6 +225,10 @@ export default function SubscriptionScreen() {
 
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          
+          {/* --- YENİ BİLGİLENDİRME KUTUSU BURADA GÖSTERİLİYOR --- */}
+          {renderCurrentFreePlanInfo()}
+          
           <View style={styles.heroSection}>
               <Sparkles color={theme.colors.primary} size={32} />
               <Text style={[styles.heroTitle, { color: theme.colors.text }]}>{t('subscription.heroTitle')}</Text>
@@ -241,7 +273,36 @@ const styles = StyleSheet.create({
     content: { flex: 1 },
     centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, padding: 24 },
     messageText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
-    heroSection: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24 },
+
+    // --- YENİ STİLLER ---
+    freePlanContainer: {
+      marginHorizontal: 16,
+      marginTop: 16,
+      padding: 16,
+      borderRadius: 12,
+      borderWidth: 1,
+    },
+    freePlanHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    freePlanTitle: {
+      fontFamily: 'Montserrat-Bold',
+      fontSize: 14,
+      marginLeft: 8,
+    },
+    freePlanFeatures: {
+      gap: 6,
+    },
+    freePlanFeatureText: {
+      fontFamily: 'Montserrat-Regular',
+      fontSize: 13,
+      lineHeight: 18,
+    },
+
+    // Diğer stiller
+    heroSection: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24, paddingTop: 32 },
     heroTitle: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 28, textAlign: 'center', marginTop: 16, marginBottom: 8 },
     heroSubtitle: { fontFamily: 'Montserrat-Regular', fontSize: 16, textAlign: 'center', lineHeight: 22 },
     billingToggle: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 32, gap: 12 },

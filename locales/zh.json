@@ -573,6 +573,18 @@
       "noAds": "流畅无广告的体验",
       "advancedTips": "让您的风格更上一层楼的建议",
       "pinterestInspiration": "从您的 Pinterest 看板获取灵感，提升个人风格"
+    },
+    "free": {
+      "title": "您当前的计划：免费",
+      "description": "您可以随时升级以解锁更多功能。",
+      "features": [
+        "衣橱中最多可存放30件物品",
+        "每天2个个性化穿搭建议",
+        "含广告的体验"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "正在重定向..."
   }
 }

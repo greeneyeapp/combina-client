@@ -573,6 +573,18 @@
       "noAds": "Une expérience fluide et sans publicité",
       "advancedTips": "Des conseils pour faire passer votre style au niveau supérieur",
       "pinterestInspiration": "L'inspiration de vos tableaux Pinterest pour sublimer votre style"
+    },
+    "free": {
+      "title": "Votre Forfait Actuel : Gratuit",
+      "description": "Vous pouvez passer à un forfait supérieur à tout moment pour débloquer plus de fonctionnalités.",
+      "features": [
+        "Jusqu'à 30 articles dans votre garde-robe",
+        "2 idées de tenues personnalisées par jour",
+        "Expérience financée par la publicité"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Redirection..."
   }
 }

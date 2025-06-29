@@ -573,6 +573,18 @@
       "noAds": "Ein nahtloses, werbefreies Erlebnis",
       "advancedTips": "Tipps, um deinen Stil auf das nächste Level zu bringen",
       "pinterestInspiration": "Inspiration von deinen Pinterest-Pinnwänden, um deinen Stil zu verfeinern"
+    },
+    "free": {
+      "title": "Dein aktueller Plan: Kostenlos",
+      "description": "Du kannst jederzeit ein Upgrade durchführen, um weitere Funktionen freizuschalten.",
+      "features": [
+        "Bis zu 30 Kleidungsstücke in deinem Schrank",
+        "Täglich 2 personalisierte Outfit-Ideen",
+        "Werbeunterstütztes Erlebnis"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Leite weiter..."
   }
 }

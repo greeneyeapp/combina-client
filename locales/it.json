@@ -573,6 +573,18 @@
       "noAds": "Un'esperienza fluida e senza pubblicità",
       "advancedTips": "Consigli per portare il tuo stile al livello successivo",
       "pinterestInspiration": "Ispirazione dalle tue bacheche Pinterest per elevare il tuo stile"
+    },
+    "free": {
+      "title": "Il Tuo Piano Attuale: Gratuito",
+      "description": "Puoi fare l'upgrade in qualsiasi momento per sbloccare più funzionalità.",
+      "features": [
+        "Fino a 30 articoli nel tuo guardaroba",
+        "2 idee di outfit personalizzate al giorno",
+        "Esperienza supportata da pubblicità"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Reindirizzamento..."
   }
 }

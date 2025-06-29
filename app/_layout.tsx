@@ -1,5 +1,6 @@
-// app/_layout.tsx (Düzeltilmiş navigation logic)
-import React, { useEffect, useState } from 'react';
+// kodlar/app/_layout.tsx
+
+import React, { useEffect } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,7 +10,6 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/locales/i18n';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
-import { useOnboardingStore } from '@/store/onboardingStore';
 import CustomAlert from '@/components/common/CustomAlert';
 import Toast, { BaseToastProps } from 'react-native-toast-message';
 import CustomToast from '@/components/common/CustomToast';
@@ -21,116 +21,66 @@ import { initializeApp } from '@/utils/appInitialization';
 
 SplashScreen.preventAutoHideAsync();
 
-function RootLayoutNav(): React.JSX.Element | null {
+function useProtectedRouter() {
   const { user, loading: authLoading, isAuthFlowActive } = useAuth();
-  const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
-  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
-    const isAppReady = (fontsLoaded || fontError) && !authLoading && navigationState?.key;
-    if (!isAppReady) return;
+    // Navigasyon hazır değilse bekle.
+    if (!navigationState?.key) return;
+    
+    const isNotFound = segments.includes('+not-found');
 
-    console.log('🔍 Navigation check - Current segments:', segments);
-    console.log('🔍 Navigation check - User:', !!user);
-    console.log('🔍 Navigation check - Auth flow active:', isAuthFlowActive);
-    console.log('🔍 Navigation check - Has navigated:', hasNavigated);
-
-    const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
-    const isNotFoundPage = segments.includes('+not-found');
-    const isGoogleSignIn = segments.includes('google-signin');
-    const isAppleSignIn = segments.includes('apple-signin');
-    const isCompleteProfile = segments.includes('complete-profile');
-
-    // Auth flow sırasında navigation'ı engelle
-    if ((isGoogleSignIn || isAppleSignIn) && isAuthFlowActive) {
-      console.log('⏸️ On sign-in page with active auth flow, waiting...');
-      return;
-    }
-
-    // Eğer user varsa ve auth sayfalarındaysa
-    if (user && inAuthGroup && !isCompleteProfile && !isGoogleSignIn && !isAppleSignIn) {
-      const hasGender = user.gender && user.gender !== null && user.gender !== '';
-      const hasBirthDate = user.birthDate && user.birthDate !== null && user.birthDate !== '';
-      
-      if (!hasGender || !hasBirthDate) {
-        console.log('🔄 User logged in but profile incomplete, redirecting to complete-profile');
-        if (!hasNavigated) {
-          router.replace('/(auth)/complete-profile');
-          setHasNavigated(true);
-        }
-      } else {
-        console.log('🔄 User logged in and profile complete, redirecting to wardrobe');
-        if (!hasNavigated) {
-          router.replace('/(tabs)/wardrobe');
-          setHasNavigated(true);
-          
-          // Onboarding kontrolü
-          setTimeout(async () => {
-            try {
-              const isCompleted = await checkIfOnboardingCompleted();
-              if (!isCompleted) {
-                console.log('🎯 Starting onboarding for first time user');
-                startOnboarding();
-              }
-            } catch (error) {
-              console.error('Error checking onboarding:', error);
-            }
-          }, 1000);
-        }
-      }
-      return;
-    }
-
-    // Complete profile sayfasındaysa navigation'ı engelle
-    if (isCompleteProfile && user) {
-      console.log('📝 On complete-profile page, staying here');
-      return;
-    }
-
-    // User yoksa ve auth sayfalarında değilse
-    if (!user && !inAuthGroup && !authLoading) {
-      console.log('🔄 No user, redirecting to auth index');
-      if (!hasNavigated) {
-        router.replace('/(auth)');
-        setHasNavigated(true);
-      }
-      return;
-    }
-
-    // Not-found sayfasındaysak ve auth flow aktif değilse yönlendir
-    if (isNotFoundPage && !isAuthFlowActive) {
-      console.log('🔄 User on not-found page, redirecting...');
-      
-      if (user) {
-        const hasGender = user.gender && user.gender !== null && user.gender !== '';
-        const hasBirthDate = user.birthDate && user.birthDate !== null && user.birthDate !== '';
-        if (!hasGender || !hasBirthDate) {
-          router.replace('/(auth)/complete-profile');
+    // --- İnternetten Bulunan Çözüm: GECİKMELİ YÖNLENDİRME ---
+    // Eğer Expo Router yolunu şaşırıp +not-found'a düşerse,
+    // bu genellikle harici bir işlemden (Google/Apple girişi) sonra olur.
+    // State'in oturması için çok kısa bir gecikme ile yönlendirme yapacağız.
+    if (isNotFound) {
+      console.log("⚠️ Detected '+not-found' state. Applying delayed redirect based on research...");
+      const timer = setTimeout(() => {
+        // Gecikme sonunda, kullanıcı durumu ne ise ona göre karar ver.
+        if (user) {
+          const profileComplete = user.gender && user.birthDate;
+          if (profileComplete) {
+            router.replace('/(tabs)/wardrobe');
+          } else {
+            router.replace('/(auth)/complete-profile');
+          }
         } else {
-          router.replace('/(tabs)/wardrobe');
+          router.replace('/(auth)');
         }
-      } else {
-        router.replace('/(auth)');
-      }
-      return;
+      }, 150); // State'in güncellenmesi için 150ms bekle.
+
+      return () => clearTimeout(timer); // Hook'tan çıkılırsa zamanlayıcıyı temizle.
     }
 
-    // Navigation tamamlandıysa state'i reset et
-    if (hasNavigated && (inTabsGroup || (inAuthGroup && segments.length > 1))) {
-      setHasNavigated(false);
+    // İşlem devam ediyorsa dokunma.
+    if (authLoading || isAuthFlowActive) {
+      return;
     }
     
-    SplashScreen.hideAsync();
-  }, [user, segments, authLoading, fontsLoaded, fontError, navigationState?.key, isAuthFlowActive, hasNavigated]);
+    const inAuthGroup = segments[0] === '(auth)';
+    const inTabsGroup = segments[0] === '(tabs)';
 
-  // User değiştiğinde navigation state'ini reset et
-  useEffect(() => {
-    setHasNavigated(false);
-  }, [user?.uid]); // User UID'sine göre reset et
+    // Standart yönlendirme kuralları (eğer +not-found durumu yoksa çalışacak)
+    if (user) {
+      const profileComplete = user.gender && user.birthDate;
+      if (!profileComplete && segments[1] !== 'complete-profile') {
+        router.replace('/(auth)/complete-profile');
+      } else if (profileComplete && inAuthGroup) {
+        router.replace('/(tabs)/wardrobe');
+      }
+    } else {
+      if (inTabsGroup) {
+        router.replace('/(auth)');
+      }
+    }
+  }, [navigationState?.key, user, segments, authLoading, isAuthFlowActive]);
+}
 
+
+function RootLayoutNav(): React.JSX.Element | null {
   const [fontsLoaded, fontError] = useFonts({
     'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
     'Montserrat-Medium': require('../assets/fonts/Montserrat-Medium.ttf'),
@@ -139,13 +89,21 @@ function RootLayoutNav(): React.JSX.Element | null {
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
   });
 
+  useProtectedRouter(); // Yönlendirme mantığını burada çağırıyoruz.
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, fontError]);
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
@@ -155,8 +113,8 @@ function RootLayoutNav(): React.JSX.Element | null {
   );
 }
 
+
 export default function RootLayout(): React.JSX.Element {
-  const [servicesInitialized, setServicesInitialized] = useState(false);
   const toastConfig: Record<string, (props: BaseToastProps) => React.JSX.Element> = {
     success: (props) => <CustomToast {...props} type="success" />,
     info: (props) => <CustomToast {...props} type="info" />,
@@ -168,27 +126,49 @@ export default function RootLayout(): React.JSX.Element {
       try {
         const langPromise = (async () => {
           const savedLanguage = await AsyncStorage.getItem('app_language');
-          if (savedLanguage) { await i18n.changeLanguage(savedLanguage); }
-          else {
-            const deviceLanguage = Localization.getLocales()[0].languageCode;
-            const supportedLanguages = ['en', 'tr'];
-            const finalLanguage = supportedLanguages.includes(deviceLanguage) ? deviceLanguage : 'en';
+          
+          if (savedLanguage) {
+            // Kayıtlı dil varsa, onu kullan.
+            await i18n.changeLanguage(savedLanguage);
+          } else {
+            // Kayıtlı dil yoksa, cihaz dilini kontrol et.
+            
+            // 1. DEĞİŞİKLİK: DESTEKLENEN TÜM DİLLERİ BURAYA EKLİYORUZ.
+            const supportedLanguages = [
+              'ar', 'bg', 'de', 'el', 'en', 'es', 'fr', 'he', 'hi', 
+              'id', 'it', 'ja', 'ko', 'pt', 'ru', 'tl', 'tr', 'zh'
+            ];
+            
+            // 2. DEĞİŞİKLİK: NULL KONTROLÜ İLE TYPESCRIPT HATASINI ÇÖZÜYORUZ.
+            // Cihazın ilk dilini al, eğer yoksa varsayılan olarak 'en' kullan.
+            const deviceLanguageCode = Localization.getLocales()[0]?.languageCode ?? 'en';
+
+            // Cihazın dili desteklenen diller arasında mı kontrol et.
+            const finalLanguage = supportedLanguages.includes(deviceLanguageCode) 
+              ? deviceLanguageCode 
+              : 'en'; // Desteklenmiyorsa yine İngilizce'ye dön.
+              
             await i18n.changeLanguage(finalLanguage);
             await AsyncStorage.setItem('app_language', finalLanguage);
           }
         })();
+        
         const purchasesPromise = (async () => {
           const apiKey = Platform.select({ ios: 'appl_DuXXAykkepzomdHesCIharljFmd', android: 'goog_PDkLWblJUhcgbNKkgItuNKXvkZh' });
-          if (apiKey) { await Purchases.configure({ apiKey }); console.log(`RevenueCat initialized successfully for ${Platform.OS}`); }
+          if (apiKey) { 
+            await Purchases.configure({ apiKey }); 
+            console.log(`RevenueCat initialized successfully for ${Platform.OS}`); 
+          }
         })();
+
         const appInitPromise = initializeApp();
+        
         await Promise.all([langPromise, purchasesPromise, appInitPromise]);
       } catch (error) {
         console.error('Failed to initialize app services:', error);
-      } finally {
-        setServicesInitialized(true);
       }
     };
+    
     initializeAppServices();
   }, []);
 

@@ -573,6 +573,18 @@
       "noAds": "A seamless, ad-free experience",
       "advancedTips": "Advice to take your style to the next level",
       "pinterestInspiration": "Inspiration from your Pinterest boards to elevate your style"
+    },
+    "free": {
+      "title": "Your Current Plan: Free",
+      "description": "You can upgrade at any time to unlock more features.",
+      "features": [
+        "Up to 30 items in your wardrobe",
+        "2 personalized outfit ideas daily",
+        "Ad-supported experience"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Redirecting..."
   }
 }

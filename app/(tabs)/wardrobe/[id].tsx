@@ -1,5 +1,6 @@
-// app/(tabs)/wardrobe/[id].tsx (Güncellenmiş - Depolama yönetimi kaldırıldı)
-import React, { useEffect } from 'react';
+// kodlar/app/(tabs)/wardrobe/[id].tsx
+
+import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
@@ -8,7 +9,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { ArrowLeft, Edit2, Trash2 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
-import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
 
@@ -16,21 +16,16 @@ export default function ClothingDetailScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { clothing, removeClothing } = useClothingStore();
+  // setClothing fonksiyonunu store'dan alıyoruz.
+  const { clothing, setClothing } = useClothingStore();
   const { show: showAlert } = useAlertStore();
 
   const item = clothing.find((item) => item.id === id);
 
-  // Item silinmişse otomatik olarak wardrobe'a yönlendir
-  useEffect(() => {
-    if (!item && id) {
-      console.log('🚨 Item not found, redirecting to wardrobe');
-      router.replace('/(tabs)/wardrobe');
-    }
-  }, [item, id]);
-
-  // Item yoksa hiçbir şey render etme (yönlendirme olacak)
   if (!item) {
+    // Eğer bir şekilde bu sayfaya gelindiğinde eşya yoksa,
+    // (ki bu normalde olmamalı) bir şey gösterme.
+    // Kullanıcı zaten listede olmadığı için tıklayamaz.
     return null;
   }
   
@@ -49,19 +44,15 @@ export default function ClothingDetailScreen() {
             {
               text: t('common.delete'),
               onPress: () => {
-                try {
-                    console.log('🗑️ Deleting item:', id);
-                    // Store'dan kaldır
-                    removeClothing(id);
-                    console.log('✅ Item removed from store');
-                    
-                    // HEMEN wardrobe sayfasına git (alert kapanmadan önce)
-                    router.push('/(tabs)/wardrobe');
-                    console.log('🔄 Navigated to wardrobe');
-                    
-                } catch (error) {
-                    console.error("Error deleting item:", error);
-                    showAlert({title: t('common.error'), message: "Failed to delete item.", buttons: [{text: t('common.ok')}]})
+                // Sadece global state'i güncelle.
+                const newClothingList = clothing.filter(c => c.id !== id);
+                setClothing(newClothingList); 
+                console.log('✅ Item removed from store. The wardrobe screen will now re-render itself.');
+
+                // State güncellendikten sonra, basitçe bir önceki ekrana geri dön.
+                // Bu, artık state'ler arasında bir yarışa neden olmaz.
+                if (router.canGoBack()) {
+                    router.back();
                 }
               },
               variant: 'destructive',
@@ -112,7 +103,7 @@ export default function ClothingDetailScreen() {
               {t('wardrobe.color')}
             </Text>
             <View style={styles.colorRow}>
-              <View style={[styles.colorCircle, { backgroundColor: item.color }]} />
+              <View style={[styles.colorCircle, { backgroundColor: item.color, borderColor: theme.colors.border }]} />
               <Text style={[styles.detailValue, { color: theme.colors.text }]}>
                 {t(`colors.${item.color}`)}
               </Text>
@@ -184,9 +175,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 32 },
-  notFound: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  notFoundText: { fontFamily: 'Montserrat-Medium', fontSize: 16, textAlign: 'center', marginBottom: 16 },
-  backButton: { width: '50%' },
   imageContainer: { position: 'relative', width: '100%', height: 300, borderRadius: 16, overflow: 'hidden', marginBottom: 16 },
   image: { width: '100%', height: '100%', resizeMode: 'cover' },
   editButton: { position: 'absolute', bottom: 16, right: 16, width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
@@ -196,7 +184,7 @@ const styles = StyleSheet.create({
   detailLabel: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
   detailValue: { fontFamily: 'Montserrat-Bold', fontSize: 14 },
   colorRow: { flexDirection: 'row', alignItems: 'center' },
-  colorCircle: { width: 20, height: 20, borderRadius: 10, marginRight: 8 },
+  colorCircle: { width: 20, height: 20, borderRadius: 10, marginRight: 8, borderWidth: 1 },
   tagContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '60%', gap: 8 },
   tag: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16 },
   tagText: { fontFamily: 'Montserrat-Medium', fontSize: 12 },

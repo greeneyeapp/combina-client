@@ -573,6 +573,18 @@
       "noAds": "Uma experiência fluida e sem anúncios",
       "advancedTips": "Conselhos para levar o seu estilo para o próximo nível",
       "pinterestInspiration": "Inspiração dos seus painéis do Pinterest para elevar o seu estilo"
+    },
+    "free": {
+      "title": "Seu Plano Atual: Gratuito",
+      "description": "Você pode fazer um upgrade a qualquer momento para desbloquear mais recursos.",
+      "features": [
+        "Até 30 itens em seu guarda-roupa",
+        "2 ideias de looks personalizados diariamente",
+        "Experiência com anúncios"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Redirecionando..."
   }
 }

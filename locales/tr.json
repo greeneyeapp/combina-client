@@ -573,6 +573,18 @@
       "noAds": "Kesintisiz ve reklamsız bir deneyim",
       "advancedTips": "Stilini bir üst seviyeye taşıyacak tavsiyeler",
       "pinterestInspiration": "Pinterest panolarından stilini besleyen ilhamlar"
+    },
+    "free": {
+      "title": "Mevcut Planınız: Ücretsiz",
+      "description": "Daha fazla özelliğin kilidini açmak için dilediğiniz zaman yükseltebilirsiniz.",
+      "features": [
+        "Gardırobunuza 30 adede kadar eşya ekleyin",
+        "Günde 2 kişiselleştirilmiş kombin fikri",
+        "Reklam destekli deneyim"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Yönlendiriliyorsunuz..."
   }
 }

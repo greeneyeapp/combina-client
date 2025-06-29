@@ -1,5 +1,6 @@
-// app/(tabs)/wardrobe/edit/[id].tsx (Güncellenmiş - Galeri referansı tabanlı)
-import React, { useState, useEffect } from 'react';
+// kodlar/app/(tabs)/wardrobe/edit/[id].tsx
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,7 +10,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { Camera, Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library'; // Sadece kamera fotoğrafları için
+import * as MediaLibrary from 'expo-media-library';
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
@@ -39,7 +40,8 @@ export default function EditClothingScreen() {
   const { show: showAlert } = useAlertStore();
 
   const itemToEdit = clothing.find(item => item.id === id);
-  const [image, setImage] = useState<string | null>(itemToEdit?.imageUri || null);
+
+  const [image, setImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const {
@@ -51,8 +53,10 @@ export default function EditClothingScreen() {
     defaultValues: { name: '', category: '', color: '', season: [], style: [], notes: '' },
   });
 
+  // --- ZOMBİ EKRANINI YOK EDEN NIHAI ÇÖZÜM BURADA ---
   useEffect(() => {
     if (itemToEdit) {
+      // Eğer eşya varsa, formu doldurmak için state'i ve form değerlerini güncelle.
       reset({
         name: itemToEdit.name || '',
         category: itemToEdit.category || '',
@@ -63,13 +67,19 @@ export default function EditClothingScreen() {
       });
       setImage(itemToEdit.imageUri || null);
     } else {
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.itemNotFound'),
-        buttons: [{ text: t('common.ok'), onPress: () => router.back() }]
-      });
+      // EĞER EŞYA YOKSA (başka bir ekranda silindiği için):
+      // Bu ekran artık geçersizdir. Hata basmak yerine,
+      // sessizce kendini kapatıp ana gardırop ekranına dön.
+      // replace kullanarak geri tuşuyla bu bozuk ekrana dönülmesini engelle.
+      console.warn(`Edit screen for item ${id} is being closed because the item no longer exists.`);
+      if (router.canGoBack()) {
+        router.back();
+      } else {
+        router.replace('/(tabs)/wardrobe');
+      }
     }
-  }, [itemToEdit, reset]);
+  }, [itemToEdit, reset, id]); // Bu useEffect, itemToEdit her değiştiğinde (veya yok olduğunda) çalışır.
+
 
   const takePicture = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -88,7 +98,7 @@ export default function EditClothingScreen() {
         quality: 0.8 
       });
       if (!result.canceled) { 
-        await processSelectedImage(result.assets[0].uri, true); // true = kameradan geldi
+        await processSelectedImage(result.assets[0].uri, true);
       }
     } catch (error) { 
       console.log('Error taking picture:', error);
@@ -118,7 +128,7 @@ export default function EditClothingScreen() {
         quality: 0.8 
       });
       if (!result.canceled) { 
-        await processSelectedImage(result.assets[0].uri, false); // false = galeriden geldi
+        await processSelectedImage(result.assets[0].uri, false);
       }
     } catch (error) { 
       console.log('Error picking image:', error);
@@ -133,26 +143,20 @@ export default function EditClothingScreen() {
   const processSelectedImage = async (sourceUri: string, isFromCamera: boolean = false) => {
     try {
       let finalUri = sourceUri;
-      
-      // Kamera fotoğrafıysa galeriye kaydet
       if (isFromCamera) {
         try {
-          // Sadece galeriye kaydetmek için minimal izin iste
-          const { status } = await MediaLibrary.requestPermissionsAsync(false); // false = sadece yazmak için
+          const { status } = await MediaLibrary.requestPermissionsAsync(false);
           if (status === 'granted') {
             const asset = await MediaLibrary.createAssetAsync(sourceUri);
             finalUri = asset.uri;
             console.log('📸 Camera photo saved to gallery:', finalUri);
           } else {
             console.log('⚠️ Gallery permission denied, using temp URI');
-            // İzin verilmezse geçici URI'yi kullan (risk var ama çalışır)
           }
         } catch (error) {
           console.log('⚠️ Could not save to gallery:', error);
-          // Hata durumunda geçici URI'yi kullan
         }
       }
-      
       setImage(finalUri);
     } catch (error) {
       console.error('Error processing image:', error);
@@ -181,11 +185,10 @@ export default function EditClothingScreen() {
 
     setIsLoading(true);
     try {
-      // Store'u güncelle - artık görsel silme işlemi yok
       updateClothing(id, {
         ...itemToEdit,
         ...data,
-        imageUri: image, // Doğrudan galeri URI'sini kullan
+        imageUri: image,
         style: data.style.join(','),
       });
       
@@ -211,6 +214,8 @@ export default function EditClothingScreen() {
   };
 
   if (!itemToEdit) {
+    // Eşya bulunamadıysa (ve yönlendirme henüz gerçekleşmediyse),
+    // boş bir ekran göstererek hatayı engelle.
     return null;
   }
 

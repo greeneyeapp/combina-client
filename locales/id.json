@@ -573,6 +573,18 @@
       "noAds": "Pengalaman yang lancar dan bebas iklan",
       "advancedTips": "Saran untuk meningkatkan gaya Anda ke level berikutnya",
       "pinterestInspiration": "Inspirasi dari papan Pinterest Anda untuk menyempurnakan gaya Anda"
+    },
+    "free": {
+      "title": "Paket Anda Saat Ini: Gratis",
+      "description": "Anda dapat meningkatkan kapan saja untuk membuka lebih banyak fitur.",
+      "features": [
+        "Hingga 30 item di lemari pakaian Anda",
+        "2 ide pakaian personal setiap hari",
+        "Pengalaman yang didukung iklan"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Mengalihkan..."
   }
 }

@@ -573,6 +573,18 @@
       "noAds": "Isang tuluy-tuloy at ad-free na karanasan",
       "advancedTips": "Payo para i-level up ang iyong style",
       "pinterestInspiration": "Inspirasyon mula sa iyong mga Pinterest board para iangat ang iyong istilo"
+    },
+    "free": {
+      "title": "Iyong Kasalukuyang Plano: Libre",
+      "description": "Maaari kang mag-upgrade anumang oras para ma-unlock ang mas maraming feature.",
+      "features": [
+        "Hanggang 30 item sa iyong wardrobe",
+        "2 personalized na ideya ng outfit araw-araw",
+        "Karanasan na suportado ng ad"
+      ]
     }
+  },
+  "navigation": {
+    "redirecting": "Nire-redirect..."
   }
 }

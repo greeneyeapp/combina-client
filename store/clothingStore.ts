@@ -1,4 +1,5 @@
-// store/clothingStore.ts (Güncellenmiş - Galeri referansı tabanlı)
+// kodlar/store/clothingStore.ts
+
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -19,6 +20,7 @@ interface ClothingState {
   clothing: ClothingItem[];
   isValidated: boolean;
   isValidating: boolean;
+  setClothing: (newClothing: ClothingItem[]) => void; // YENİ FONKSİYON
   addClothing: (item: ClothingItem) => void;
   removeClothing: (id: string) => void;
   updateClothing: (id: string, updatedItem: Partial<ClothingItem>) => void;
@@ -55,6 +57,9 @@ export const useClothingStore = create<ClothingState>()(
       clothing: [],
       isValidated: false,
       isValidating: false,
+      
+      // YENİ FONKSİYONUN TANIMI
+      setClothing: (newClothing) => set({ clothing: newClothing }),
       
       addClothing: (item) => set((state) => {
         return { clothing: [...state.clothing, item] };

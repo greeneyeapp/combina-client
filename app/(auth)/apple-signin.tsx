@@ -1,3 +1,5 @@
+// kodlar/app/(auth)/apple-signin.tsx
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,27 +19,21 @@ export default function AppleSignInScreen() {
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusMessage, setStatusMessage] = useState(t('authFlow.appleSignIn.processing'));
-    const [authStarted, setAuthStarted] = useState(false);
 
     useEffect(() => {
-        if (Platform.OS !== 'ios') {
-            router.replace('/(auth)');
-            return;
-        }
-
-        if (!authStarted) {
-            console.log('🍎 Setting Auth Flow to ACTIVE and starting Apple sign-in...');
+        if (Platform.OS === 'ios') {
+            // Akışı "aktif" olarak işaretle ve giriş işlemini başlat.
             setAuthFlowActive(true);
-            setAuthStarted(true);
             handleAppleSignIn();
+        } else {
+            // iOS değilse bu ekranın bir anlamı yok, geri dön.
+            router.replace('/(auth)');
         }
-    }, [authStarted]);
+    }, []);
 
     const handleAppleSignIn = async () => {
+        setIsProcessing(true);
         try {
-            setIsProcessing(true);
-            setStatusMessage(t('authFlow.appleSignIn.processing'));
-
             const credential = await AppleAuthentication.signInAsync({
                 requestedScopes: [
                     AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
@@ -45,32 +41,25 @@ export default function AppleSignInScreen() {
                 ],
             });
 
-            console.log('🍎 Apple credential received, processing...');
             setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
-
             await signInWithApple(credential);
-
-            console.log('✅ Apple sign-in completed successfully');
-            setStatusMessage(t('authFlow.appleSignIn.success'));
+            console.log('✅ Apple sign-in completed. RootLayout will handle navigation.');
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);
-            setIsProcessing(false);
-            setAuthFlowActive(false);
-
-            if (error.code === 'ERR_CANCELED') {
-                console.log('🍎 Apple sign-in cancelled by user');
-                router.replace('/(auth)');
-            } else {
+            // Hata veya iptal durumunda kullanıcıya bilgi ver.
+            if (error.code !== 'ERR_CANCELED') {
                 showAlert({
                     title: t('common.error'),
                     message: t('authFlow.errors.signInFailed'),
-                    buttons: [{ 
-                        text: t('common.ok'), 
-                        onPress: () => router.replace('/(auth)') 
-                    }]
+                    buttons: [{ text: t('common.ok') }]
                 });
             }
+        } finally {
+            // Başarılı veya başarısız, her durumda akışı bitiriyoruz ki
+            // ana navigasyon kontrolü alabilsin.
+            setIsProcessing(false);
+            setAuthFlowActive(false);
         }
     };
 

@@ -11,6 +11,7 @@ import useAlertStore from '@/store/alertStore';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
+import { router } from 'expo-router'; // Yönlendirme için router'ı import et
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -42,6 +43,7 @@ export default function GoogleSignInScreen() {
             promptAsync().catch(error => {
                 console.error("promptAsync error:", error);
                 setAuthFlowActive(false); // Hata olursa akışı bitir
+                router.replace('/(auth)'); // Hata durumunda da geri dön
             });
         }
     }, [request]);
@@ -54,8 +56,10 @@ export default function GoogleSignInScreen() {
             setIsProcessing(true);
             handleGoogleSignIn(response.authentication.accessToken);
         } else {
+            // ÇÖZÜM: İptal veya hata durumunda ana giriş ekranına geri dön.
             console.log('Google auth failed or cancelled:', response.type);
-            setAuthFlowActive(false); // İptal veya hata durumunda akışı sonlandır
+            setAuthFlowActive(false); // Akışı sonlandır
+            router.replace('/(auth)'); // Ana giriş ekranına yönlendir
         }
     }, [response]);
 
@@ -64,6 +68,7 @@ export default function GoogleSignInScreen() {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
             await signInWithGoogle(accessToken);
             console.log('✅ signInWithGoogle completed. RootLayout will handle navigation.');
+            // Başarılı olduğunda RootLayout yönlendireceği için burada yönlendirme yapmıyoruz.
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
@@ -74,8 +79,11 @@ export default function GoogleSignInScreen() {
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
+            // Hata durumunda da geri dön
+            router.replace('/(auth)');
         } finally {
             // Başarılı veya başarısız, her durumda auth akışını bitiriyoruz.
+            // Başarı durumunda RootLayout yönlendirme yapana kadar bu ekran görünebilir.
             setAuthFlowActive(false);
         }
     };

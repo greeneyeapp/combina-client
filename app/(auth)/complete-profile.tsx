@@ -1,3 +1,5 @@
+// kodlar/app/(auth)/complete-profile.tsx
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
@@ -93,13 +95,13 @@ export default function CompleteProfileScreen() {
         const newErrors: { [key: string]: string } = {};
 
         if (!formData.name.trim()) {
-            newErrors.name = t('authFlow.errors.updateFailed');
+            newErrors.name = t('auth.nameRequired');
         } else if (formData.name.trim().length < 2) {
-            newErrors.name = t('authFlow.errors.updateFailed');
+            newErrors.name = t('auth.nameMinLength');
         }
 
         if (!formData.gender) {
-            newErrors.gender = t('authFlow.errors.updateFailed');
+            newErrors.gender = t('auth.genderRequired');
         }
 
         const today = new Date();
@@ -110,9 +112,9 @@ export default function CompleteProfileScreen() {
         const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
 
         if (exactAge < 13) {
-            newErrors.birthDate = t('authFlow.errors.updateFailed');
+            newErrors.birthDate = t('auth.ageMinimum');
         } else if (exactAge > 100) {
-            newErrors.birthDate = t('authFlow.errors.updateFailed');
+            newErrors.birthDate = t('auth.ageMaximum');
         }
 
         setErrors(newErrors);
@@ -128,10 +130,11 @@ export default function CompleteProfileScreen() {
 
     const handleSubmit = async () => {
         if (!validateForm()) {
-            const firstError = Object.values(errors)[0] || t('authFlow.errors.updateFailed');
+            const firstErrorKey = Object.keys(errors)[0];
+            const firstErrorMessage = errors[firstErrorKey] || t('authFlow.errors.updateFailed');
             showAlert({
                 title: t('common.error'),
-                message: firstError,
+                message: firstErrorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
             return;
@@ -153,7 +156,6 @@ export default function CompleteProfileScreen() {
                     onPress: async () => {
                         router.replace('/(tabs)/wardrobe');
 
-                        // ONBOARDING KONTROLÜ BURADA YAP - ALERT KAPANDIKTAN SONRA
                         setTimeout(async () => {
                             try {
                                 const isCompleted = await checkIfOnboardingCompleted();
@@ -204,7 +206,6 @@ export default function CompleteProfileScreen() {
                     </View>
 
                     <View style={styles.formContainer}>
-                        {/* --- DEĞİŞİKLİK: Name alanı artık bir Input --- */}
                         <View style={[styles.formCard, { backgroundColor: theme.colors.surface }]}>
                             <View style={styles.cardHeader}>
                                 <User color={theme.colors.primary} size={20} />
@@ -217,14 +218,13 @@ export default function CompleteProfileScreen() {
                                 onChangeText={handleNameChange}
                                 placeholder={t('register.namePlaceholder')}
                                 error={errors.name}
-                                containerStyle={{ padding: 0, margin: 0 }} // Input'un kendi boşluklarını sıfırla
+                                containerStyle={{ padding: 0, margin: 0 }}
                             />
                             <Text style={[styles.helpText, { color: theme.colors.textSecondary, marginLeft: 0, marginTop: 8 }]}>
                                 {t('authFlow.completeProfile.nameFromAccount')}
                             </Text>
                         </View>
 
-                        {/* Gender */}
                         <View style={[
                             styles.formCard,
                             {
@@ -286,7 +286,6 @@ export default function CompleteProfileScreen() {
                             )}
                         </View>
 
-                        {/* Birth Date */}
                         <TouchableOpacity
                             style={[
                                 styles.formCard,
@@ -308,11 +307,7 @@ export default function CompleteProfileScreen() {
                             </View>
                             <View style={styles.cardContent}>
                                 <Text style={[styles.dateDisplay, { color: theme.colors.text }]}>
-                                    {formData.birthDate.toLocaleDateString('tr-TR', {
-                                        year: 'numeric',
-                                        month: 'long',
-                                        day: 'numeric'
-                                    })}
+                                    {formatDate(formData.birthDate)}
                                 </Text>
                             </View>
                             {errors.birthDate && (
@@ -345,7 +340,6 @@ export default function CompleteProfileScreen() {
 
                     </View>
 
-                    {/* Submit Button */}
                     <View style={styles.actionSection}>
                         <TouchableOpacity
                             style={[
@@ -466,11 +460,6 @@ const styles = StyleSheet.create({
     },
     cardContent: {
         marginLeft: 32,
-    },
-    valueDisplay: {
-        fontSize: 16,
-        fontFamily: 'Montserrat-Medium',
-        marginBottom: 4,
     },
     helpText: {
         fontSize: 12,

@@ -22,17 +22,16 @@ export default function AppleSignInScreen() {
 
     useEffect(() => {
         if (Platform.OS === 'ios') {
-            // Akışı "aktif" olarak işaretle ve giriş işlemini başlat.
             setAuthFlowActive(true);
             handleAppleSignIn();
         } else {
-            // iOS değilse bu ekranın bir anlamı yok, geri dön.
             router.replace('/(auth)');
         }
     }, []);
 
     const handleAppleSignIn = async () => {
         setIsProcessing(true);
+        let isSuccess = false; // Başarı durumunu takip et
         try {
             const credential = await AppleAuthentication.signInAsync({
                 requestedScopes: [
@@ -43,11 +42,11 @@ export default function AppleSignInScreen() {
 
             setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
             await signInWithApple(credential);
+            isSuccess = true; // İşlem başarılı
             console.log('✅ Apple sign-in completed. RootLayout will handle navigation.');
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);
-            // Hata veya iptal durumunda kullanıcıya bilgi ver.
             if (error.code !== 'ERR_CANCELED') {
                 showAlert({
                     title: t('common.error'),
@@ -56,10 +55,12 @@ export default function AppleSignInScreen() {
                 });
             }
         } finally {
-            // Başarılı veya başarısız, her durumda akışı bitiriyoruz ki
-            // ana navigasyon kontrolü alabilsin.
             setIsProcessing(false);
             setAuthFlowActive(false);
+            // ÇÖZÜM: Eğer işlem başarılı değilse (iptal veya hata), ana giriş ekranına dön.
+            if (!isSuccess) {
+                router.replace('/(auth)');
+            }
         }
     };
 

@@ -27,19 +27,12 @@ function useProtectedRouter() {
   const navigationState = useRootNavigationState();
 
   useEffect(() => {
-    // Navigasyon hazır değilse bekle.
     if (!navigationState?.key) return;
     
     const isNotFound = segments.includes('+not-found');
 
-    // --- İnternetten Bulunan Çözüm: GECİKMELİ YÖNLENDİRME ---
-    // Eğer Expo Router yolunu şaşırıp +not-found'a düşerse,
-    // bu genellikle harici bir işlemden (Google/Apple girişi) sonra olur.
-    // State'in oturması için çok kısa bir gecikme ile yönlendirme yapacağız.
     if (isNotFound) {
-      console.log("⚠️ Detected '+not-found' state. Applying delayed redirect based on research...");
       const timer = setTimeout(() => {
-        // Gecikme sonunda, kullanıcı durumu ne ise ona göre karar ver.
         if (user) {
           const profileComplete = user.gender && user.birthDate;
           if (profileComplete) {
@@ -50,20 +43,16 @@ function useProtectedRouter() {
         } else {
           router.replace('/(auth)');
         }
-      }, 150); // State'in güncellenmesi için 150ms bekle.
-
-      return () => clearTimeout(timer); // Hook'tan çıkılırsa zamanlayıcıyı temizle.
+      }, 150);
+      return () => clearTimeout(timer);
     }
 
-    // İşlem devam ediyorsa dokunma.
     if (authLoading || isAuthFlowActive) {
       return;
     }
     
     const inAuthGroup = segments[0] === '(auth)';
-    const inTabsGroup = segments[0] === '(tabs)';
 
-    // Standart yönlendirme kuralları (eğer +not-found durumu yoksa çalışacak)
     if (user) {
       const profileComplete = user.gender && user.birthDate;
       if (!profileComplete && segments[1] !== 'complete-profile') {
@@ -72,7 +61,9 @@ function useProtectedRouter() {
         router.replace('/(tabs)/wardrobe');
       }
     } else {
-      if (inTabsGroup) {
+      // ÇÖZÜM: Kullanıcı yoksa ve (auth) grubunda değilse, her zaman (auth) ana ekranına yönlendir.
+      // Bu, profile ekranından çıkış yapıldığında yönlendirmenin doğru çalışmasını sağlar.
+      if (!inAuthGroup) {
         router.replace('/(auth)');
       }
     }
@@ -89,7 +80,7 @@ function RootLayoutNav(): React.JSX.Element | null {
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
   });
 
-  useProtectedRouter(); // Yönlendirme mantığını burada çağırıyoruz.
+  useProtectedRouter();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -128,25 +119,18 @@ export default function RootLayout(): React.JSX.Element {
           const savedLanguage = await AsyncStorage.getItem('app_language');
           
           if (savedLanguage) {
-            // Kayıtlı dil varsa, onu kullan.
             await i18n.changeLanguage(savedLanguage);
           } else {
-            // Kayıtlı dil yoksa, cihaz dilini kontrol et.
-            
-            // 1. DEĞİŞİKLİK: DESTEKLENEN TÜM DİLLERİ BURAYA EKLİYORUZ.
             const supportedLanguages = [
               'ar', 'bg', 'de', 'el', 'en', 'es', 'fr', 'he', 'hi', 
               'id', 'it', 'ja', 'ko', 'pt', 'ru', 'tl', 'tr', 'zh'
             ];
             
-            // 2. DEĞİŞİKLİK: NULL KONTROLÜ İLE TYPESCRIPT HATASINI ÇÖZÜYORUZ.
-            // Cihazın ilk dilini al, eğer yoksa varsayılan olarak 'en' kullan.
             const deviceLanguageCode = Localization.getLocales()[0]?.languageCode ?? 'en';
 
-            // Cihazın dili desteklenen diller arasında mı kontrol et.
             const finalLanguage = supportedLanguages.includes(deviceLanguageCode) 
               ? deviceLanguageCode 
-              : 'en'; // Desteklenmiyorsa yine İngilizce'ye dön.
+              : 'en';
               
             await i18n.changeLanguage(finalLanguage);
             await AsyncStorage.setItem('app_language', finalLanguage);

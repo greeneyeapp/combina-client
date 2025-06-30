@@ -8,7 +8,8 @@ import axios from 'axios';
 import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router } from 'expo-router';
+// useSegments hook'unu import ediyoruz
+import { router, useSegments } from 'expo-router';
 
 const USER_CACHE_KEY = 'cached_user_data';
 
@@ -41,6 +42,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [skipInitialize, setSkipInitialize] = useState(false);
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
+  // Mevcut route segmentlerini almak için hook'u burada çağırıyoruz.
+  const segments = useSegments();
 
   useEffect(() => {
     const loadCachedUser = async () => {
@@ -120,25 +123,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithApple = async (credential: any) => {
     setLoading(true);
     try {
+      const givenName = credential.fullName?.givenName || '';
+      const familyName = credential.fullName?.familyName || '';
+      const nameForBackend = `${givenName} ${familyName}`.trim();
+
       const response = await axios.post(`${API_URL}/auth/apple`, {
-        identity_token: credential.identityToken, authorization_code: credential.authorizationCode, user_info: credential.fullName
+        identity_token: credential.identityToken,
+        authorization_code: credential.authorizationCode,
+        user_info: {
+          name: nameForBackend,
+          email: credential.email
+        }
       });
+
       const { access_token, user_info } = response.data;
+
+      if (!user_info) {
+        throw new Error("User info was not returned from the server.");
+      }
+
       await setJwt(access_token);
+
       const completeUserInfo = {
-        uid: user_info?.uid, name: user_info?.name || '', fullname: user_info?.name || '', displayName: user_info?.name || '',
-        email: user_info?.email || '', gender: user_info?.gender || null, birthDate: user_info?.birthDate || null,
-        plan: user_info?.plan || 'free', provider: 'apple', isAnonymous: false
+        uid: user_info.uid,
+        name: user_info.name || '',
+        fullname: user_info.name || '',
+        displayName: user_info.name || '',
+        email: user_info.email || '',
+        gender: user_info.gender || null,
+        birthDate: user_info.birthDate || null,
+        plan: user_info.plan || 'free',
+        provider: 'apple',
+        isAnonymous: false
       };
+
       setUser(completeUserInfo);
-      if (user_info?.uid) await Purchases.logIn(user_info.uid);
+      await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
+
+      if (user_info.uid) {
+        await Purchases.logIn(user_info.uid);
+      }
       await initializeUserProfile();
-      setLoading(false);
+
       return completeUserInfo;
+
     } catch (error) {
-      setLoading(false);
       console.error('Apple sign in error:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -157,28 +190,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       console.log('🚪 Starting logout process...');
+      const inAuthGroup = segments[0] === '(auth)';
+
       setUser(null);
-      console.log('✅ User state cleared');
       clearUserPlan();
-      console.log('✅ UserPlan store cleared');
       await clearJwt();
-      console.log('✅ JWT cleared');
       await AsyncStorage.removeItem(USER_CACHE_KEY);
-      console.log('✅ User cache cleared');
+
       try {
         await Purchases.logOut();
         console.log('✅ RevenueCat logout successful');
       } catch (revenueCatError) {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
       }
-      router.replace('/(auth)');
-      console.log('🎉 Logout completed successfully');
+
+      // *** NIHAI ÇÖZÜM ***
+      // Eğer kullanıcı zaten (auth) grubundaki bir ekrandaysa (örn: complete-profile),
+      // o zaman manuel olarak ana giriş ekranına yönlendir.
+      // Değilse (örn: profile ekranındaysa), yönlendirmeyi useProtectedRouter'a bırak.
+      if (inAuthGroup) {
+        router.replace('/(auth)');
+        console.log('🎉 Logout from auth screen. Manually redirecting.');
+      } else {
+        console.log('🎉 Logout from tabs screen. Letting protected router handle redirection.');
+      }
+
     } catch (error) {
       console.error("🚨 Logout Error:", error);
       setUser(null);
       clearUserPlan();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
-      router.replace('/(auth)'); 
+      // Hata durumunda her zaman güvenli limana dön.
+      router.replace('/(auth)');
     }
   };
 

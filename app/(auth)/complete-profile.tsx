@@ -13,16 +13,17 @@ import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Calendar, ChevronDown, User, CheckCircle } from 'lucide-react-native';
+import { Calendar, ChevronDown, User, CheckCircle, LogOut } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
 import { useOnboardingStore } from '@/store/onboardingStore';
+import Input from '@/components/common/Input';
 
 export default function CompleteProfileScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
-    const { updateUserInfo, user } = useAuth();
+    const { updateUserInfo, user, logout } = useAuth();
     const { show: showAlert } = useAlertStore();
     const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
     const scrollViewRef = useRef<ScrollView>(null);
@@ -58,6 +59,13 @@ export default function CompleteProfileScreen() {
         setTimeout(() => {
             scrollViewRef.current?.scrollToEnd({ animated: true });
         }, 100);
+    };
+
+    const handleNameChange = (text: string) => {
+        setFormData(prev => ({ ...prev, name: text }));
+        if (errors.name) {
+            setErrors(prev => ({ ...prev, name: '' }));
+        }
     };
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -196,24 +204,24 @@ export default function CompleteProfileScreen() {
                     </View>
 
                     <View style={styles.formContainer}>
-
-                        {/* Name */}
+                        {/* --- DEĞİŞİKLİK: Name alanı artık bir Input --- */}
                         <View style={[styles.formCard, { backgroundColor: theme.colors.surface }]}>
                             <View style={styles.cardHeader}>
                                 <User color={theme.colors.primary} size={20} />
                                 <Text style={[styles.cardTitle, { color: theme.colors.text }]}>
-                                    {t('register.name')}
-                                </Text>
-                                {formData.name && <CheckCircle color={theme.colors.success} size={16} />}
-                            </View>
-                            <View style={styles.cardContent}>
-                                <Text style={[styles.valueDisplay, { color: theme.colors.text }]}>
-                                    {formData.name || t('authFlow.completeProfile.noNameProvided')}
-                                </Text>
-                                <Text style={[styles.helpText, { color: theme.colors.textSecondary }]}>
-                                    {t('authFlow.completeProfile.nameFromAccount')}
+                                    {t('register.name')} <Text style={styles.required}>*</Text>
                                 </Text>
                             </View>
+                            <Input
+                                value={formData.name}
+                                onChangeText={handleNameChange}
+                                placeholder={t('register.namePlaceholder')}
+                                error={errors.name}
+                                containerStyle={{ padding: 0, margin: 0 }} // Input'un kendi boşluklarını sıfırla
+                            />
+                            <Text style={[styles.helpText, { color: theme.colors.textSecondary, marginLeft: 0, marginTop: 8 }]}>
+                                {t('authFlow.completeProfile.nameFromAccount')}
+                            </Text>
                         </View>
 
                         {/* Gender */}
@@ -359,6 +367,13 @@ export default function CompleteProfileScreen() {
                                 </Text>
                             )}
                         </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                            <LogOut color={theme.colors.textSecondary} size={16} />
+                            <Text style={[styles.logoutText, { color: theme.colors.textSecondary }]}>
+                                {t('profile.logout')}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 </ScrollView>
             </SafeAreaView>
@@ -367,6 +382,18 @@ export default function CompleteProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+    logoutButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 10,
+        gap: 8,
+    },
+    logoutText: {
+        fontFamily: 'Montserrat-Medium',
+        fontSize: 14,
+        textDecorationLine: 'underline',
+    },
     gradient: {
         flex: 1,
     },

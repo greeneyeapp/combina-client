@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { fileSystemStorage } from '@/utils/fileSystemStorage';
 
 export type Outfit = {
   id: string;
@@ -33,7 +33,7 @@ export const useOutfitStore = create<OutfitState>()(
     }),
     {
       name: 'outfit-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => fileSystemStorage),
     }
   )
 );

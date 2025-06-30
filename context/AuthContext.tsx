@@ -8,6 +8,7 @@ import axios from 'axios';
 import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 const USER_CACHE_KEY = 'cached_user_data';
 
@@ -170,12 +171,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (revenueCatError) {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
       }
+      router.replace('/(auth)');
       console.log('🎉 Logout completed successfully');
     } catch (error) {
       console.error("🚨 Logout Error:", error);
       setUser(null);
       clearUserPlan();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
+      router.replace('/(auth)'); 
     }
   };
 

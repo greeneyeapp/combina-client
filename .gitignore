@@ -36,3 +36,5 @@ yarn-error.*
 
 android
 package-lock.json
+.expo
+google-services.json

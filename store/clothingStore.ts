@@ -3,6 +3,7 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { fileSystemStorage } from '@/utils/fileSystemStorage'; // YENİ IMPORT
 
 export type ClothingItem = {
   id: string;
@@ -135,7 +136,7 @@ export const useClothingStore = create<ClothingState>()(
     }),
     {
       name: 'clothing-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => fileSystemStorage),
       
       onRehydrateStorage: () => (state) => {
         if (state) {

@@ -168,24 +168,7 @@ export default function ProfileScreen() {
         { text: t('common.cancel') },
         {
           text: t('common.continue'),
-          onPress: async () => {
-            try {
-              console.log('🚪 Logout button pressed');
-              await logout();
-              console.log('✅ Logout completed, navigating...');
-
-              // Navigation'ı logout'tan sonra yap
-              setTimeout(() => {
-                router.replace('/(auth)');
-                console.log('🔄 Navigated to auth screen');
-              }, 100);
-
-            } catch (error) {
-              console.error('🚨 Logout failed:', error);
-              // Hata olsa bile auth'a yönlendir
-              router.replace('/(auth)');
-            }
-          }
+          onPress: logout
         }
       ]
     });

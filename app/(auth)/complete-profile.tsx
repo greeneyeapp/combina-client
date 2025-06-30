@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -25,7 +25,7 @@ export default function CompleteProfileScreen() {
     const { updateUserInfo, user } = useAuth();
     const { show: showAlert } = useAlertStore();
     const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
-
+    const scrollViewRef = useRef<ScrollView>(null);
     const [formData, setFormData] = useState({
         name: '',
         gender: '',
@@ -47,12 +47,18 @@ export default function CompleteProfileScreen() {
         }
     }, [user]);
 
-    // Burada cinsiyet seçenekleri senin gender çevirilerine göre:
     const genderOptions = [
         { label: t('gender.male'), value: 'male' },
         { label: t('gender.female'), value: 'female' },
         { label: t('gender.unisex'), value: 'unisex' }
     ];
+
+    const handleOpenDatePicker = () => {
+        setShowDatePicker(true);
+        setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+    };
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
         if (Platform.OS === 'android') {
@@ -172,6 +178,7 @@ export default function CompleteProfileScreen() {
         >
             <SafeAreaView style={styles.container}>
                 <ScrollView
+                    ref={scrollViewRef}
                     style={styles.scrollView}
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
@@ -281,7 +288,7 @@ export default function CompleteProfileScreen() {
                                     borderWidth: errors.birthDate ? 1 : 0
                                 }
                             ]}
-                            onPress={() => setShowDatePicker(true)}
+                            onPress={handleOpenDatePicker}
                             activeOpacity={0.7}
                         >
                             <View style={styles.cardHeader}>

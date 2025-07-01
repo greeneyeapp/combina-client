@@ -8,7 +8,6 @@ import axios from 'axios';
 import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-// useSegments hook'unu import ediyoruz
 import { router, useSegments } from 'expo-router';
 
 const USER_CACHE_KEY = 'cached_user_data';
@@ -42,7 +41,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [skipInitialize, setSkipInitialize] = useState(false);
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
-  // Mevcut route segmentlerini almak için hook'u burada çağırıyoruz.
   const segments = useSegments();
 
   useEffect(() => {
@@ -144,12 +142,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await setJwt(access_token);
 
+      // *** HATA DÜZELTMESİ BURADA ***
+      // Backend'den gelen isme güvenmek yerine, eğer boşsa,
+      // Apple'dan zaten aldığımız `nameForBackend`'i kullanıyoruz.
+      const finalName = user_info.name || nameForBackend;
+      const finalEmail = user_info.email || credential.email || '';
+
       const completeUserInfo = {
         uid: user_info.uid,
-        name: user_info.name || '',
-        fullname: user_info.name || '',
-        displayName: user_info.name || '',
-        email: user_info.email || '',
+        name: finalName,
+        fullname: finalName,
+        displayName: finalName,
+        email: finalEmail,
         gender: user_info.gender || null,
         birthDate: user_info.birthDate || null,
         plan: user_info.plan || 'free',
@@ -177,7 +181,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const updateUserInfo = async (info: { name: string; gender: string; birthDate: string }) => {
     try {
-      await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${jwt}` } });
+      const token = useApiAuthStore.getState().jwt;
+      await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
       const updatedUser = { ...user, name: info.name, fullname: info.name, displayName: info.name, gender: info.gender, birthDate: info.birthDate };
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
@@ -203,16 +208,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (revenueCatError) {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
       }
-
-      // *** NIHAI ÇÖZÜM ***
-      // Eğer kullanıcı zaten (auth) grubundaki bir ekrandaysa (örn: complete-profile),
-      // o zaman manuel olarak ana giriş ekranına yönlendir.
-      // Değilse (örn: profile ekranındaysa), yönlendirmeyi useProtectedRouter'a bırak.
+      
       if (inAuthGroup) {
         router.replace('/(auth)');
-        console.log('🎉 Logout from auth screen. Manually redirecting.');
-      } else {
-        console.log('🎉 Logout from tabs screen. Letting protected router handle redirection.');
       }
 
     } catch (error) {
@@ -220,7 +218,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       clearUserPlan();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
-      // Hata durumunda her zaman güvenli limana dön.
       router.replace('/(auth)');
     }
   };
@@ -238,6 +235,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // RootLayout'taki yönlendirme mantığı için bu useEffect'i güncelleyelim.
+  useEffect(() => {
+    const isReadyToRoute = !loading && !isAuthFlowActive;
+    if (!isReadyToRoute) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if(user) {
+        const profileComplete = user.gender && user.birthDate && user.name;
+        if(!profileComplete && segments[1] !== 'complete-profile') {
+            router.replace('/(auth)/complete-profile');
+        } else if (profileComplete && inAuthGroup) {
+            router.replace('/(tabs)/wardrobe');
+        }
+    } else {
+        if(!inAuthGroup) {
+            router.replace('/(auth)');
+        }
+    }
+  }, [user, loading, isAuthFlowActive, segments]);
+  
   const value = { user, loading, isAuthFlowActive, setAuthFlowActive, signInWithGoogle, signInWithApple, updateUserInfo, logout, refreshUserProfile };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

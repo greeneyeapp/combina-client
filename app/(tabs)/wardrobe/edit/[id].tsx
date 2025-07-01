@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx (Güncellenmiş - Galeri referans sistemi)
+// kodlar/app/(tabs)/wardrobe/edit/[id].tsx
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -24,8 +24,7 @@ import Toast from 'react-native-toast-message';
 import {
   processGalleryAsset,
   GalleryImageResult,
-  checkGalleryPermissions,
-  cleanupUnusedThumbnails
+  checkGalleryPermissions
 } from '@/utils/galleryImageStorage';
 
 type FormData = {
@@ -62,7 +61,6 @@ export default function EditClothingScreen() {
     defaultValues: { name: '', category: '', color: '', season: [], style: [], notes: '' },
   });
 
-  // Form'u mevcut item verisiyle doldur
   useEffect(() => {
     if (itemToEdit) {
       reset({
@@ -74,8 +72,6 @@ export default function EditClothingScreen() {
         notes: itemToEdit.notes || '',
       });
     } else {
-      // Item bulunamazsa geri dön
-      console.warn(`Edit screen for item ${id} is being closed because the item no longer exists.`);
       if (router.canGoBack()) {
         router.back();
       } else {
@@ -86,17 +82,10 @@ export default function EditClothingScreen() {
 
   const getCurrentImageUri = (): string => {
     if (!itemToEdit) return '';
-
-    // Yeni görselin önceliği varsa
-    if (processedImage) {
-      return processedImage.thumbnailUri || processedImage.originalUri;
-    }
-
-    // Mevcut görsellerin öncelik sırası
+    if (processedImage) return processedImage.thumbnailUri || processedImage.originalUri;
     if (itemToEdit.thumbnailImageUri) return itemToEdit.thumbnailImageUri;
     if (itemToEdit.originalImageUri) return itemToEdit.originalImageUri;
-    if (itemToEdit.imageUri) return itemToEdit.imageUri; // Legacy support
-
+    if (itemToEdit.imageUri) return itemToEdit.imageUri;
     return '';
   };
 
@@ -116,21 +105,11 @@ export default function EditClothingScreen() {
   const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
     setIsLoading(true);
     try {
-      console.log('Processing new selected asset:', asset.id);
-
-      // Yeni asset'i işle
+      // id! kullanarak itemToEdit'in varlığından emin oluyoruz.
       const result = await processGalleryAsset(id!, asset);
-
       setSelectedAsset(asset);
       setProcessedImage(result);
       setImageChanged(true);
-
-      console.log('New asset processed successfully:', {
-        originalUri: result.originalUri,
-        thumbnailUri: result.thumbnailUri,
-        assetId: result.assetId
-      });
-
     } catch (error) {
       console.error('Error processing selected asset:', error);
       showAlert({
@@ -152,8 +131,7 @@ export default function EditClothingScreen() {
   const onSubmit = async (data: FormData) => {
     if (!id || !itemToEdit) return;
 
-    // Görsel kontrolü - yeni görsel seçilmediyse mevcut görsel olmalı
-    if (!processedImage && !getCurrentImageUri()) {
+    if (!imageChanged && !getCurrentImageUri()) {
       showAlert({
         title: t('common.error'),
         message: t('wardrobe.imageRequired'),
@@ -164,33 +142,28 @@ export default function EditClothingScreen() {
 
     setIsLoading(true);
     try {
-      // Güncellenmiş item objesi
-      const updatedItem = {
+      const updatedItemData = {
         ...itemToEdit,
         ...data,
         style: data.style.join(','),
       };
 
-      // Eğer yeni görsel seçildiyse, görsel bilgilerini güncelle
       if (imageChanged && processedImage) {
-        // Eski thumbnail'i temizle (eğer varsa)
-        if (itemToEdit.thumbnailImageUri) {
-          try {
-            await cleanupUnusedThumbnails([]);
-            console.log('Old thumbnail cleaned up');
-          } catch (error) {
-            console.warn('Could not cleanup old thumbnail:', error);
-          }
-        }
+        // *** HATA BURADAYDI VE KALDIRILDI ***
+        // Eski thumbnail temizleme kodu buradan kaldırıldı.
+        // Bu, artık tüm thumbnail'ların silinmesini önleyecek.
 
-        // Yeni görsel bilgilerini ekle
-        updatedItem.originalImageUri = processedImage.originalUri;
-        updatedItem.thumbnailImageUri = processedImage.thumbnailUri;
-        updatedItem.galleryAssetId = processedImage.assetId;
-        updatedItem.imageMetadata = processedImage.metadata;
+        updatedItemData.originalImageUri = processedImage.originalUri;
+        updatedItemData.thumbnailImageUri = processedImage.thumbnailUri;
+        updatedItemData.galleryAssetId = processedImage.assetId;
+        updatedItemData.imageMetadata = processedImage.metadata;
+        updatedItemData.isImageMissing = false; // Yeni resim eklendiği için işaret kalkar
+      } else if (imageChanged && !processedImage) {
+        // Kullanıcı resmi kaldırdıysa
+        updatedItemData.isImageMissing = true;
       }
 
-      updateClothing(id, updatedItem);
+      updateClothing(id, updatedItemData);
 
       Toast.show({
         type: 'success',
@@ -214,8 +187,20 @@ export default function EditClothingScreen() {
     }
   };
 
+  // renderImageSection ve stiller aynı kaldığı için tekrar eklemiyorum.
+  // ... (Önceki yanıttaki renderImageSection ve styles kodları buraya gelecek) ...
   const renderImageSection = () => {
     const currentImageUri = getCurrentImageUri();
+
+    if (imageChanged && !processedImage) {
+        return (
+          <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
+              {t('wardrobe.addPhoto')}
+            </Text>
+          </View>
+        )
+    }
 
     if (currentImageUri) {
       return (
@@ -230,23 +215,6 @@ export default function EditClothingScreen() {
           >
             <X color={theme.colors.white} size={20} />
           </TouchableOpacity>
-
-          {/* Image info */}
-          {(processedImage?.metadata || itemToEdit?.imageMetadata) && (
-            <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
-                {processedImage?.metadata.width || itemToEdit?.imageMetadata?.width} × {processedImage?.metadata.height || itemToEdit?.imageMetadata?.height}
-                {(processedImage?.metadata.fileSize || itemToEdit?.imageMetadata?.fileSize) &&
-                  ` • ${Math.round((processedImage?.metadata.fileSize || itemToEdit?.imageMetadata?.fileSize!) / 1024)} KB`
-                }
-                {imageChanged && processedImage && (
-                  <Text style={[styles.changedIndicator, { color: theme.colors.primary }]}>
-                    {' • '}{t('wardrobe.newImage')}
-                  </Text>
-                )}
-              </Text>
-            </View>
-          )}
         </View>
       );
     }
@@ -422,7 +390,6 @@ export default function EditClothingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Galeri Picker Modal */}
       <GalleryPicker
         isVisible={showGalleryPicker}
         onClose={() => setShowGalleryPicker(false)}
@@ -457,24 +424,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center'
-  },
-  imageInfo: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-  },
-  imageInfoText: {
-    fontSize: 12,
-    fontFamily: 'Montserrat-Regular',
-    color: '#FFFFFF',
-    textAlign: 'center',
-  },
-  changedIndicator: {
-    fontFamily: 'Montserrat-Bold',
   },
   imagePlaceholder: {
     width: '100%',

@@ -1,14 +1,15 @@
-// app/(tabs)/wardrobe/[id].tsx (Güncellenmiş - Orijinal image sistemi)
+// kodlar/app/(tabs)/wardrobe/[id].tsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
-import { ArrowLeft, Edit2, Trash2, Image as ImageIcon } from 'lucide-react-native';
+import { ArrowLeft, Edit2, Trash2, ImageOff, RefreshCcw, Image as ImageIcon } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
+import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
 
@@ -16,14 +17,15 @@ export default function ClothingDetailScreen() {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { clothing, setClothing } = useClothingStore();
+  const { clothing, removeClothing } = useClothingStore();
   const { show: showAlert } = useAlertStore();
-  const [imageError, setImageError] = useState(false);
-  const [showingThumbnail, setShowingThumbnail] = useState(false);
 
   const item = clothing.find((item) => item.id === id);
 
   if (!item) {
+    // Eğer item bulunamazsa (belki başka bir ekranda silindi),
+    // bu ekranın çökmesini engellemek için null döndür.
+    // Bir üst katman (örn: _layout) bu durumu yönetip kullanıcıyı geri yönlendirebilir.
     return null;
   }
   
@@ -31,44 +33,24 @@ export default function ClothingDetailScreen() {
 
   // Gösterilecek image URI'sini belirle
   const getDisplayImageUri = (): string => {
+    // Eğer resim kayıp olarak işaretlenmişse, URI döndürme.
+    if (item.isImageMissing) {
+      return '';
+    }
     // Detay görünümünde öncelik sırası:
     // 1. Original image (yüksek kalite)
     // 2. Eski sistem imageUri (backward compatibility)
     // 3. Thumbnail (fallback)
-    
-    if (item.originalImageUri && !imageError) {
-      return item.originalImageUri;
-    }
-    
-    // Backward compatibility için eski imageUri
-    if (item.imageUri && !imageError) {
-      return item.imageUri;
-    }
-    
-    // Son çare olarak thumbnail
-    if (item.thumbnailImageUri) {
-      setShowingThumbnail(true);
-      return item.thumbnailImageUri;
-    }
+    if (item.originalImageUri) return item.originalImageUri;
+    if (item.imageUri) return item.imageUri; // Legacy support
+    if (item.thumbnailImageUri) return item.thumbnailImageUri;
     
     return '';
   };
 
-  const handleImageError = () => {
-    console.warn(`Image load failed for item: ${item.name} (${item.id})`);
-    setImageError(true);
-  };
-
-  const handleImageLoad = () => {
-    if (imageError) {
-      setImageError(false);
-    }
-    if (showingThumbnail) {
-      setShowingThumbnail(false);
-    }
-  };
-
   const handleEdit = () => {
+    // Kullanıcıyı düzenleme ekranına yönlendir.
+    // Bu ekran hem bilgileri hem de (gerekirse) resmi güncellemeyi sağlar.
     router.push(`/wardrobe/edit/${id}`);
   };
 
@@ -81,10 +63,10 @@ export default function ClothingDetailScreen() {
             {
               text: t('common.delete'),
               onPress: () => {
-                const newClothingList = clothing.filter(c => c.id !== id);
-                setClothing(newClothingList); 
-                console.log('✅ Item removed from store. The wardrobe screen will now re-render itself.');
+                removeClothing(id); // Zustand store'dan kıyafeti sil
+                console.log('✅ Item removed from store.');
 
+                // Silme işleminden sonra gardırop ekranına geri dön.
                 if (router.canGoBack()) {
                     router.back();
                 }
@@ -98,44 +80,39 @@ export default function ClothingDetailScreen() {
   const displayUri = getDisplayImageUri();
 
   const renderImageSection = () => {
+    // Eğer kıyafetin resmi kayıp olarak işaretlenmişse, kullanıcıya özel bir bildirim göster.
+    if (item.isImageMissing) {
+      return (
+        <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card, height: 300, marginBottom: 16 }]}>
+          <ImageOff color={theme.colors.textLight} size={48} />
+          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
+            {t('wardrobe.imageNotAvailable')}
+          </Text>
+          <Button
+            label={t('wardrobe.changePhoto')}
+            onPress={handleEdit} // Kullanıcıyı direkt düzenleme ekranına yönlendirerek resmi yeniden bağlamasını sağla
+            variant="primary"
+            style={{ marginTop: 24 }}
+            icon={<RefreshCcw color={theme.colors.white} size={16} />}
+          />
+        </View>
+      );
+    }
+
+    // Resim varsa, normal şekilde göster.
     return (
       <View style={styles.imageContainer}>
         {displayUri ? (
-          <>
-            <Image 
-              source={{ uri: displayUri }} 
-              style={styles.image}
-              resizeMode="cover"
-              onError={handleImageError}
-              onLoad={handleImageLoad}
-            />
-            
-            {/* Quality indicator */}
-            {showingThumbnail && (
-              <View style={[styles.qualityBadge, { backgroundColor: theme.colors.warning }]}>
-                <Text style={styles.qualityBadgeText}>
-                  {t('wardrobe.thumbnailQuality')}
-                </Text>
-              </View>
-            )}
-            
-            {/* Image metadata info */}
-            {item.imageMetadata && (
-              <View style={[styles.metadataContainer, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-                <Text style={styles.metadataText}>
-                  {item.imageMetadata.width} × {item.imageMetadata.height}
-                  {item.imageMetadata.fileSize && 
-                    ` • ${Math.round(item.imageMetadata.fileSize / 1024)} KB`
-                  }
-                </Text>
-              </View>
-            )}
-          </>
+          <Image 
+            source={{ uri: displayUri }} 
+            style={styles.image}
+            resizeMode="cover"
+          />
         ) : (
           <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
             <ImageIcon color={theme.colors.textLight} size={48} />
             <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-              {t('wardrobe.imageNotAvailable')}
+              {t('wardrobe.noImage')}
             </Text>
           </View>
         )}
@@ -146,43 +123,6 @@ export default function ClothingDetailScreen() {
         >
           <Edit2 color={theme.colors.white} size={20} />
         </TouchableOpacity>
-      </View>
-    );
-  };
-
-  const renderImageTypeInfo = () => {
-    if (!__DEV__) return null;
-    
-    let imageSource = '';
-    let sourceColor = theme.colors.textLight;
-    
-    if (item.originalImageUri && !imageError) {
-      imageSource = 'Original Gallery Reference';
-      sourceColor = theme.colors.success;
-    } else if (item.imageUri && !imageError) {
-      imageSource = 'Legacy Image URI';
-      sourceColor = theme.colors.warning;
-    } else if (item.thumbnailImageUri) {
-      imageSource = 'Thumbnail Fallback';
-      sourceColor = theme.colors.error;
-    } else {
-      imageSource = 'No Image Available';
-      sourceColor = theme.colors.error;
-    }
-    
-    return (
-      <View style={[styles.debugInfo, { backgroundColor: theme.colors.card }]}>
-        <Text style={[styles.debugTitle, { color: theme.colors.text }]}>
-          DEBUG: Image Source
-        </Text>
-        <Text style={[styles.debugText, { color: sourceColor }]}>
-          {imageSource}
-        </Text>
-        {item.galleryAssetId && (
-          <Text style={[styles.debugText, { color: theme.colors.textLight }]}>
-            Asset ID: {item.galleryAssetId}
-          </Text>
-        )}
       </View>
     );
   };
@@ -292,8 +232,6 @@ export default function ClothingDetailScreen() {
             </Text>
           </View>
         </View>
-
-        {renderImageTypeInfo()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -314,42 +252,14 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   placeholderContainer: {
     width: '100%',
-    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 16,
+    gap: 12
   },
   placeholderText: {
     fontFamily: 'Montserrat-Medium',
     fontSize: 16,
-    marginTop: 12,
-    textAlign: 'center',
-  },
-  qualityBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  qualityBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontFamily: 'Montserrat-Bold',
-  },
-  metadataContainer: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 12,
-    padding: 8,
-    borderRadius: 8,
-  },
-  metadataText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontFamily: 'Montserrat-Regular',
     textAlign: 'center',
   },
   editButton: { 
@@ -360,7 +270,12 @@ const styles = StyleSheet.create({
     height: 40, 
     borderRadius: 20, 
     justifyContent: 'center', 
-    alignItems: 'center' 
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   itemName: { 
     fontFamily: 'PlayfairDisplay-Bold', 
@@ -398,20 +313,5 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     marginTop: 8, 
     lineHeight: 20 
-  },
-  debugInfo: {
-    marginTop: 24,
-    padding: 12,
-    borderRadius: 8,
-  },
-  debugTitle: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 12,
-    marginBottom: 4,
-  },
-  debugText: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 10,
-    lineHeight: 14,
   },
 });

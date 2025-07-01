@@ -1,3 +1,5 @@
+// kodlar/app/(tabs)/suggestions/index.tsx
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
@@ -52,13 +54,16 @@ export default function SuggestionsScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [suggestion, setSuggestion] = useState<OutfitSuggestionResponse | null>(null);
   const [suggestionLayoutY, setSuggestionLayoutY] = useState<number>(0);
-
   const [selectedOccasion, setSelectedOccasion] = useState('errands-run');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pinterestLinks, setPinterestLinks] = useState<PinterestLink[]>([]);
   const [isLiked, setIsLiked] = useState(false);
   const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
+
+  const availableClothing = useMemo(() => {
+    return clothing.filter(item => !item.isImageMissing);
+  }, [clothing]);
 
   const isAlreadyLiked = useMemo(
     () =>
@@ -77,11 +82,6 @@ export default function SuggestionsScreen() {
 
   useEffect(() => {
     setIsLiked(false);
-  }, [suggestion]);
-
-  // Bu useEffect, API'den pinterest_links gelmese bile uygulamanın
-  // çökmemesini sağlar ve güvenli bir şekilde boş bir dizi atar.
-  useEffect(() => {
     setPinterestLinks(suggestion?.pinterest_links || []);
   }, [suggestion]);
 
@@ -95,18 +95,12 @@ export default function SuggestionsScreen() {
   }, [suggestionLayoutY, suggestion]);
 
   const wardrobeStatus = useMemo(() => {
-    const required: Record<string, number> = {
-      top: 2,
-      bottom: 2,
-      outerwear: 2,
-      shoes: 2,
-    };
-    
+    const required: Record<string, number> = { top: 2, bottom: 2, outerwear: 2, shoes: 2 };
     const gender = userPlan?.gender === 'male' ? 'male' : 'female';
     const hierarchy = GENDERED_CATEGORY_HIERARCHY[gender];
-
     const counts: Record<string, number> = {};
-    clothing.forEach(item => {
+
+    availableClothing.forEach(item => {
       for (const [mainCat, subcats] of Object.entries(hierarchy)) {
         if ((subcats as string[]).includes(item.category)) {
           counts[mainCat] = (counts[mainCat] || 0) + 1;
@@ -122,11 +116,8 @@ export default function SuggestionsScreen() {
         needed: minCount - (counts[mainCat] || 0),
       }));
 
-    return {
-      hasEnough: missing.length === 0,
-      missing,
-    };
-  }, [clothing, t, userPlan?.gender]);
+    return { hasEnough: missing.length === 0, missing };
+  }, [availableClothing, t, userPlan?.gender]);
 
   const handleLike = () => {
     if (!suggestion) return;
@@ -144,7 +135,7 @@ export default function SuggestionsScreen() {
       weather: weatherCondition,
       date: new Date().toISOString(),
       description: suggestion.description,
-      suggestion_tip: suggestion.suggestion_tip!,
+      suggestion_tip: suggestion.suggestion_tip || '',
     };
     addOutfit(newOutfit);
     setIsLiked(true);
@@ -153,7 +144,6 @@ export default function SuggestionsScreen() {
   };
 
   const handleGenerateSuggestion = async () => {
-    // limitInfo henüz yüklenmediyse butona basılmasını engelle
     if (isLimitLoading || !limitInfo) return;
     
     if (!wardrobeStatus.hasEnough || !weather) return;
@@ -198,18 +188,16 @@ export default function SuggestionsScreen() {
     setShowLoadingAnimation(true);
     setError(null);
     setSuggestion(null);
-    setPinterestLinks([]);
 
     try {
       const weatherCondition = getWeatherCondition(weather as any);
       const last5 = outfits.slice(0, 5);
 
-      // --- DEĞİŞİKLİK: API çağrısına plan bilgisini ekle ---
       const result = await getOutfitSuggestion(
         i18n.language,
         userPlan?.gender as 'female' | 'male' | undefined,
-        limitInfo.plan, // Güvenilir kaynaktan plan bilgisini gönderiyoruz
-        clothing,
+        limitInfo.plan,
+        availableClothing,
         last5,
         weatherCondition,
         selectedOccasion

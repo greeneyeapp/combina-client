@@ -1,6 +1,7 @@
-// components/suggestions/OutfitLoadingAnimation.tsx (Güncellenmiş - Yeni image sistemi)
+// kodlar/components/suggestions/OutfitLoadingAnimation.tsx
+
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, Animated, Image, Easing } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
@@ -11,93 +12,87 @@ interface OutfitLoadingAnimationProps {
   onComplete?: () => void;
 }
 
-export default function OutfitLoadingAnimation({ 
-  isVisible, 
-  onComplete 
+export default function OutfitLoadingAnimation({
+  isVisible,
+  onComplete
 }: OutfitLoadingAnimationProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { clothing } = useClothingStore();
-  
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
 
-  // Gösterilecek rastgele clothing item'ları seç
   const randomClothingItems = React.useMemo(() => {
-    if (clothing.length === 0) return [];
-    
-    const shuffled = [...clothing].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, Math.min(6, clothing.length)); // Max 6 item
-  }, [clothing, isVisible]); // isVisible değiştiğinde yeniden karıştır
+    const availableItems = clothing.filter(item => !item.isImageMissing);
+    if (availableItems.length === 0) return [];
 
-  // Gösterilecek image URI'sini belirle (thumbnail öncelikli)
+    const shuffled = [...availableItems].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.min(6, availableItems.length));
+  }, [clothing, isVisible]);
+
   const getDisplayImageUri = (item: any): string => {
     if (!item) return '';
-    
-    // Öncelik sırası: thumbnail -> original -> legacy
+
     if (item.thumbnailImageUri) return item.thumbnailImageUri;
     if (item.originalImageUri) return item.originalImageUri;
-    if (item.imageUri) return item.imageUri; // Legacy support
-    
+    if (item.imageUri) return item.imageUri;
+
     return '';
   };
 
   useEffect(() => {
-    if (!isVisible || randomClothingItems.length === 0) {
-      fadeAnim.setValue(0);
-      scaleAnim.setValue(0.8);
-      return;
+    if (isVisible) {
+        // Giriş animasyonu
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, { // Girişte daha dinamik bir yaylanma efekti
+                toValue: 1,
+                speed: 14,
+                bounciness: 6,
+                useNativeDriver: true,
+            }),
+        ]).start();
+
+        if(randomClothingItems.length > 0) {
+            const interval = setInterval(() => {
+                setCurrentIndex(prev => (prev + 1) % randomClothingItems.length);
+            }, 800);
+            return () => clearInterval(interval);
+        }
+    } else {
+        // *** YENİ ÇIKIŞ ANİMASYONU BURADA ***
+        // isVisible false olduğunda animasyonu tetikle
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 400, // Süre 200ms'den 400ms'ye çıkarıldı
+                easing: Easing.inOut(Easing.ease), // Daha yumuşak bir geçiş için easing eklendi
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 0.8,
+                duration: 400, // Süre 200ms'den 400ms'ye çıkarıldı
+                easing: Easing.inOut(Easing.ease),
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            // Animasyon bittiğinde onComplete callback'ini çağır
+            setCurrentIndex(0);
+            onComplete?.();
+        });
     }
-
-    // Fade in animasyonu
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    // Item'ları sırayla göster
-    const interval = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % randomClothingItems.length);
-    }, 800);
-
-    return () => clearInterval(interval);
   }, [isVisible, randomClothingItems.length]);
-
-  useEffect(() => {
-    if (!isVisible) {
-      // Fade out animasyonu
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.8,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setCurrentIndex(0);
-        onComplete?.();
-      });
-    }
-  }, [isVisible]);
 
   if (!isVisible) return null;
 
   const renderClothingItem = () => {
     if (randomClothingItems.length === 0) {
-      // Fallback: Gardırop boşsa icon göster
       return (
         <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card }]}>
           <Shirt color={theme.colors.primary} size={48} />
@@ -126,9 +121,9 @@ export default function OutfitLoadingAnimation({
             </Text>
           </View>
         )}
-        
+
         <View style={styles.itemInfo}>
-          <Text 
+          <Text
             style={[styles.itemName, { color: theme.colors.text }]}
             numberOfLines={1}
             ellipsizeMode="tail"
@@ -144,7 +139,7 @@ export default function OutfitLoadingAnimation({
   };
 
   return (
-    <View style={[styles.overlay, { backgroundColor: theme.colors.background + 'F0' }]}>
+    <View style={[styles.overlay, { backgroundColor: theme.colors.background + 'E6' }]}>
       <Animated.View
         style={[
           styles.container,
@@ -158,7 +153,7 @@ export default function OutfitLoadingAnimation({
           <Text style={[styles.title, { color: theme.colors.text }]}>
             {t('suggestions.generatingOutfit')}
           </Text>
-          
+
           <Text style={[styles.subtitle, { color: theme.colors.textLight }]}>
             {t('suggestions.analyzingWardrobe')}
           </Text>
@@ -174,8 +169,8 @@ export default function OutfitLoadingAnimation({
                 style={[
                   styles.dot,
                   {
-                    backgroundColor: index === currentIndex 
-                      ? theme.colors.primary 
+                    backgroundColor: index === currentIndex
+                      ? theme.colors.primary
                       : theme.colors.border,
                   },
                 ]}
@@ -184,7 +179,7 @@ export default function OutfitLoadingAnimation({
           </View>
 
           <Text style={[styles.progressText, { color: theme.colors.textLight }]}>
-            {randomClothingItems.length > 0 
+            {randomClothingItems.length > 0
               ? t('suggestions.findingPerfectMatch')
               : t('suggestions.preparingOutfit')
             }
@@ -230,30 +225,27 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   itemContainer: {
-    width: 120,
-    borderRadius: 12,
+    width: 150,
+    borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2, },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
   },
   itemImage: {
     width: '100%',
-    height: 120,
+    height: 150,
   },
   itemPlaceholder: {
     width: '100%',
-    height: 120,
+    height: 150,
     justifyContent: 'center',
     alignItems: 'center',
   },
   itemPlaceholderText: {
-    fontSize: 32,
+    fontSize: 36,
     fontFamily: 'Montserrat-Bold',
   },
   itemInfo: {
@@ -269,9 +261,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
   },
   placeholderContainer: {
-    width: 120,
-    height: 180,
-    borderRadius: 12,
+    width: 150,
+    height: 210,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,

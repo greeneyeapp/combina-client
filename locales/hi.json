@@ -35,6 +35,7 @@
     "confirm": "पुष्टि करें",
     "delete": "हटाएं",
     "success": "सफलता",
+    "loadMore": "और लोड करें",
     "ok": "ठीक है",
     "reset": "रीसेट करें",
     "save": "सहेजें",
@@ -181,6 +182,15 @@
     "optimizingImage": "छवि को अनुकूलित किया जा रहा है...",
     "optimizingInProgress": "छवि को अनुकूलित किया जा रहा है, कृपया प्रतीक्षा करें...",
     "errorTakingPhoto": "फ़ोटो लेने में त्रुटि",
+    "selectPhoto": "फोटो चुनें",
+    "changePhoto": "फोटो बदलें",
+    "selectedPhoto": "चुनी हुई फोटो",
+    "noImage": "कोई छवि नहीं",
+    "imageNotAvailable": "छवि उपलब्ध नहीं है",
+    "thumbnailQuality": "प्रीव्यू गुणवत्ता",
+    "itemsAvailable": "आइटम उपलब्ध हैं",
+    "removedItem": "हटाई गई वस्तु",
+    "newImage": "नई छवि",
     "errorPickingPhoto": "फ़ोटो चुनने में त्रुटि",
     "errorProcessingImage": "छवि को संसाधित करने में त्रुटि",
     "itemsRemoved": "आइटम हटा दिए गए",
@@ -321,6 +331,10 @@
     "generatingOutfit": "आपका परफेक्ट आउटफिट बना रहा है",
     "analyzingWardrobe": "आपके वार्डरोब का विश्लेषण कर रहा है...",
     "wardrobeLimitReachedTitle": "वार्डरोब की सीमा पूरी हो गई",
+    "suggestedOutfit": "सुझाया गया पहनावा",
+    "someItemsMissing": "इस पहनावे के कुछ आइटम आपकी अलमारी में नहीं हैं।",
+    "itemNotInWardrobe": "आइटम अलमारी में नहीं है",
+    "preparingOutfit": "आपका पहनावा तैयार हो रहा है...",
     "wardrobeLimitReachedMessage": "आप अपनी '{{plan}}' योजना की {{limit}} आइटम सीमा तक पहुंच गए हैं। नए आउटफिट बनाने के लिए, कृपया अपनी योजना को अपग्रेड करें।",
     "findingPerfectMatch": "सही मैच ढूंढ रहा है...",
     "inspirationTitle": "स्टाइल प्रेरणा",
@@ -500,7 +514,9 @@
     "emptyMessage": "इसे यहाँ देखने के लिए एक आउटफिट सुझाव को लाइक करें।",
     "generateOutfit": "एक आउटफिट बनाएं",
     "deleteTitle": "आउटफिट हटाएं",
-    "deleteMessage": "क्या आप वाकई इस आउटफिट को अपनी हिस्ट्री से हटाना चाहते हैं?"
+    "deleteMessage": "क्या आप वाकई इस आउटफिट को अपनी हिस्ट्री से हटाना चाहते हैं?",
+    "missingItems": "{{total}} में से {{missing}} आइटम गायब हैं",
+    "someItemsRemoved": "इस पहनावे के कुछ आइटम हटा दिए गए हैं।"
   },
   "profile": {
     "title": "प्रोफ़ाइल",
@@ -532,7 +548,8 @@
     "galleryRequired": "आपके कपड़ों की तस्वीरें चुनने के लिए फोटो लाइब्रेरी अनुमति की आवश्यकता है।",
     "locationRequiredTitle": "स्थान अनुमति आवश्यक",
     "locationRequiredMessage": "इस सुविधा को सटीक, मौसम-आधारित सुझाव प्रदान करने के लिए आपके स्थान की आवश्यकता है। कृपया अपने डिवाइस सेटिंग्स में इस ऐप के लिए स्थान सेवाओं को सक्षम करें।",
-    "openSettings": "सेटिंग्स खोलें"
+    "openSettings": "सेटिंग्स खोलें",
+    "grantPermission": "अनुमति दें"
   },
   "subscription": {
     "title": "सदस्यता",
@@ -541,6 +558,7 @@
     "loadError": "सदस्यता योजनाओं को लोड करने में विफल।",
     "selectPlan": "प्लान चुनें",
     "currentPlan": "वर्तमान प्लान",
+    "noPlansAvailable": "इस बिलिंग अवधि के लिए कोई प्लान उपलब्ध नहीं है।",
     "purchaseNotAvailable": "इस डिवाइस पर खरीद उपलब्ध नहीं है।",
     "purchaseSuccessTitle": "खरीद सफल!",
     "purchaseSuccessMessage": "आपकी {{plan}} योजना सक्रिय हो गई है।",

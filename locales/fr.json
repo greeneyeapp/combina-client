@@ -37,6 +37,7 @@
     "success": "Succès",
     "ok": "OK",
     "reset": "Réinitialiser",
+    "loadMore": "Charger plus",
     "save": "Enregistrer",
     "select": "Sélectionner...",
     "continue": "Continuer",
@@ -141,6 +142,15 @@
     "wardrobe": "Garde-robe",
     "suggestions": "Tenues",
     "history": "Historique",
+    "selectPhoto": "Sélectionner une photo",
+    "changePhoto": "Changer de photo",
+    "selectedPhoto": "Photo sélectionnée",
+    "noImage": "Aucune image",
+    "imageNotAvailable": "Image non disponible",
+    "thumbnailQuality": "Qualité de l'aperçu",
+    "itemsAvailable": "articles disponibles",
+    "removedItem": "Article supprimé",
+    "newImage": "Nouvelle image",
     "profile": "Profil"
   },
   "storage": {
@@ -321,6 +331,10 @@
     "generatingOutfit": "Création de votre tenue parfaite",
     "analyzingWardrobe": "Analyse de votre garde-robe...",
     "findingPerfectMatch": "Recherche de la combinaison parfaite...",
+    "suggestedOutfit": "Tenue suggérée",
+    "someItemsMissing": "Certains articles de cette tenue ne sont pas dans votre garde-robe.",
+    "itemNotInWardrobe": "L'article n'est pas dans la garde-robe",
+    "preparingOutfit": "Préparation de votre tenue...",
     "inspirationTitle": "Inspiration de style",
     "linkError": "Impossible d'ouvrir le lien.",
     "wardrobeLimitReachedTitle": "Limite de garde-robe atteinte",
@@ -499,6 +513,8 @@
     "emptyTitle": "Aucun historique de tenues",
     "emptyMessage": "Aimez une suggestion de tenue pour la voir ici.",
     "generateOutfit": "Générer une tenue",
+    "missingItems": "{{missing}} articles sur {{total}} manquants",
+    "someItemsRemoved": "Certains articles de cette tenue ont été supprimés.",
     "deleteTitle": "Supprimer la tenue",
     "deleteMessage": "Êtes-vous sûr de vouloir supprimer cette tenue de votre historique ?"
   },
@@ -532,10 +548,12 @@
     "galleryRequired": "L'autorisation d'accès à la galerie de photos est requise pour sélectionner des photos de vos vêtements.",
     "locationRequiredTitle": "Autorisation de localisation requise",
     "locationRequiredMessage": "Cette fonctionnalité nécessite votre emplacement pour fournir des suggestions précises basées sur la météo. Veuillez activer les services de localisation pour cette application dans les paramètres de votre appareil.",
-    "openSettings": "Ouvrir les paramètres"
+    "openSettings": "Ouvrir les paramètres",
+    "grantPermission": "Accorder la permission"
   },
   "subscription": {
     "title": "Abonnement",
+    "noPlansAvailable": "Aucun forfait disponible pour cette période.",
     "notAvailable": "Abonnements non disponibles",
     "selectPlan": "Choisir ce forfait",
     "currentPlan": "Forfait actuel",

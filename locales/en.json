@@ -54,7 +54,8 @@
     "hoursAgo_other": "{{count}} hours ago",
     "minutesAgo_one": "{{count}} minute ago",
     "minutesAgo_other": "{{count}} minutes ago",
-    "justNow": "Just now"
+    "justNow": "Just now",
+    "loadMore": "Load More"
   },
   "auth": {
     "signInWithGoogle": "Sign in with Google",
@@ -153,6 +154,12 @@
     "addPhoto": "Add Photo",
     "takePhoto": "Take Photo",
     "choosePhoto": "Choose Photo",
+    "selectPhoto": "Select Photo",
+    "changePhoto": "Change Photo",
+    "selectedPhoto": "Selected Photo",
+    "noImage": "No Image",
+    "imageNotAvailable": "Image Not Available",
+    "thumbnailQuality": "Preview Quality",
     "name": "Name",
     "namePlaceholder": "e.g., Blue Denim Jeans",
     "nameRequired": "Item name is required.",
@@ -193,7 +200,10 @@
     "errorPickingPhoto": "Error picking photo",
     "errorProcessingImage": "Error processing image",
     "itemsRemoved": "Items removed",
-    "missingImagesRemoved": "{{count}} items with missing images were removed"
+    "missingImagesRemoved": "{{count}} items with missing images were removed",
+    "itemsAvailable": "items available",
+    "removedItem": "Removed Item",
+    "newImage": "New Image"
   },
   "onboarding": {
     "step1": {
@@ -310,7 +320,11 @@
     "likeInfo": "You can now see it in your history tab.",
     "alreadyLiked": "This outfit is already in your history.",
     "usageLimitInfo": "{{used}} of {{total}} suggestions used today",
-    "dailyUsage": "Daily Usage"
+    "dailyUsage": "Daily Usage",
+    "suggestedOutfit": "Suggested Outfit",
+    "someItemsMissing": "Some items in this outfit are not in your wardrobe.",
+    "itemNotInWardrobe": "Item not in wardrobe",
+    "preparingOutfit": "Preparing your outfit..."
   },
   "storage": {
     "title": "Storage Management",
@@ -500,7 +514,9 @@
     "emptyMessage": "Like an outfit suggestion to see it here.",
     "generateOutfit": "Generate an Outfit",
     "deleteTitle": "Delete Outfit",
-    "deleteMessage": "Are you sure you want to delete this outfit from your history?"
+    "deleteMessage": "Are you sure you want to delete this outfit from your history?",
+    "missingItems": "{{missing}} of {{total}} items missing",
+    "someItemsRemoved": "Some items in this outfit have been removed."
   },
   "profile": {
     "title": "Profile",
@@ -532,7 +548,8 @@
     "galleryRequired": "Photo library permission is required to select photos of your clothes.",
     "locationRequiredTitle": "Location Permission Required",
     "locationRequiredMessage": "This feature requires your location to provide accurate, weather-based suggestions. Please enable location services for this app in your device settings.",
-    "openSettings": "Open Settings"
+    "openSettings": "Open Settings",
+    "grantPermission": "Grant Permission"
   },
   "subscription": {
     "title": "Subscription",
@@ -582,7 +599,8 @@
         "2 personalized outfit ideas daily",
         "Ad-supported experience"
       ]
-    }
+    },
+    "noPlansAvailable": "No plans available for this billing period."
   },
   "navigation": {
     "redirecting": "Redirecting..."

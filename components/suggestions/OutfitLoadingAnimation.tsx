@@ -1,422 +1,301 @@
-// components/suggestions/OutfitLoadingAnimation.tsx
-import React, { useEffect, useState, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Animated,
-  Dimensions,
-  Modal,
-  Easing,
-} from 'react-native';
-import { useTheme } from '@/context/ThemeContext';
+// components/suggestions/OutfitLoadingAnimation.tsx (Güncellenmiş - Yeni image sistemi)
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Animated, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useClothingStore, ClothingItem } from '@/store/clothingStore';
-import { Sparkles, Shuffle } from 'lucide-react-native';
+import { useTheme } from '@/context/ThemeContext';
+import { useClothingStore } from '@/store/clothingStore';
+import { Shirt } from 'lucide-react-native';
 
 interface OutfitLoadingAnimationProps {
   isVisible: boolean;
   onComplete?: () => void;
 }
 
-const { width, height } = Dimensions.get('window');
-const ITEM_SIZE = 120;
-const ANIMATION_DURATION = 800;
-
-export default function OutfitLoadingAnimation({ isVisible, onComplete }: OutfitLoadingAnimationProps) {
-  const { theme } = useTheme();
+export default function OutfitLoadingAnimation({ 
+  isVisible, 
+  onComplete 
+}: OutfitLoadingAnimationProps) {
   const { t } = useTranslation();
+  const { theme } = useTheme();
   const { clothing } = useClothingStore();
   
-  const [currentItems, setCurrentItems] = useState<ClothingItem[]>([]);
-  const [shuffleCount, setShuffleCount] = useState(0);
-  const [usedItemIds, setUsedItemIds] = useState<Set<string>>(new Set());
-  
-  // Animation values
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const shuffleAnim = useRef(new Animated.Value(0)).current;
-  const sparkleAnim = useRef(new Animated.Value(0)).current;
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [scaleAnim] = useState(new Animated.Value(0.8));
 
-  // Get random items from wardrobe (tekrarları engelle)
-  const getRandomItems = (count: number = 4): ClothingItem[] => {
+  // Gösterilecek rastgele clothing item'ları seç
+  const randomClothingItems = React.useMemo(() => {
     if (clothing.length === 0) return [];
     
-    // Eğer kullanılabilir eşya sayısı istenen sayıdan azsa, used set'i sıfırla
-    const availableItems = clothing.filter(item => !usedItemIds.has(item.id));
-    if (availableItems.length < count && usedItemIds.size > 0) {
-      setUsedItemIds(new Set());
-      return getRandomItems(count);
-    }
+    const shuffled = [...clothing].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, Math.min(6, clothing.length)); // Max 6 item
+  }, [clothing, isVisible]); // isVisible değiştiğinde yeniden karıştır
+
+  // Gösterilecek image URI'sini belirle (thumbnail öncelikli)
+  const getDisplayImageUri = (item: any): string => {
+    if (!item) return '';
     
-    // Kullanılmamış eşyalardan rastgele seç
-    const shuffled = [...availableItems].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, Math.min(count, availableItems.length));
+    // Öncelik sırası: thumbnail -> original -> legacy
+    if (item.thumbnailImageUri) return item.thumbnailImageUri;
+    if (item.originalImageUri) return item.originalImageUri;
+    if (item.imageUri) return item.imageUri; // Legacy support
     
-    // Seçilen eşyaları kullanılmış listesine ekle
-    setUsedItemIds(prev => {
-      const newSet = new Set(prev);
-      selected.forEach(item => newSet.add(item.id));
-      return newSet;
-    });
-    
-    return selected;
+    return '';
   };
 
-  // Shuffle items animation
-  const shuffleItems = () => {
-    Animated.sequence([
-      Animated.timing(shuffleAnim, {
-        toValue: 1,
-        duration: 200,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(shuffleAnim, {
-        toValue: 0,
-        duration: 200,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    setCurrentItems(getRandomItems(4));
-    setShuffleCount(prev => prev + 1);
-  };
-
-  // Start animations when visible
   useEffect(() => {
-    if (isVisible) {
-      // Reset state
-      setUsedItemIds(new Set());
-      setCurrentItems(getRandomItems(4));
-      setShuffleCount(0);
-      
-      // Initial entrance animation
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 400,
-          easing: Easing.out(Easing.back(1.5)),
-          useNativeDriver: true,
-        }),
-      ]).start();
-
-      // Continuous rotation
-      const rotateAnimation = Animated.loop(
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 3000,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      );
-      rotateAnimation.start();
-
-      // Sparkle animation
-      const sparkleAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(sparkleAnim, {
-            toValue: 1,
-            duration: 1000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(sparkleAnim, {
-            toValue: 0,
-            duration: 1000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-      sparkleAnimation.start();
-
-      // Shuffle items periodically
-      const shuffleInterval = setInterval(shuffleItems, ANIMATION_DURATION);
-
-      return () => {
-        clearInterval(shuffleInterval);
-        rotateAnimation.stop();
-        sparkleAnimation.stop();
-      };
-    } else {
-      // Reset animations when hidden
+    if (!isVisible || randomClothingItems.length === 0) {
       fadeAnim.setValue(0);
       scaleAnim.setValue(0.8);
-      rotateAnim.setValue(0);
-      shuffleAnim.setValue(0);
-      sparkleAnim.setValue(0);
-      setUsedItemIds(new Set());
+      return;
     }
-  }, [isVisible]);
 
-  // Exit animation when closing
-  const handleClose = () => {
+    // Fade in animasyonu
     Animated.parallel([
       Animated.timing(fadeAnim, {
-        toValue: 0,
+        toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }),
       Animated.timing(scaleAnim, {
-        toValue: 0.8,
+        toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      onComplete?.();
-    });
-  };
+    ]).start();
+
+    // Item'ları sırayla göster
+    const interval = setInterval(() => {
+      setCurrentIndex(prev => (prev + 1) % randomClothingItems.length);
+    }, 800);
+
+    return () => clearInterval(interval);
+  }, [isVisible, randomClothingItems.length]);
 
   useEffect(() => {
     if (!isVisible) {
-      handleClose();
+      // Fade out animasyonu
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setCurrentIndex(0);
+        onComplete?.();
+      });
     }
   }, [isVisible]);
 
-  const rotation = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const shuffleTransform = shuffleAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 10],
-  });
-
-  const sparkleOpacity = sparkleAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.3, 1, 0.3],
-  });
-
-  const sparkleScale = sparkleAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.8, 1.2, 0.8],
-  });
-
   if (!isVisible) return null;
 
-  return (
-    <Modal
-      visible={isVisible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-    >
-      <View style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.85)' }]}>
-        <Animated.View
-          style={[
-            styles.container,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          {/* Main loading text */}
-          <View style={styles.headerContainer}>
-            <Animated.View
-              style={[
-                styles.sparkleIcon,
-                {
-                  opacity: sparkleOpacity,
-                  transform: [{ scale: sparkleScale }],
-                },
-              ]}
-            >
-              <Sparkles color={theme.colors.primary} size={32} />
-            </Animated.View>
-            <Text style={[styles.loadingTitle, { color: theme.colors.white }]}>
-              {t('suggestions.generatingOutfit')}
-            </Text>
-            <Text style={[styles.loadingSubtitle, { color: theme.colors.textLight }]}>
-              {t('suggestions.analyzingWardrobe')}
+  const renderClothingItem = () => {
+    if (randomClothingItems.length === 0) {
+      // Fallback: Gardırop boşsa icon göster
+      return (
+        <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card }]}>
+          <Shirt color={theme.colors.primary} size={48} />
+          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
+            {t('wardrobe.emptyTitle')}
+          </Text>
+        </View>
+      );
+    }
+
+    const currentItem = randomClothingItems[currentIndex];
+    const imageUri = getDisplayImageUri(currentItem);
+
+    return (
+      <View style={[styles.itemContainer, { backgroundColor: theme.colors.card }]}>
+        {imageUri ? (
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.itemImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.itemPlaceholder, { backgroundColor: theme.colors.background }]}>
+            <Text style={[styles.itemPlaceholderText, { color: theme.colors.textLight }]}>
+              {currentItem.name?.charAt(0) || '?'}
             </Text>
           </View>
-
-          {/* Clothing items carousel */}
-          <Animated.View
-            style={[
-              styles.itemsContainer,
-              {
-                transform: [
-                  { rotate: rotation },
-                  { translateY: shuffleTransform },
-                ],
-              },
-            ]}
+        )}
+        
+        <View style={styles.itemInfo}>
+          <Text 
+            style={[styles.itemName, { color: theme.colors.text }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           >
-            {currentItems.map((item, index) => {
-              const angle = (index * 90) * (Math.PI / 180); // 90 degrees between items
-              const radius = 80;
-              const x = Math.cos(angle) * radius;
-              const y = Math.sin(angle) * radius;
+            {currentItem.name}
+          </Text>
+          <Text style={[styles.itemCategory, { color: theme.colors.textLight }]}>
+            {t(`categories.${currentItem.category}`)}
+          </Text>
+        </View>
+      </View>
+    );
+  };
 
-              return (
-                <Animated.View
-                  key={`${item.id}-${shuffleCount}`}
-                  style={[
-                    styles.clothingItem,
-                    {
-                      transform: [
-                        { translateX: x },
-                        { translateY: y },
-                        { scale: shuffleAnim.interpolate({
-                          inputRange: [0, 0.5, 1],
-                          outputRange: [1, 0.8, 1],
-                        }) },
-                      ],
-                    },
-                  ]}
-                >
-                  <Image
-                    source={{ uri: item.imageUri }}
-                    style={styles.clothingImage}
-                    resizeMode="cover"
-                  />
-                  <View style={[styles.itemOverlay, { backgroundColor: theme.colors.primaryLight }]}>
-                    <Text style={[styles.itemName, { color: theme.colors.primary }]} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                  </View>
-                </Animated.View>
-              );
-            })}
+  return (
+    <View style={[styles.overlay, { backgroundColor: theme.colors.background + 'F0' }]}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }],
+          },
+        ]}
+      >
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            {t('suggestions.generatingOutfit')}
+          </Text>
+          
+          <Text style={[styles.subtitle, { color: theme.colors.textLight }]}>
+            {t('suggestions.analyzingWardrobe')}
+          </Text>
+
+          <Animated.View style={styles.itemDisplay}>
+            {renderClothingItem()}
           </Animated.View>
 
-          {/* Shuffle indicator */}
-          <Animated.View
-            style={[
-              styles.shuffleContainer,
-              {
-                opacity: shuffleAnim.interpolate({
-                  inputRange: [0, 0.5, 1],
-                  outputRange: [0.6, 1, 0.6],
-                }),
-              },
-            ]}
-          >
-            <Shuffle color={theme.colors.textLight} size={16} />
-            <Text style={[styles.shuffleText, { color: theme.colors.textLight }]}>
-              {t('suggestions.findingPerfectMatch')}
-            </Text>
-          </Animated.View>
-
-          {/* Progress dots */}
-          <View style={styles.progressContainer}>
-            {[0, 1, 2].map((index) => (
-              <Animated.View
+          <View style={styles.dotsContainer}>
+            {randomClothingItems.length > 0 && randomClothingItems.map((_, index) => (
+              <View
                 key={index}
                 style={[
-                  styles.progressDot,
+                  styles.dot,
                   {
-                    backgroundColor: theme.colors.primary,
-                    opacity: sparkleAnim.interpolate({
-                      inputRange: [0, 0.33, 0.66, 1],
-                      outputRange: index === 0 ? [1, 0.3, 0.3, 1] :
-                                   index === 1 ? [0.3, 1, 0.3, 0.3] :
-                                   [0.3, 0.3, 1, 0.3],
-                    }),
+                    backgroundColor: index === currentIndex 
+                      ? theme.colors.primary 
+                      : theme.colors.border,
                   },
                 ]}
               />
             ))}
           </View>
-        </Animated.View>
-      </View>
-    </Modal>
+
+          <Text style={[styles.progressText, { color: theme.colors.textLight }]}>
+            {randomClothingItems.length > 0 
+              ? t('suggestions.findingPerfectMatch')
+              : t('suggestions.preparingOutfit')
+            }
+          </Text>
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   },
   container: {
     alignItems: 'center',
     padding: 32,
   },
-  headerContainer: {
+  content: {
     alignItems: 'center',
-    marginBottom: 60,
+    maxWidth: 280,
   },
-  sparkleIcon: {
-    marginBottom: 16,
-  },
-  loadingTitle: {
-    fontFamily: 'PlayfairDisplay-Bold',
+  title: {
     fontSize: 24,
+    fontFamily: 'PlayfairDisplay-Bold',
     textAlign: 'center',
     marginBottom: 8,
   },
-  loadingSubtitle: {
-    fontFamily: 'Montserrat-Regular',
+  subtitle: {
     fontSize: 16,
+    fontFamily: 'Montserrat-Regular',
     textAlign: 'center',
-  },
-  itemsContainer: {
-    width: ITEM_SIZE * 2,
-    height: ITEM_SIZE * 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  clothingItem: {
-    position: 'absolute',
-    width: ITEM_SIZE * 0.6,
-    height: ITEM_SIZE * 0.6,
-    borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  clothingImage: {
-    width: '100%',
-    height: '70%',
-  },
-  itemOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-  },
-  itemName: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 10,
-    textAlign: 'center',
-  },
-  shuffleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 32,
   },
-  shuffleText: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
-    marginLeft: 8,
+  itemDisplay: {
+    marginBottom: 24,
   },
-  progressContainer: {
-    flexDirection: 'row',
+  itemContainer: {
+    width: 120,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  itemImage: {
+    width: '100%',
+    height: 120,
+  },
+  itemPlaceholder: {
+    width: '100%',
+    height: 120,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  progressDot: {
+  itemPlaceholderText: {
+    fontSize: 32,
+    fontFamily: 'Montserrat-Bold',
+  },
+  itemInfo: {
+    padding: 12,
+  },
+  itemName: {
+    fontSize: 14,
+    fontFamily: 'Montserrat-SemiBold',
+    marginBottom: 4,
+  },
+  itemCategory: {
+    fontSize: 12,
+    fontFamily: 'Montserrat-Regular',
+  },
+  placeholderContainer: {
+    width: 120,
+    height: 180,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  placeholderText: {
+    fontSize: 12,
+    fontFamily: 'Montserrat-Medium',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  dotsContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 8,
+  },
+  dot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    marginHorizontal: 4,
+  },
+  progressText: {
+    fontSize: 14,
+    fontFamily: 'Montserrat-Regular',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

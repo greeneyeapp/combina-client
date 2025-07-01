@@ -2,6 +2,7 @@ import API_URL from '@/config';
 import { auth } from '@/firebaseConfig';
 import { useUserPlanStore, UserPlan } from '@/store/userPlanStore';
 import { useApiAuthStore } from '@/store/apiAuthStore';
+import i18n from '@/locales/i18n';
 
 interface UserProfileResponse {
   user_id: string;
@@ -32,17 +33,17 @@ const getAuthToken = async (): Promise<string> => {
 
   const user = auth.currentUser;
   if (!user) throw new Error('User not authenticated');
-  
+
   const idToken = await user.getIdToken();
   const tokenResponse = await fetch(`${API_URL}/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id_token: idToken })
   });
-  
+
   if (!tokenResponse.ok) throw new Error('Failed to get auth token');
   const { access_token } = await tokenResponse.json();
-  
+
   // Update the store with new token
   useApiAuthStore.getState().setJwt(access_token);
   return access_token;
@@ -51,21 +52,21 @@ const getAuthToken = async (): Promise<string> => {
 // Initialize user profile on first registration
 export const initializeProfile = async (profileData: ProfileInitData): Promise<void> => {
   const token = await getAuthToken();
-  
+
   const response = await fetch(`${API_URL}/api/users/init-profile`, {
     method: 'POST',
-    headers: { 
+    headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify(profileData)
   });
-  
+
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(`Failed to initialize profile: ${response.status} ${errorData}`);
   }
-  
+
   // After initialization, fetch the complete profile
   await getUserProfile(true);
 };
@@ -73,31 +74,31 @@ export const initializeProfile = async (profileData: ProfileInitData): Promise<v
 // Fetch user profile from API
 export const fetchUserProfile = async (): Promise<UserProfileResponse> => {
   const token = await getAuthToken();
-  
+
   const response = await fetch(`${API_URL}/api/users/profile`, {
-    headers: { 
+    headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     }
   });
-  
+
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(`Failed to fetch user profile: ${response.status} ${errorData}`);
   }
-  
+
   return response.json();
 };
 
 // Get user profile with store management
 export const getUserProfile = async (forceRefresh: boolean = false): Promise<UserPlan> => {
   const { userPlan, lastFetched, setUserPlan, setLoading } = useUserPlanStore.getState();
-  
+
   // Check if we need to fetch (force refresh or no cached data or stale data)
-  const shouldFetch = forceRefresh || 
-                     !userPlan || 
-                     !lastFetched || 
-                     (Date.now() - new Date(lastFetched).getTime()) > 5 * 60 * 1000; // 5 minutes
+  const shouldFetch = forceRefresh ||
+    !userPlan ||
+    !lastFetched ||
+    (Date.now() - new Date(lastFetched).getTime()) > 5 * 60 * 1000; // 5 minutes
 
   if (!shouldFetch && userPlan) {
     return userPlan;
@@ -106,7 +107,7 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   try {
     setLoading(true);
     const profileData = await fetchUserProfile();
-    
+
     const planData: UserPlan = {
       plan: profileData.plan,
       usage: profileData.usage,
@@ -115,19 +116,19 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
       age: profileData.age,
       created_at: profileData.created_at,
     };
-    
+
     setUserPlan(planData);
     return planData;
-    
+
   } catch (error) {
     console.error('Failed to fetch user profile:', error);
-    
+
     // If we have cached data, return it even if refresh failed
     if (userPlan) {
       console.warn('Using cached profile data due to fetch error');
       return userPlan;
     }
-    
+
     throw error;
   } finally {
     setLoading(false);
@@ -137,25 +138,25 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
 // Update user plan (for subscription changes)
 export const updateUserPlan = async (plan: 'free' | 'standard' | 'premium'): Promise<void> => {
   const token = await getAuthToken();
-  
+
   const response = await fetch(`${API_URL}/api/users/plan`, {
     method: 'PATCH',
-    headers: { 
+    headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({ plan })
   });
-  
+
   if (!response.ok) {
     const errorData = await response.text();
     throw new Error(`Failed to update plan: ${response.status} ${errorData}`);
   }
-  
+
   // Update local store
   const { setPlan } = useUserPlanStore.getState();
   setPlan(plan);
-  
+
   // Refresh profile to get updated usage limits
   await getUserProfile(true);
 };
@@ -181,17 +182,17 @@ export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: 
   try {
     const profile = await getUserProfile();
     const { canAddItem, getRemainingItems } = useUserPlanStore.getState();
-    
+
     if (canAddItem()) {
       return { canAdd: true };
     }
-    
+
     const remaining = getRemainingItems();
-    return { 
-      canAdd: false, 
-      reason: `You've reached your ${profile.plan} plan limit. ${remaining} items remaining.` 
+    return {
+      canAdd: false,
+      reason: i18n.t('wardrobe.addItemLimitReached', { plan: profile.plan })
     };
-    
+
   } catch (error) {
     console.error('Error checking wardrobe limit:', error);
     // If we can't check, assume they can add (fail open)
@@ -203,19 +204,19 @@ export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: 
 export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?: string }> => {
   try {
     const profile = await getUserProfile();
-    
+
     if (profile.usage.remaining > 0) {
       return { canSuggest: true };
     }
-    
-    return { 
-      canSuggest: false, 
-      reason: `Daily suggestion limit reached (${profile.usage.current_usage}/${profile.usage.daily_limit})` 
+
+    return {
+      canSuggest: false,
+      reason: `Daily suggestion limit reached (${profile.usage.current_usage}/${profile.usage.daily_limit})`
     };
-    
+
   } catch (error) {
     console.error('Error checking suggestion limit:', error);
-    return { canSuggest: false, reason: 'Unable to check usage limits' };
+    return { canSuggest: false, reason: i18n.t('suggestions.usageCheckFailed') };
   }
 };
 
@@ -238,6 +239,6 @@ export const getPlanFeatures = (planType: 'free' | 'standard' | 'premium') => {
       features: ['Unlimited everything', 'Pinterest inspiration', 'Advanced AI styling', 'Personal stylist chat', 'Premium support']
     }
   };
-  
+
   return features[planType];
 };

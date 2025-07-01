@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/add.tsx (Güncellenmiş - Galeri referansı tabanlı)
+// app/(tabs)/wardrobe/add.tsx (Güncellenmiş - Galeri referans sistemi)
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,8 +8,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { Camera, Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as MediaLibrary from 'expo-media-library'; // Sadece kamera fotoğrafları için
+import * as MediaLibrary from 'expo-media-library';
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
@@ -18,10 +17,16 @@ import CategoryPicker from '@/components/wardrobe/CategoryPicker';
 import ColorPicker from '@/components/wardrobe/ColorPicker';
 import SeasonPicker from '@/components/wardrobe/SeasonPicker';
 import StylePicker from '@/components/wardrobe/StylePicker';
+import GalleryPicker from '@/components/common/GalleryPicker';
 import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
+import { 
+  processGalleryAsset,
+  GalleryImageResult,
+  checkGalleryPermissions 
+} from '@/utils/galleryImageStorage';
 
 type FormData = {
   name: string;
@@ -37,8 +42,10 @@ export default function AddClothingScreen() {
   const { theme } = useTheme();
   const { addClothing } = useClothingStore();
   const { userPlan } = useUserPlanStore();
-  const [image, setImage] = useState<string | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
+  const [processedImage, setProcessedImage] = useState<GalleryImageResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const { show: showAlert } = useAlertStore();
 
@@ -58,114 +65,68 @@ export default function AddClothingScreen() {
     },
   });
 
-    useFocusEffect(
+  useFocusEffect(
     useCallback(() => {
       reset({ name: '', category: '', color: '', season: [], style: [], notes: '' });
-      setImage(null);
+      setSelectedAsset(null);
+      setProcessedImage(null);
       setIsLoading(false);
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
   );
 
-  const takePicture = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      showAlert({ 
-        title: t('common.error'), 
-        message: t('permissions.cameraRequired'), 
-        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
-      });
-      return;
-    }
-    try {
-      const result = await ImagePicker.launchCameraAsync({ 
-        allowsEditing: true, 
-        aspect: [4, 3], 
-        quality: 0.8 // Düşük kalite kullan, zaten referans olarak saklayacağız
-      });
-      if (!result.canceled) {
-        await processSelectedImage(result.assets[0].uri, true); // true = kameradan geldi
-      }
-    } catch (error) {
-      console.log('Error taking picture:', error);
-      showAlert({ 
-        title: t('common.error'), 
-        message: t('wardrobe.errorTakingPhoto'), 
-        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
-      });
-    }
-  };
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
+  const handleOpenGalleryPicker = async () => {
+    const hasPermission = await checkGalleryPermissions();
+    if (hasPermission) {
+      setShowGalleryPicker(true);
+    } else {
       showAlert({ 
         title: t('common.error'), 
         message: t('permissions.galleryRequired'), 
         buttons: [{ text: t('common.ok'), onPress: () => {} }] 
       });
-      return;
-    }
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({ 
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, 
-        allowsEditing: true, 
-        aspect: [4, 3], 
-        quality: 0.8 // Düşük kalite yeterli
-      });
-      if (!result.canceled) {
-        await processSelectedImage(result.assets[0].uri, false); // false = galeriden geldi
-      }
-    } catch (error) {
-      console.log('Error picking image:', error);
-      showAlert({ 
-        title: t('common.error'), 
-        message: t('wardrobe.errorPickingPhoto'), 
-        buttons: [{ text: t('common.ok'), onPress: () => {} }] 
-      });
     }
   };
 
-  const processSelectedImage = async (sourceUri: string, isFromCamera: boolean = false) => {
+  const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
+    setIsLoading(true);
     try {
-      let finalUri = sourceUri;
+      console.log('Processing selected asset:', asset.id);
       
-      // Kamera fotoğrafıysa galeriye kaydet
-      if (isFromCamera) {
-        try {
-          // Sadece galeriye kaydetmek için minimal izin iste
-          const { status } = await MediaLibrary.requestPermissionsAsync(false); // false = sadece yazmak için
-          if (status === 'granted') {
-            const asset = await MediaLibrary.createAssetAsync(sourceUri);
-            finalUri = asset.uri;
-            console.log('📸 Camera photo saved to gallery:', finalUri);
-          } else {
-            console.log('⚠️ Gallery permission denied, using temp URI');
-            // İzin verilmezse geçici URI'yi kullan (risk var ama çalışır)
-          }
-        } catch (error) {
-          console.log('⚠️ Could not save to gallery:', error);
-          // Hata durumunda geçici URI'yi kullan
-        }
-      }
+      // Unique ID oluştur
+      const itemId = generateUniqueId();
       
-      setImage(finalUri);
+      // Galeri asset'ini işle (gerçek galeri URI + thumbnail)
+      const result = await processGalleryAsset(itemId, asset);
+      
+      setSelectedAsset(asset);
+      setProcessedImage(result);
+      
+      console.log('Asset processed successfully:', {
+        originalUri: result.originalUri,
+        thumbnailUri: result.thumbnailUri,
+        assetId: result.assetId
+      });
+      
     } catch (error) {
-      console.error('Error processing image:', error);
+      console.error('Error processing selected asset:', error);
       showAlert({ 
         title: t('common.error'), 
         message: t('wardrobe.errorProcessingImage'), 
         buttons: [{ text: t('common.ok'), onPress: () => {} }] 
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const removeImage = () => {
-    setImage(null);
+    setSelectedAsset(null);
+    setProcessedImage(null);
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!image) {
+    if (!processedImage || !selectedAsset) {
       showAlert({ 
         title: t('common.error'), 
         message: t('wardrobe.imageRequired'), 
@@ -200,11 +161,18 @@ export default function AddClothingScreen() {
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
-        imageUri: image, // Doğrudan galeri URI'sini kullan
+        
+        // YENİ: Galeri referans sistemi
+        originalImageUri: processedImage.originalUri,
+        thumbnailImageUri: processedImage.thumbnailUri,
+        galleryAssetId: processedImage.assetId,
+        imageMetadata: processedImage.metadata,
+        
         createdAt: new Date().toISOString(),
       };
       
       await addClothing(newItem);
+      
       Toast.show({
         type: 'success',
         text1: t('common.success'),
@@ -213,7 +181,9 @@ export default function AddClothingScreen() {
         visibilityTime: 2000,
         topOffset: 50,
       });
+      
       router.back();
+      
     } catch (error) {
       console.error('Error adding clothing item:', error);
       showAlert({ 
@@ -226,6 +196,43 @@ export default function AddClothingScreen() {
     }
   };
 
+  const renderImageSection = () => {
+    if (processedImage && selectedAsset) {
+      return (
+        <View style={styles.imageContainer}>
+          <Image 
+            source={{ uri: processedImage.thumbnailUri || processedImage.originalUri }} 
+            style={styles.clothingImage} 
+          />
+          <TouchableOpacity 
+            style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]} 
+            onPress={removeImage}
+          >
+            <X color={theme.colors.white} size={20} />
+          </TouchableOpacity>
+          
+          {/* Image info */}
+          <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
+              {processedImage.metadata.width} × {processedImage.metadata.height}
+              {processedImage.metadata.fileSize && 
+                ` • ${Math.round(processedImage.metadata.fileSize / 1024)} KB`
+              }
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
+        <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
+          {t('wardrobe.addPhoto')}
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar
@@ -233,42 +240,33 @@ export default function AddClothingScreen() {
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
         onLeftPress={() => router.back()}
       />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView}>
-        <ScrollView ref={scrollViewRef} style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={styles.keyboardAvoidingView}
+      >
+        <ScrollView 
+          ref={scrollViewRef} 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false} 
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.imageSection}>
-            {image ? (
-              <View style={styles.imageContainer}>
-                <Image source={{ uri: image }} style={styles.clothingImage} />
-                <TouchableOpacity style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]} onPress={removeImage}>
-                  <X color={theme.colors.white} size={20} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
-                <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
-                  {t('wardrobe.addPhoto')}
-                </Text>
-              </View>
-            )}
+            {renderImageSection()}
+            
             <View style={styles.imageButtonsContainer}>
-              <Button 
-                icon={<Camera color={theme.colors.text} size={20} />} 
-                label={t('wardrobe.takePhoto')} 
-                onPress={takePicture} 
-                variant="outline" 
-                style={styles.imageButton} 
-                disabled={isLoading} 
-              />
               <Button 
                 icon={<ImageIcon color={theme.colors.text} size={20} />} 
                 label={t('wardrobe.choosePhoto')} 
-                onPress={pickImage} 
+                onPress={handleOpenGalleryPicker}
                 variant="outline" 
                 style={styles.imageButton} 
                 disabled={isLoading} 
               />
             </View>
           </View>
+          
           <View style={styles.formSection}>
             <Controller
               control={control}
@@ -286,6 +284,7 @@ export default function AddClothingScreen() {
                 />
               )}
             />
+            
             <Controller
               control={control}
               name="category"
@@ -299,41 +298,70 @@ export default function AddClothingScreen() {
                 />
               )}
             />
+            
             <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.color')}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                {t('wardrobe.color')}
+              </Text>
               <Controller
                 control={control}
                 name="color"
                 rules={{ required: t('wardrobe.colorRequired') as string }}
                 render={({ field: { onChange, value } }) => (
-                  <ColorPicker selectedColor={value} onSelectColor={onChange} error={errors.color?.message} />
+                  <ColorPicker 
+                    selectedColor={value} 
+                    onSelectColor={onChange} 
+                    error={errors.color?.message} 
+                  />
                 )}
               />
             </View>
+            
             <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.season')}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                {t('wardrobe.season')}
+              </Text>
               <Controller
                 control={control}
                 name="season"
                 rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }}
                 render={({ field: { onChange, value } }) => (
-                  <SeasonPicker selectedSeasons={value} onSelectSeason={onChange} />
+                  <SeasonPicker 
+                    selectedSeasons={value} 
+                    onSelectSeason={onChange} 
+                  />
                 )}
               />
-              {errors.season && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>}
+              {errors.season && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.season.message}
+                </Text>
+              )}
             </View>
+            
             <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.style')}</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                {t('wardrobe.style')}
+              </Text>
               <Controller
                 control={control}
                 name="style"
                 rules={{ validate: (value) => value.length > 0 || (t('wardrobe.styleRequired') as string) }}
                 render={({ field: { onChange, value } }) => (
-                  <StylePicker selectedStyles={value} onSelectStyles={onChange} multiSelect={true} />
+                  <StylePicker 
+                    selectedStyles={value} 
+                    onSelectStyles={onChange} 
+                    multiSelect={true} 
+                  />
                 )}
               />
-              {errors.style && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>}
+              {errors.style && (
+                <Text style={[styles.errorText, { color: theme.colors.error }]}>
+                  {errors.style.message}
+                </Text>
+              )}
             </View>
+            
             <Controller
               control={control}
               name="notes"
@@ -351,6 +379,7 @@ export default function AddClothingScreen() {
                 />
               )}
             />
+            
             <Button 
               label={isLoading ? t('common.saving') : t('wardrobe.saveItem')} 
               onPress={handleSubmit(onSubmit)} 
@@ -362,6 +391,14 @@ export default function AddClothingScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Galeri Picker Modal */}
+      <GalleryPicker
+        isVisible={showGalleryPicker}
+        onClose={() => setShowGalleryPicker(false)}
+        onSelectImage={handleAssetSelected}
+        allowCamera={true}
+      />
     </SafeAreaView>
   );
 }
@@ -372,12 +409,50 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 32 },
   imageSection: { marginBottom: 24 },
-  imageContainer: { position: 'relative', width: '100%', height: 250, borderRadius: 16, overflow: 'hidden', marginBottom: 16 },
+  imageContainer: { 
+    position: 'relative', 
+    width: '100%', 
+    height: 250, 
+    borderRadius: 16, 
+    overflow: 'hidden', 
+    marginBottom: 16 
+  },
   clothingImage: { width: '100%', height: '100%', resizeMode: 'cover' },
-  removeImageButton: { position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
-  imagePlaceholder: { width: '100%', height: 250, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  removeImageButton: { 
+    position: 'absolute', 
+    top: 8, 
+    right: 8, 
+    width: 32, 
+    height: 32, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  imageInfo: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+  },
+  imageInfoText: {
+    fontSize: 12,
+    fontFamily: 'Montserrat-Regular',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  imagePlaceholder: { 
+    width: '100%', 
+    height: 250, 
+    borderRadius: 16, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginBottom: 16 
+  },
   imagePlaceholderText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
-  imageButtonsContainer: { flexDirection: 'row', justifyContent: 'space-between' },
+  imageButtonsContainer: { flexDirection: 'row', justifyContent: 'center' },
   imageButton: { flex: 1, marginHorizontal: 4 },
   formSection: { gap: 16 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },

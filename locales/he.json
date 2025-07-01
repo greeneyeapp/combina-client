@@ -36,6 +36,7 @@
     "delete": "מחק",
     "success": "הצלחה",
     "ok": "אישור",
+    "loadMore": "טען עוד",
     "reset": "איפוס",
     "save": "שמור",
     "select": "בחר...",
@@ -183,6 +184,15 @@
     "errorTakingPhoto": "שגיאה בצילום התמונה",
     "errorPickingPhoto": "שגיאה בבחירת התמונה",
     "errorProcessingImage": "שגיאה בעיבוד התמונה",
+    "selectPhoto": "בחר תמונה",
+    "changePhoto": "שנה תמונה",
+    "selectedPhoto": "תמונה נבחרה",
+    "noImage": "אין תמונה",
+    "imageNotAvailable": "תמונה לא זמינה",
+    "thumbnailQuality": "איכות תצוגה מקדימה",
+    "itemsAvailable": "פריטים זמינים",
+    "removedItem": "פריט שהוסר",
+    "newImage": "תמונה חדשה",
     "itemsRemoved": "פריטים הוסרו",
     "missingImagesRemoved": "{{count}} פריטים עם תמונות חסרות הוסרו",
     "addItem": "הוסף פריט חדש",
@@ -321,6 +331,10 @@
     "generatingOutfit": "יוצר את התלבושת המושלמת שלך",
     "analyzingWardrobe": "מנתח את המלתחה שלך...",
     "findingPerfectMatch": "מוצא את ההתאמה המושלמת...",
+    "suggestedOutfit": "תלבושת מוצעת",
+    "someItemsMissing": "חלק מהפריטים בתלבושת זו אינם במלתחה שלך.",
+    "itemNotInWardrobe": "הפריט אינו במלתחה",
+    "preparingOutfit": "מכין את התלבושת שלך...",
     "wardrobeLimitReachedTitle": "הגעת למגבלת המלתחה",
     "wardrobeLimitReachedMessage": "לא ניתן ליצור תלבושות חדשות. הגעת למגבלת {{limit}} הפריטים בתוכנית '{{plan}}'. כדי להמשיך, יש לשדרג את התוכנית.",
     "inspirationTitle": "השראת סטייל",
@@ -500,7 +514,9 @@
     "emptyMessage": "עשה 'לייק' להצעת לבוש כדי לראות אותה כאן.",
     "generateOutfit": "צור תלבושת",
     "deleteTitle": "מחק תלבושת",
-    "deleteMessage": "האם אתה בטוח שברצונך למחוק תלבושת זו מההיסטוריה שלך?"
+    "deleteMessage": "האם אתה בטוח שברצונך למחוק תלבושת זו מההיסטוריה שלך?",
+    "missingItems": "{{missing}} מתוך {{total}} פריטים חסרים",
+    "someItemsRemoved": "חלק מהפריטים בתלבושת זו הוסרו."
   },
   "profile": {
     "title": "פרופיל",
@@ -532,7 +548,8 @@
     "galleryRequired": "נדרשת הרשאת גלריית תמונות כדי לבחור תמונות של הבגדים שלך.",
     "locationRequiredTitle": "נדרשת הרשאת מיקום",
     "locationRequiredMessage": "תכונה זו דורשת את מיקומך כדי לספק הצעות מדויקות מבוססות מזג אוויר. אנא הפעל שירותי מיקום עבור אפליקציה זו בהגדרות המכשיר שלך.",
-    "openSettings": "פתח הגדרות"
+    "openSettings": "פתח הגדרות",
+    "grantPermission": "הענק הרשאה"
   },
   "subscription": {
     "title": "מנוי",
@@ -541,6 +558,7 @@
     "loadError": "טעינת תוכניות המנוי נכשלה.",
     "selectPlan": "בחר תוכנית",
     "currentPlan": "התוכנית הנוכחית",
+    "noPlansAvailable": "אין תוכניות זמינות לתקופת חיוב זו.",
     "purchaseNotAvailable": "הרכישה אינה זמינה במכשיר זה.",
     "purchaseSuccessTitle": "הרכישה הושלמה בהצלחה!",
     "purchaseSuccessMessage": "תוכנית ה-{{plan}} שלך הופעלה.",

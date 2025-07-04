@@ -1,50 +1,39 @@
-// utils/appInitialization.ts - Asset ID migration dahil
-import { ensureThumbnailCacheExists, migrateFromCacheToAppSupport } from '@/utils/galleryImageStorage';
-import { quickCleanupInvalidItems } from '@/utils/migrationHelper';
+import { ensurePermanentDirectories, migrateLegacyImages } from '@/utils/permanentImageStorage';
 import { useClothingStore } from '@/store/clothingStore';
 
-// Uygulama başlangıcında çalışacak doğrulama fonksiyonu
 export const initializeApp = async () => {
   try {
-    console.log('🚀 Initializing app...');
+    console.log('🚀 Initializing app with permanent storage...');
 
-    // 1. Cache'den persistent directory'ye migration
-    try {
-      const migrationResult = await migrateFromCacheToAppSupport();
-      if (migrationResult.migratedCount > 0) {
-        console.log(`📦 Migrated ${migrationResult.migratedCount} thumbnails to persistent storage`);
-      }
-    } catch (error) {
-      console.error('❌ Thumbnail migration failed:', error);
-    }
+    // 1. Kalıcı dizinleri oluştur
+    await ensurePermanentDirectories();
+    console.log('✅ Permanent directories initialized');
 
-    // 2. Persistent thumbnail directory'sini oluştur
-    await ensureThumbnailCacheExists();
-    console.log('✅ Persistent thumbnail directory initialized');
-
-    // 3. Asset ID migration (async olarak çalıştır)
+    // 2. Legacy migration (async)
     setTimeout(async () => {
       try {
-        const { migrateToAssetIdSystem } = useClothingStore.getState();
-        const assetMigrationResult = await migrateToAssetIdSystem();
-        if (assetMigrationResult.migratedCount > 0) {
-          console.log(`🔄 Asset ID migration: ${assetMigrationResult.migratedCount} items migrated`);
-        }
+        const { migrateToPermanentStorage } = useClothingStore.getState();
+        await migrateToPermanentStorage();
+        console.log('🔄 Legacy migration completed');
       } catch (error) {
-        console.error('❌ Asset ID migration failed:', error);
+        console.error('❌ Legacy migration failed:', error);
       }
     }, 1000);
 
-    // 4. Hızlı temizlik - broken file URI'leri kaldır (log spam'ı engeller)
+    // 3. Görsel validation (async)
     setTimeout(async () => {
       try {
-        await quickCleanupInvalidItems();
+        const { validateClothingImages } = useClothingStore.getState();
+        const result = await validateClothingImages();
+        if (result.updatedCount > 0 || result.removedCount > 0) {
+          console.log(`📊 Image validation: ${result.updatedCount} updated, ${result.removedCount} removed`);
+        }
       } catch (error) {
-        console.warn('⚠️ Quick cleanup failed:', error);
+        console.warn('⚠️ Image validation failed:', error);
       }
     }, 2000);
 
-    console.log('✅ App initialization completed');
+    console.log('✅ App initialization completed with permanent storage');
   } catch (error) {
     console.error('❌ App initialization failed:', error);
   }

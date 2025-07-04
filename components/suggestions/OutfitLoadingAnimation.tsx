@@ -1,10 +1,11 @@
+// components/suggestions/OutfitLoadingAnimation.tsx - Opacity Fix ile Tam Kod
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Image, Easing } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { Shirt } from 'lucide-react-native';
-import { getDisplayImageUriSync, getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
 
 interface OutfitLoadingAnimationProps {
   isVisible: boolean;
@@ -44,24 +45,20 @@ export default function OutfitLoadingAnimation({
 
       const initialItems: ItemWithUri[] = randomClothingItems.map(item => ({
         item,
-        displayUri: getDisplayImageUriSync(item),
-        isLoading: !getDisplayImageUriSync(item)
+        displayUri: '',
+        isLoading: true
       }));
 
       setItemsWithUris(initialItems);
 
-      // Async URI'leri yükle
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
-        if (itemWithUri.isLoading && itemWithUri.item) {
-          try {
-            const asyncUri = await getDisplayImageUri(itemWithUri.item);
-            return { index, uri: asyncUri };
-          } catch (error) {
-            console.error('Error loading async URI for loading animation:', error);
-            return { index, uri: '' };
-          }
+        try {
+          const uri = await getDisplayImageUri(itemWithUri.item);
+          return { index, uri };
+        } catch (error) {
+          console.error('Error loading URI for loading animation:', error);
+          return { index, uri: '' };
         }
-        return null;
       });
 
       const results = await Promise.all(asyncPromises);
@@ -88,7 +85,6 @@ export default function OutfitLoadingAnimation({
 
   useEffect(() => {
     if (isVisible) {
-        // Giriş animasyonu
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -110,7 +106,6 @@ export default function OutfitLoadingAnimation({
             return () => clearInterval(interval);
         }
     } else {
-        // Çıkış animasyonu
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 0,
@@ -189,7 +184,7 @@ export default function OutfitLoadingAnimation({
           </View>
         )}
 
-        <View style={styles.itemInfo}>
+        <View style={[styles.itemInfo, { backgroundColor: theme.colors.card }]}>
           <Text
             style={[styles.itemName, { color: theme.colors.text }]}
             numberOfLines={1}
@@ -206,7 +201,7 @@ export default function OutfitLoadingAnimation({
   };
 
   return (
-    <View style={[styles.overlay, { backgroundColor: theme.colors.background + 'E6' }]}>
+    <View style={[styles.overlay, { backgroundColor: theme.colors.background }]}>
       <Animated.View
         style={[
           styles.container,
@@ -216,7 +211,7 @@ export default function OutfitLoadingAnimation({
           },
         ]}
       >
-        <View style={styles.content}>
+        <View style={[styles.content, { backgroundColor: theme.colors.card }]}>
           <Text style={[styles.title, { color: theme.colors.text }]}>
             {t('suggestions.generatingOutfit')}
           </Text>
@@ -267,29 +262,37 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
+    // ✅ SOLID BACKGROUND - Artık saydam değil
   },
-  container: {
-    alignItems: 'center',
+  container: { 
+    alignItems: 'center', 
     padding: 32,
   },
-  content: {
-    alignItems: 'center',
+  content: { 
+    alignItems: 'center', 
     maxWidth: 280,
+    padding: 24,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
   },
-  title: {
-    fontSize: 24,
-    fontFamily: 'PlayfairDisplay-Bold',
-    textAlign: 'center',
+  title: { 
+    fontSize: 24, 
+    fontFamily: 'PlayfairDisplay-Bold', 
+    textAlign: 'center', 
     marginBottom: 8,
   },
-  subtitle: {
-    fontSize: 16,
-    fontFamily: 'Montserrat-Regular',
-    textAlign: 'center',
+  subtitle: { 
+    fontSize: 16, 
+    fontFamily: 'Montserrat-Regular', 
+    textAlign: 'center', 
     marginBottom: 32,
   },
-  itemDisplay: {
-    marginBottom: 24,
+  itemDisplay: { 
+    marginBottom: 24 
   },
   itemContainer: {
     width: 150,
@@ -297,68 +300,73 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2, },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  itemImage: {
-    width: '100%',
-    height: 150,
+  itemImage: { 
+    width: '100%', 
+    height: 150 
   },
-  itemPlaceholder: {
-    width: '100%',
-    height: 150,
-    justifyContent: 'center',
+  itemPlaceholder: { 
+    width: '100%', 
+    height: 150, 
+    justifyContent: 'center', 
     alignItems: 'center',
   },
-  itemPlaceholderText: {
-    fontSize: 36,
+  itemPlaceholderText: { 
+    fontSize: 36, 
     fontFamily: 'Montserrat-Bold',
   },
-  loadingText: {
-    fontSize: 24,
+  loadingText: { 
+    fontSize: 24, 
     fontFamily: 'Montserrat-Regular',
   },
-  itemInfo: {
+  itemInfo: { 
     padding: 12,
   },
-  itemName: {
-    fontSize: 14,
-    fontFamily: 'Montserrat-SemiBold',
+  itemName: { 
+    fontSize: 14, 
+    fontFamily: 'Montserrat-SemiBold', 
     marginBottom: 4,
   },
-  itemCategory: {
-    fontSize: 12,
+  itemCategory: { 
+    fontSize: 12, 
     fontFamily: 'Montserrat-Regular',
   },
   placeholderContainer: {
     width: 150,
-    height: 210, // Yüksekliği itemContainer ile tutarlı hale getirmek için ayarlandı
+    height: 210,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2, },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  placeholderText: {
-    fontSize: 12,
-    fontFamily: 'Montserrat-Medium',
-    textAlign: 'center',
+  placeholderText: { 
+    fontSize: 12, 
+    fontFamily: 'Montserrat-Medium', 
+    textAlign: 'center', 
     marginTop: 8,
   },
-  dotsContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    gap: 8,
+  dotsContainer: { 
+    flexDirection: 'row', 
+    marginBottom: 16, 
+    gap: 8 
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  dot: { 
+    width: 8, 
+    height: 8, 
+    borderRadius: 4 
   },
-  progressText: {
-    fontSize: 14,
-    fontFamily: 'Montserrat-Regular',
-    textAlign: 'center',
+  progressText: { 
+    fontSize: 14, 
+    fontFamily: 'Montserrat-Regular', 
+    textAlign: 'center', 
     fontStyle: 'italic',
   },
 });

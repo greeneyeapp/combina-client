@@ -1,4 +1,3 @@
-// app/(tabs)/wardrobe/add.tsx (Güncellenmiş - Galeri referans sistemi)
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -23,10 +22,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
 import { 
-  processGalleryAsset,
-  GalleryImageResult,
-  checkGalleryPermissions 
-} from '@/utils/galleryImageStorage';
+  copyAssetToPermanentStorage,
+  checkImagePermissions 
+} from '@/utils/permanentImageStorage';
 
 type FormData = {
   name: string;
@@ -43,7 +41,11 @@ export default function AddClothingScreen() {
   const { addClothing } = useClothingStore();
   const { userPlan } = useUserPlanStore();
   const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
-  const [processedImage, setProcessedImage] = useState<GalleryImageResult | null>(null);
+  const [processedImage, setProcessedImage] = useState<{
+    originalPath: string;
+    thumbnailPath: string;
+    metadata: any;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -76,7 +78,7 @@ export default function AddClothingScreen() {
   );
 
   const handleOpenGalleryPicker = async () => {
-    const hasPermission = await checkGalleryPermissions();
+    const hasPermission = await checkImagePermissions();
     if (hasPermission) {
       setShowGalleryPicker(true);
     } else {
@@ -91,21 +93,23 @@ export default function AddClothingScreen() {
   const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
     setIsLoading(true);
     try {
-      console.log('Processing selected asset:', asset.id);
+      console.log('Processing selected asset for permanent storage:', asset.id);
       
-      // Unique ID oluştur
       const itemId = generateUniqueId();
       
-      // Galeri asset'ini işle (gerçek galeri URI + thumbnail)
-      const result = await processGalleryAsset(itemId, asset);
+      // Asset'i kalıcı depolamaya kopyala
+      const result = await copyAssetToPermanentStorage(itemId, asset);
       
       setSelectedAsset(asset);
-      setProcessedImage(result);
+      setProcessedImage({
+        originalPath: result.originalImagePath,
+        thumbnailPath: result.thumbnailImagePath,
+        metadata: result.metadata
+      });
       
-      console.log('Asset processed successfully:', {
-        originalUri: result.originalUri,
-        thumbnailUri: result.thumbnailUri,
-        assetId: result.assetId
+      console.log('Asset processed successfully for permanent storage:', {
+        originalPath: result.originalImagePath,
+        thumbnailPath: result.thumbnailImagePath
       });
       
     } catch (error) {
@@ -162,13 +166,13 @@ export default function AddClothingScreen() {
         style: data.style.join(','),
         notes: data.notes,
         
-        // YENİ: Galeri referans sistemi
-        originalImageUri: processedImage.originalUri,
-        thumbnailImageUri: processedImage.thumbnailUri,
-        galleryAssetId: processedImage.assetId,
+        // YENİ: Kalıcı depolama yolları
+        originalImageUri: processedImage.originalPath,
+        thumbnailImageUri: processedImage.thumbnailPath,
         imageMetadata: processedImage.metadata,
         
         createdAt: new Date().toISOString(),
+        isImageMissing: false
       };
       
       await addClothing(newItem);
@@ -201,7 +205,7 @@ export default function AddClothingScreen() {
       return (
         <View style={styles.imageContainer}>
           <Image 
-            source={{ uri: processedImage.thumbnailUri || processedImage.originalUri }} 
+            source={{ uri: processedImage.thumbnailPath }} 
             style={styles.clothingImage} 
           />
           <TouchableOpacity 
@@ -211,13 +215,13 @@ export default function AddClothingScreen() {
             <X color={theme.colors.white} size={20} />
           </TouchableOpacity>
           
-          {/* Image info */}
           <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
               {processedImage.metadata.width} × {processedImage.metadata.height}
               {processedImage.metadata.fileSize && 
                 ` • ${Math.round(processedImage.metadata.fileSize / 1024)} KB`
               }
+              <Text style={{ color: theme.colors.success }}> • Kalıcı</Text>
             </Text>
           </View>
         </View>
@@ -392,7 +396,6 @@ export default function AddClothingScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Galeri Picker Modal */}
       <GalleryPicker
         isVisible={showGalleryPicker}
         onClose={() => setShowGalleryPicker(false)}

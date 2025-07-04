@@ -1,11 +1,10 @@
-// components/wardrobe/ClothingItem.tsx - Asset ID tabanlı görüntüleme
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { Edit2, ImageOff } from 'lucide-react-native';
 import { ClothingItem as TClothingItem } from '@/store/clothingStore';
-import { getDisplayImageUriSync, getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
 
 interface ClothingItemProps {
   item: TClothingItem;
@@ -23,21 +22,12 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
     const loadDisplayUri = async () => {
       setIsLoading(true);
       try {
-        // Önce sync versiyonu dene (thumbnail varsa hızlı)
-        const syncUri = getDisplayImageUriSync(item);
-        
-        if (syncUri) {
-          setDisplayUri(syncUri);
-          setIsLoading(false);
-        } else {
-          // iOS ph:// URI'leri için async çözümleme
-          const asyncUri = await getDisplayImageUri(item);
-          setDisplayUri(asyncUri);
-          setIsLoading(false);
-        }
+        const uri = await getDisplayImageUri(item);
+        setDisplayUri(uri);
       } catch (error) {
         console.error('Error loading display URI for item:', item.id, error);
         setDisplayUri('');
+      } finally {
         setIsLoading(false);
       }
     };
@@ -52,7 +42,6 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
 
   const renderImage = () => {
     if (isLoading) {
-      // Loading state - basit placeholder
       return (
         <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
           <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
@@ -70,13 +59,12 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
           resizeMode="cover"
           onError={() => {
             console.warn('Image load error for item:', item.id);
-            setDisplayUri(''); // Error durumunda placeholder göster
+            setDisplayUri('');
           }}
         />
       );
     }
 
-    // Resim yok - placeholder göster
     return (
       <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
         <ImageOff color={theme.colors.textLight} size={32}/>

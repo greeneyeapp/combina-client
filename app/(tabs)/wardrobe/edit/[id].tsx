@@ -1,5 +1,3 @@
-// kodlar/app/(tabs)/wardrobe/edit/[id].tsx
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,11 +19,12 @@ import StylePicker from '@/components/wardrobe/StylePicker';
 import GalleryPicker from '@/components/common/GalleryPicker';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import {
-  processGalleryAsset,
-  GalleryImageResult,
-  checkGalleryPermissions
-} from '@/utils/galleryImageStorage';
+import { 
+  copyAssetToPermanentStorage,
+  checkImagePermissions,
+  getPermanentImagePaths,
+  validatePermanentImage
+} from '@/utils/permanentImageStorage';
 
 type FormData = {
   name: string;
@@ -47,7 +46,12 @@ export default function EditClothingScreen() {
   const itemToEdit = clothing.find(item => item.id === id);
 
   const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
-  const [processedImage, setProcessedImage] = useState<GalleryImageResult | null>(null);
+  const [processedImage, setProcessedImage] = useState<{
+    originalPath: string;
+    thumbnailPath: string;
+    metadata: any;
+  } | null>(null);
+  const [currentImageUri, setCurrentImageUri] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const [imageChanged, setImageChanged] = useState(false);
@@ -71,26 +75,34 @@ export default function EditClothingScreen() {
         style: itemToEdit.style ? itemToEdit.style.split(',') : [],
         notes: itemToEdit.notes || '',
       });
+      loadCurrentImage();
     } else {
-      if (router.canGoBack()) {
-        router.back();
-      } else {
-        router.replace('/(tabs)/wardrobe');
-      }
+      router.back();
     }
   }, [itemToEdit, reset, id]);
 
-  const getCurrentImageUri = (): string => {
-    if (!itemToEdit) return '';
-    if (processedImage) return processedImage.thumbnailUri || processedImage.originalUri;
-    if (itemToEdit.thumbnailImageUri) return itemToEdit.thumbnailImageUri;
-    if (itemToEdit.originalImageUri) return itemToEdit.originalImageUri;
-    if (itemToEdit.imageUri) return itemToEdit.imageUri;
-    return '';
+  const loadCurrentImage = async () => {
+    if (!itemToEdit) return;
+
+    try {
+      const { thumbnailPath, originalPath } = await getPermanentImagePaths(itemToEdit.id);
+      
+      if (thumbnailPath && await validatePermanentImage(thumbnailPath)) {
+        setCurrentImageUri(thumbnailPath);
+      } else if (originalPath && await validatePermanentImage(originalPath)) {
+        setCurrentImageUri(originalPath);
+      } else if (itemToEdit.thumbnailImageUri) {
+        setCurrentImageUri(itemToEdit.thumbnailImageUri);
+      } else if (itemToEdit.originalImageUri) {
+        setCurrentImageUri(itemToEdit.originalImageUri);
+      }
+    } catch (error) {
+      console.error('Error loading current image:', error);
+    }
   };
 
   const handleOpenGalleryPicker = async () => {
-    const hasPermission = await checkGalleryPermissions();
+    const hasPermission = await checkImagePermissions();
     if (hasPermission) {
       setShowGalleryPicker(true);
     } else {
@@ -105,10 +117,14 @@ export default function EditClothingScreen() {
   const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
     setIsLoading(true);
     try {
-      // id! kullanarak itemToEdit'in varlığından emin oluyoruz.
-      const result = await processGalleryAsset(id!, asset);
+      const result = await copyAssetToPermanentStorage(id!, asset);
       setSelectedAsset(asset);
-      setProcessedImage(result);
+      setProcessedImage({
+        originalPath: result.originalImagePath,
+        thumbnailPath: result.thumbnailImagePath,
+        metadata: result.metadata
+      });
+      setCurrentImageUri(result.thumbnailImagePath);
       setImageChanged(true);
     } catch (error) {
       console.error('Error processing selected asset:', error);
@@ -125,13 +141,14 @@ export default function EditClothingScreen() {
   const removeImage = () => {
     setSelectedAsset(null);
     setProcessedImage(null);
+    setCurrentImageUri('');
     setImageChanged(true);
   };
 
   const onSubmit = async (data: FormData) => {
     if (!id || !itemToEdit) return;
 
-    if (!imageChanged && !getCurrentImageUri()) {
+    if (!imageChanged && !currentImageUri) {
       showAlert({
         title: t('common.error'),
         message: t('wardrobe.imageRequired'),
@@ -149,17 +166,11 @@ export default function EditClothingScreen() {
       };
 
       if (imageChanged && processedImage) {
-        // *** HATA BURADAYDI VE KALDIRILDI ***
-        // Eski thumbnail temizleme kodu buradan kaldırıldı.
-        // Bu, artık tüm thumbnail'ların silinmesini önleyecek.
-
-        updatedItemData.originalImageUri = processedImage.originalUri;
-        updatedItemData.thumbnailImageUri = processedImage.thumbnailUri;
-        updatedItemData.galleryAssetId = processedImage.assetId;
+        updatedItemData.originalImageUri = processedImage.originalPath;
+        updatedItemData.thumbnailImageUri = processedImage.thumbnailPath;
         updatedItemData.imageMetadata = processedImage.metadata;
-        updatedItemData.isImageMissing = false; // Yeni resim eklendiği için işaret kalkar
+        updatedItemData.isImageMissing = false;
       } else if (imageChanged && !processedImage) {
-        // Kullanıcı resmi kaldırdıysa
         updatedItemData.isImageMissing = true;
       }
 
@@ -187,19 +198,15 @@ export default function EditClothingScreen() {
     }
   };
 
-  // renderImageSection ve stiller aynı kaldığı için tekrar eklemiyorum.
-  // ... (Önceki yanıttaki renderImageSection ve styles kodları buraya gelecek) ...
   const renderImageSection = () => {
-    const currentImageUri = getCurrentImageUri();
-
-    if (imageChanged && !processedImage) {
-        return (
-          <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
-            <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
-              {t('wardrobe.addPhoto')}
-            </Text>
-          </View>
-        )
+    if (imageChanged && !processedImage && !currentImageUri) {
+      return (
+        <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
+          <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
+            {t('wardrobe.addPhoto')}
+          </Text>
+        </View>
+      )
     }
 
     if (currentImageUri) {
@@ -228,9 +235,7 @@ export default function EditClothingScreen() {
     );
   };
 
-  if (!itemToEdit) {
-    return null;
-  }
+  if (!itemToEdit) return null;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>

@@ -1,5 +1,4 @@
-// kodlar/context/AuthContext.tsx
-
+// context/AuthContext.tsx - DÜZELTME
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
@@ -43,41 +42,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { clearUserPlan } = useUserPlanStore();
   const segments = useSegments();
 
+  // DÜZELTME: Cached user loading JWT ile beraber kontrol et
   useEffect(() => {
-    const loadCachedUser = async () => {
-      try {
-        const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
-        if (cachedUser) {
-          setUser(JSON.parse(cachedUser));
-        }
-      } catch (error) {
-        console.error('Failed to load cached user:', error);
-      }
-    };
-    loadCachedUser();
-    loadJwt();
+    loadJwt(); // JWT'yi yükle, user cache'ini değil
   }, [loadJwt]);
 
   useEffect(() => {
     if (!isReady || skipInitialize) return;
+    
     const initializeAuth = async () => {
-      if (user && user.name && user.uid) { setLoading(false); return; }
       if (jwt) {
         try {
+          // JWT varsa backend'den user bilgisini al
           const userInfo = await getUserFromToken(jwt);
-          setUser(userInfo);
-          if (userInfo?.uid) await Purchases.logIn(userInfo.uid);
+          
+          // DÜZELTME: Backend'den gelen bilgiyi cached ile karşılaştır
+          let finalUser = userInfo;
+          try {
+            const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
+            if (cachedUser) {
+              const cached = JSON.parse(cachedUser);
+              // JWT geçerliyse cached bilgileri kullan (daha tam)
+              finalUser = { ...userInfo, ...cached };
+            }
+          } catch (error) {
+            console.error('Failed to load cached user:', error);
+          }
+          
+          setUser(finalUser);
+          if (finalUser?.uid) await Purchases.logIn(finalUser.uid);
           await initializeUserProfile();
         } catch (error) {
-          await clearJwt(); clearUserPlan(); setUser(null);
+          console.error('Auth initialization failed:', error);
+          // JWT geçersizse her şeyi temizle
+          await clearJwt(); 
+          clearUserPlan(); 
+          setUser(null);
           await AsyncStorage.removeItem(USER_CACHE_KEY);
         }
       } else {
-        setUser(null); clearUserPlan();
+        // JWT yoksa user da olmamalı
+        setUser(null); 
+        clearUserPlan();
         await AsyncStorage.removeItem(USER_CACHE_KEY);
       }
       setLoading(false);
     };
+    
     initializeAuth();
   }, [isReady, jwt, skipInitialize]);
 
@@ -120,7 +131,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithApple = async (credential: any) => {
     setLoading(true);
-    setSkipInitialize(true); // Google ile aynı pattern
+    setSkipInitialize(true);
     
     try {
       const givenName = credential.fullName?.givenName || '';
@@ -134,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: nameForBackend,
           email: credential.email
         }
-      }, { timeout: 30000 }); // Google ile aynı timeout
+      }, { timeout: 30000 });
 
       const { access_token, user_info } = response.data;
 
@@ -144,20 +155,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await setJwt(access_token);
 
-      // Backend'den gelen bilgileri öncelik olarak kullan, yoksa Apple'dan gelen bilgileri kullan
       const finalName = user_info.fullname || user_info.name || nameForBackend;
       const finalEmail = user_info.email || credential.email || '';
-
-      console.log('🍎 Apple user data received:', {
-        user_info_object: user_info,
-        backend_name: user_info.name,
-        backend_fullname: user_info.fullname,
-        backend_email: user_info.email,
-        apple_name: nameForBackend,
-        apple_email: credential.email,
-        final_name: finalName,
-        final_email: finalEmail
-      });
 
       const completeUserInfo = {
         uid: user_info.uid,
@@ -248,26 +247,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // RootLayout'taki yönlendirme mantığı için bu useEffect'i güncelleyelim.
+  // DÜZELTME: Yönlendirme mantığını düzelt
   useEffect(() => {
     const isReadyToRoute = !loading && !isAuthFlowActive;
     if (!isReadyToRoute) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
-    if(user) {
+    // DÜZELTME: Sadece JWT varsa ve user varsa profile kontrolü yap
+    if (user && jwt) {
         const profileComplete = user.gender && user.birthDate && user.name;
-        if(!profileComplete && segments[1] !== 'complete-profile') {
+        if (!profileComplete && segments[1] !== 'complete-profile') {
             router.replace('/(auth)/complete-profile');
         } else if (profileComplete && inAuthGroup) {
             router.replace('/(tabs)/wardrobe');
         }
     } else {
-        if(!inAuthGroup) {
+        // JWT yoksa auth sayfasına yönlendir
+        if (!inAuthGroup) {
             router.replace('/(auth)');
         }
     }
-  }, [user, loading, isAuthFlowActive, segments]);
+  }, [user, jwt, loading, isAuthFlowActive, segments]); // jwt dependency eklendi
   
   const value = { user, loading, isAuthFlowActive, setAuthFlowActive, signInWithGoogle, signInWithApple, updateUserInfo, logout, refreshUserProfile };
 

@@ -1,5 +1,4 @@
-// components/common/GalleryPicker.tsx (Son Hali - Akıcı Geçişli ve Hata Düzeltmeli)
-
+// components/common/GalleryPicker.tsx - YENİ VERSİYON (Permanent Storage)
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -66,7 +65,10 @@ export default function GalleryPicker({
       setHasPermission(status === 'granted');
 
       if (status === 'granted') {
-        loadAssets(true);
+        // Kısa bir gecikme ekle - permission verilir verilmez asset'lere erişim sorunlu olabilir
+        setTimeout(() => {
+          loadAssets(true);
+        }, 100);
       }
     } catch (error) {
       console.error('Error checking gallery permission:', error);

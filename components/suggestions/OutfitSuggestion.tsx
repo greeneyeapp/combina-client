@@ -1,4 +1,3 @@
-// components/suggestions/OutfitSuggestion.tsx - Asset ID tabanlı görüntüleme
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -7,7 +6,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { Heart, Shirt, Sparkles } from 'lucide-react-native';
 import { OutfitSuggestionResponse } from '@/services/aiService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getDisplayImageUriSync, getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
 
 interface OutfitSuggestionProps {
   outfit: OutfitSuggestionResponse;
@@ -28,7 +27,6 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
   const { clothing } = useClothingStore();
   const [itemsWithUris, setItemsWithUris] = useState<ItemWithUri[]>([]);
 
-  // Animasyon için
   const fadeAnim = useMemo(() => new Animated.Value(0), [outfit]);
   const slideAnim = useMemo(() => new Animated.Value(20), [outfit]);
 
@@ -63,24 +61,20 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
       const initialItems: ItemWithUri[] = allItems.map(item => ({
         item,
         suggestionName: item.suggestionName,
-        displayUri: getDisplayImageUriSync(item),
-        isLoading: !getDisplayImageUriSync(item)
+        displayUri: '',
+        isLoading: true
       }));
 
       setItemsWithUris(initialItems);
 
-      // Async URI'leri yükle
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
-        if (itemWithUri.isLoading && itemWithUri.item) {
-          try {
-            const asyncUri = await getDisplayImageUri(itemWithUri.item);
-            return { index, uri: asyncUri };
-          } catch (error) {
-            console.error('Error loading async URI for suggestion item:', error);
-            return { index, uri: '' };
-          }
+        try {
+          const uri = await getDisplayImageUri(itemWithUri.item);
+          return { index, uri };
+        } catch (error) {
+          console.error('Error loading URI for suggestion item:', error);
+          return { index, uri: '' };
         }
-        return null;
       });
 
       const results = await Promise.all(asyncPromises);
@@ -223,40 +217,13 @@ const styles = StyleSheet.create({
     elevation: 8,
     overflow: 'hidden',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 20,
-    gap: 12,
-  },
-  title: {
-    fontSize: 20,
-    fontFamily: 'PlayfairDisplay-Bold',
-    flex: 1,
-  },
-  outfitGrid: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-    marginBottom: 16,
-  },
-  mainItemWrapper: {
-    flex: 1,
-  },
-  mainItemContainer: {
-    alignItems: 'center',
-  },
-  mainItemImage: {
-    width: '100%',
-    aspectRatio: 0.75,
-    borderRadius: 16,
-    marginBottom: 8,
-  },
-  mainItemName: {
-    fontFamily: 'Montserrat-SemiBold',
-    fontSize: 14,
-    textAlign: 'center',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 12 },
+  title: { fontSize: 20, fontFamily: 'PlayfairDisplay-Bold', flex: 1 },
+  outfitGrid: { flexDirection: 'row', justifyContent: 'center', gap: 16, marginBottom: 16 },
+  mainItemWrapper: { flex: 1 },
+  mainItemContainer: { alignItems: 'center' },
+  mainItemImage: { width: '100%', aspectRatio: 0.75, borderRadius: 16, marginBottom: 8 },
+  mainItemName: { fontFamily: 'Montserrat-SemiBold', fontSize: 14, textAlign: 'center' },
   accessoryGrid: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -266,51 +233,15 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     marginBottom: 20,
   },
-  accessoryItemWrapper:{
-    alignItems: 'center',
-  },
-  accessoryItemContainer: {
-    alignItems: 'center',
-    width: 80,
-  },
-  accessoryItemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
-    marginBottom: 6,
-  },
-  accessoryItemName: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 11,
-    textAlign: 'center',
-  },
-  placeholderImage: {
-    backgroundColor: 'rgba(128,128,128,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    fontSize: 12,
-    fontFamily: 'Montserrat-Regular',
-  },
-  tipContainer: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-  },
-  description: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  suggestionTip:{
-    fontFamily: 'PlayfairDisplay-Italic',
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: 'center',
-  },
+  accessoryItemWrapper:{ alignItems: 'center' },
+  accessoryItemContainer: { alignItems: 'center', width: 80 },
+  accessoryItemImage: { width: 80, height: 80, borderRadius: 12, marginBottom: 6 },
+  accessoryItemName: { fontFamily: 'Montserrat-Medium', fontSize: 11, textAlign: 'center' },
+  placeholderImage: { backgroundColor: 'rgba(128,128,128,0.1)', justifyContent: 'center', alignItems: 'center' },
+  loadingText: { fontSize: 12, fontFamily: 'Montserrat-Regular' },
+  tipContainer: { borderRadius: 16, padding: 16, marginBottom: 20 },
+  description: { fontFamily: 'Montserrat-Regular', fontSize: 15, lineHeight: 22, textAlign: 'center', marginBottom: 8 },
+  suggestionTip:{ fontFamily: 'PlayfairDisplay-Italic', fontSize: 16, lineHeight: 22, textAlign: 'center' },
   likeButton: {
     position: 'absolute',
     top: 16,

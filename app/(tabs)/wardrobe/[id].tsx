@@ -1,7 +1,6 @@
-// kodlar/app/(tabs)/wardrobe/[id].tsx
-
-import React from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity } from 'react-native';
+// app/(tabs)/wardrobe/[id].tsx - Asset ID tabanlı görüntüleme
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +11,7 @@ import HeaderBar from '@/components/common/HeaderBar';
 import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
+import { getDisplayImageUri, getImageDebugInfo } from '@/utils/imageDisplayHelper';
 
 export default function ClothingDetailScreen() {
   const { t, i18n } = useTranslation();
@@ -20,37 +20,48 @@ export default function ClothingDetailScreen() {
   const { clothing, removeClothing } = useClothingStore();
   const { show: showAlert } = useAlertStore();
 
+  const [displayUri, setDisplayUri] = useState<string>('');
+  const [isLoadingImage, setIsLoadingImage] = useState(true);
+  const [imageLoadError, setImageLoadError] = useState(false);
+
   const item = clothing.find((item) => item.id === id);
 
+  useEffect(() => {
+    if (!item) return;
+
+    const loadDisplayUri = async () => {
+      setIsLoadingImage(true);
+      setImageLoadError(false);
+      
+      try {
+        console.log('🔍 Loading display URI for item:', getImageDebugInfo(item));
+        
+        const uri = await getDisplayImageUri(item);
+        setDisplayUri(uri);
+        
+        if (!uri) {
+          console.warn('⚠️ No display URI available for item:', item.id);
+          setImageLoadError(true);
+        }
+      } catch (error) {
+        console.error('❌ Error loading display URI:', error);
+        setImageLoadError(true);
+        setDisplayUri('');
+      } finally {
+        setIsLoadingImage(false);
+      }
+    };
+
+    loadDisplayUri();
+  }, [item?.id, item?.originalImageUri, item?.thumbnailImageUri, item?.isImageMissing]);
+
   if (!item) {
-    // Eğer item bulunamazsa (belki başka bir ekranda silindi),
-    // bu ekranın çökmesini engellemek için null döndür.
-    // Bir üst katman (örn: _layout) bu durumu yönetip kullanıcıyı geri yönlendirebilir.
     return null;
   }
   
   const stylesArray = item.style ? item.style.split(',') : [];
 
-  // Gösterilecek image URI'sini belirle
-  const getDisplayImageUri = (): string => {
-    // Eğer resim kayıp olarak işaretlenmişse, URI döndürme.
-    if (item.isImageMissing) {
-      return '';
-    }
-    // Detay görünümünde öncelik sırası:
-    // 1. Original image (yüksek kalite)
-    // 2. Eski sistem imageUri (backward compatibility)
-    // 3. Thumbnail (fallback)
-    if (item.originalImageUri) return item.originalImageUri;
-    if (item.imageUri) return item.imageUri; // Legacy support
-    if (item.thumbnailImageUri) return item.thumbnailImageUri;
-    
-    return '';
-  };
-
   const handleEdit = () => {
-    // Kullanıcıyı düzenleme ekranına yönlendir.
-    // Bu ekran hem bilgileri hem de (gerekirse) resmi güncellemeyi sağlar.
     router.push(`/wardrobe/edit/${id}`);
   };
 
@@ -63,10 +74,9 @@ export default function ClothingDetailScreen() {
             {
               text: t('common.delete'),
               onPress: () => {
-                removeClothing(id); // Zustand store'dan kıyafeti sil
+                removeClothing(id!);
                 console.log('✅ Item removed from store.');
 
-                // Silme işleminden sonra gardırop ekranına geri dön.
                 if (router.canGoBack()) {
                     router.back();
                 }
@@ -77,20 +87,21 @@ export default function ClothingDetailScreen() {
     });
   };
 
-  const displayUri = getDisplayImageUri();
-
   const renderImageSection = () => {
-    // Eğer kıyafetin resmi kayıp olarak işaretlenmişse, kullanıcıya özel bir bildirim göster.
     if (item.isImageMissing) {
       return (
-        <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card, height: 300, marginBottom: 16 }]}>
+        <View style={[styles.placeholderContainer, { 
+          backgroundColor: theme.colors.card, 
+          height: 300, 
+          marginBottom: 16 
+        }]}>
           <ImageOff color={theme.colors.textLight} size={48} />
           <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
             {t('wardrobe.imageNotAvailable')}
           </Text>
           <Button
             label={t('wardrobe.changePhoto')}
-            onPress={handleEdit} // Kullanıcıyı direkt düzenleme ekranına yönlendirerek resmi yeniden bağlamasını sağla
+            onPress={handleEdit}
             variant="primary"
             style={{ marginTop: 24 }}
             icon={<RefreshCcw color={theme.colors.white} size={16} />}
@@ -99,23 +110,54 @@ export default function ClothingDetailScreen() {
       );
     }
 
-    // Resim varsa, normal şekilde göster.
+    if (isLoadingImage) {
+      return (
+        <View style={[styles.imageContainer, { 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          backgroundColor: theme.colors.card 
+        }]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.textLight, marginTop: 12 }]}>
+            {t('common.loading')}
+          </Text>
+        </View>
+      );
+    }
+
+    if (imageLoadError || !displayUri) {
+      return (
+        <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
+          <ImageIcon color={theme.colors.textLight} size={48} />
+          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
+            {t('wardrobe.imageNotAvailable')}
+          </Text>
+          <Button
+            label={t('wardrobe.changePhoto')}
+            onPress={handleEdit}
+            variant="primary"
+            style={{ marginTop: 16 }}
+            icon={<RefreshCcw color={theme.colors.white} size={16} />}
+          />
+        </View>
+      );
+    }
+
     return (
       <View style={styles.imageContainer}>
-        {displayUri ? (
-          <Image 
-            source={{ uri: displayUri }} 
-            style={styles.image}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
-            <ImageIcon color={theme.colors.textLight} size={48} />
-            <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-              {t('wardrobe.noImage')}
-            </Text>
-          </View>
-        )}
+        <Image 
+          source={{ uri: displayUri }} 
+          style={styles.image}
+          resizeMode="cover"
+          onError={() => {
+            console.warn('🖼️ Image load error for item:', item.id);
+            setImageLoadError(true);
+            setDisplayUri('');
+          }}
+          onLoad={() => {
+            console.log('✅ Image loaded successfully for item:', item.id);
+          }}
+        />
         
         <TouchableOpacity 
           style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
@@ -252,14 +294,21 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: '100%' },
   placeholderContainer: {
     width: '100%',
+    height: 300,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 16,
-    gap: 12
+    gap: 12,
+    marginBottom: 16
   },
   placeholderText: {
     fontFamily: 'Montserrat-Medium',
     fontSize: 16,
+    textAlign: 'center',
+  },
+  loadingText: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 14,
     textAlign: 'center',
   },
   editButton: { 

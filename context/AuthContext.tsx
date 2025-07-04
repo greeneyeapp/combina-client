@@ -120,6 +120,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithApple = async (credential: any) => {
     setLoading(true);
+    setSkipInitialize(true); // Google ile aynı pattern
+    
     try {
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
@@ -132,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: nameForBackend,
           email: credential.email
         }
-      });
+      }, { timeout: 30000 }); // Google ile aynı timeout
 
       const { access_token, user_info } = response.data;
 
@@ -142,11 +144,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       await setJwt(access_token);
 
-      // *** HATA DÜZELTMESİ BURADA ***
-      // Backend'den gelen isme güvenmek yerine, eğer boşsa,
-      // Apple'dan zaten aldığımız `nameForBackend`'i kullanıyoruz.
-      const finalName = user_info.name || nameForBackend;
+      // Backend'den gelen bilgileri öncelik olarak kullan, yoksa Apple'dan gelen bilgileri kullan
+      const finalName = user_info.fullname || user_info.name || nameForBackend;
       const finalEmail = user_info.email || credential.email || '';
+
+      console.log('🍎 Apple user data received:', {
+        user_info_object: user_info,
+        backend_name: user_info.name,
+        backend_fullname: user_info.fullname,
+        backend_email: user_info.email,
+        apple_name: nameForBackend,
+        apple_email: credential.email,
+        final_name: finalName,
+        final_email: finalEmail
+      });
 
       const completeUserInfo = {
         uid: user_info.uid,
@@ -169,13 +180,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       await initializeUserProfile();
 
+      setLoading(false);
+      setSkipInitialize(false);
       return completeUserInfo;
 
     } catch (error) {
-      console.error('Apple sign in error:', error);
-      throw error;
-    } finally {
       setLoading(false);
+      setSkipInitialize(false);
+      console.error('❌ APPLE SIGN-IN ERROR:', error);
+      throw error;
     }
   };
 

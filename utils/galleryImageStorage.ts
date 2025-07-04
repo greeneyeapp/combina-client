@@ -1,17 +1,17 @@
-// utils/galleryImageStorage.ts
+// utils/galleryImageStorage.ts - Asset ID tabanlı kalıcı sistem
 import * as MediaLibrary from 'expo-media-library';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const THUMBNAIL_CACHE_DIR = FileSystem.cacheDirectory + 'thumbnails/';
-const THUMBNAIL_CACHE_KEY = 'thumbnail_cache_map';
+const THUMBNAIL_DIR = FileSystem.documentDirectory + 'thumbnails/';
+const THUMBNAIL_CACHE_KEY = 'thumbnail_cache_map_v3'; // Version bump for asset ID system
 
 export interface GalleryImageResult {
-  originalUri: string;      // Gerçek galeri URI'si
-  thumbnailUri: string;     // Cache'deki thumbnail
-  assetId?: string;         // MediaLibrary asset ID (backup)
+  originalUri: string;      // iOS: ph://ASSET_ID, Android: content://
+  thumbnailUri: string;     // Local cache path (kalıcı)
+  assetId: string;          // MediaLibrary asset ID (kalıcı referans)
   metadata: {
     width: number;
     height: number;
@@ -24,22 +24,21 @@ interface CachedThumbnail {
   itemId: string;
   thumbnailPath: string;
   createdAt: number;
-  originalUri: string;
+  assetId: string;          // Asset ID'yi cache'le
 }
 
-// Thumbnail cache directory'sini oluştur
 export const ensureThumbnailCacheExists = async (): Promise<void> => {
   try {
-    const dirInfo = await FileSystem.getInfoAsync(THUMBNAIL_CACHE_DIR);
+    const dirInfo = await FileSystem.getInfoAsync(THUMBNAIL_DIR);
     if (!dirInfo.exists) {
-      await FileSystem.makeDirectoryAsync(THUMBNAIL_CACHE_DIR, { intermediates: true });
+      await FileSystem.makeDirectoryAsync(THUMBNAIL_DIR, { intermediates: true });
+      console.log('📁 Created persistent thumbnail directory');
     }
   } catch (error) {
-    console.error('Error creating thumbnail cache directory:', error);
+    console.error('❌ Error creating thumbnail directory:', error);
   }
 };
 
-// Galeri seçim permission'ları kontrol et
 export const checkGalleryPermissions = async (): Promise<boolean> => {
   try {
     const { status } = await MediaLibrary.requestPermissionsAsync();
@@ -50,47 +49,91 @@ export const checkGalleryPermissions = async (): Promise<boolean> => {
   }
 };
 
-// Platform'a göre gerçek galeri URI'sini al
-export const getRealGalleryUri = async (asset: MediaLibrary.Asset): Promise<string> => {
-  try {
-    if (Platform.OS === 'ios') {
-      // iOS: MediaLibrary.getAssetInfoAsync() ile gerçek localUri'yi al
-      const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
-      return assetInfo.localUri || asset.uri;
-    } else {
-      // Android: asset.uri zaten content:// formatında gerçek referans
-      return asset.uri;
-    }
-  } catch (error) {
-    console.error('Error getting real gallery URI:', error);
-    // Fallback olarak asset.uri döndür
-    return asset.uri;
+/**
+ * Asset'ten kalıcı URI formatı oluştur
+ * iOS: ph://ASSET_ID (kalıcı)
+ * Android: content:// (zaten kalıcı)
+ */
+export const getPersistentAssetUri = (asset: MediaLibrary.Asset): string => {
+  if (Platform.OS === 'ios') {
+    return `ph://${asset.id}`;
+  } else {
+    return asset.uri; // Android content:// zaten kalıcı
   }
 };
 
-// Thumbnail oluştur ve cache'e kaydet
+/**
+ * Kalıcı URI'den güncel erişilebilir URI al
+ * iOS: ph://ASSET_ID → file://localUri
+ * Android: content:// → aynı URI
+ */
+export const getCurrentUriFromPersistent = async (persistentUri: string): Promise<string | null> => {
+  try {
+    if (Platform.OS === 'ios' && persistentUri.startsWith('ph://')) {
+      const assetId = persistentUri.replace('ph://', '');
+      console.log('📱 iOS: Getting fresh URI for asset:', assetId);
+      
+      const assetInfo = await MediaLibrary.getAssetInfoAsync(assetId);
+      
+      if (assetInfo.localUri) {
+        console.log('✅ iOS: Fresh localUri retrieved');
+        return assetInfo.localUri;
+      }
+      
+      console.warn('⚠️ iOS: Asset exists but no localUri available');
+      return null;
+    }
+    
+    // Android content:// veya diğer URI'ler için direkt döndür
+    return persistentUri;
+    
+  } catch (error) {
+    console.error('❌ Error getting current URI from persistent:', error);
+    return null;
+  }
+};
+
+/**
+ * Asset'ten thumbnail oluştur ve cache'e kaydet
+ */
 export const createCachedThumbnail = async (
   itemId: string,
-  originalUri: string
+  asset: MediaLibrary.Asset
 ): Promise<string> => {
   try {
     await ensureThumbnailCacheExists();
     
-    // Thumbnail dosya adı
     const thumbnailFileName = `thumb_${itemId}.jpg`;
-    const thumbnailPath = THUMBNAIL_CACHE_DIR + thumbnailFileName;
+    const thumbnailPath = THUMBNAIL_DIR + thumbnailFileName;
     
-    // Eğer thumbnail zaten varsa, onu döndür
+    // Existing thumbnail kontrolü
     const existingThumb = await FileSystem.getInfoAsync(thumbnailPath);
     if (existingThumb.exists) {
-      console.log('Using existing thumbnail for item:', itemId);
+      console.log('✅ Using existing thumbnail for item:', itemId);
       return thumbnailPath;
     }
     
-    // Yeni thumbnail oluştur
+    console.log('🔄 Creating new thumbnail for asset:', asset.id);
+    
+    // Thumbnail oluşturmak için en iyi URI'yi bul
+    let sourceUri = asset.uri;
+    
+    if (Platform.OS === 'ios') {
+      try {
+        const assetInfo = await MediaLibrary.getAssetInfoAsync(asset.id);
+        if (assetInfo.localUri) {
+          sourceUri = assetInfo.localUri;
+          console.log('📱 iOS: Using localUri for thumbnail creation');
+        }
+      } catch (error) {
+        console.warn('⚠️ iOS: Could not get assetInfo, using asset.uri');
+      }
+    }
+    
+    // Thumbnail manipüle et
     const manipulatedImage = await ImageManipulator.manipulateAsync(
-      originalUri,
-      [{ resize: { width: 200 } }], // 200px genişlik
+      sourceUri,
+      [{ resize: { width: 200 } }],
       {
         compress: 0.6,
         format: ImageManipulator.SaveFormat.JPEG,
@@ -98,34 +141,33 @@ export const createCachedThumbnail = async (
       }
     );
     
-    // Thumbnail'i cache dizinine kopyala
+    // Kalıcı dizine kopyala
     await FileSystem.copyAsync({
       from: manipulatedImage.uri,
       to: thumbnailPath
     });
     
     // Geçici dosyayı temizle
-    if (manipulatedImage.uri !== originalUri) {
+    if (manipulatedImage.uri !== sourceUri) {
       await FileSystem.deleteAsync(manipulatedImage.uri, { idempotent: true });
     }
     
     // Cache map'ini güncelle
-    await updateThumbnailCache(itemId, thumbnailPath, originalUri);
+    await updateThumbnailCache(itemId, thumbnailPath, asset.id);
     
-    console.log('Created new thumbnail for item:', itemId);
+    console.log('✅ Created persistent thumbnail for item:', itemId);
     return thumbnailPath;
     
   } catch (error) {
-    console.error('Error creating cached thumbnail:', error);
+    console.error('❌ Error creating cached thumbnail:', error);
     throw error;
   }
 };
 
-// Thumbnail cache map'ini güncelle
 const updateThumbnailCache = async (
   itemId: string,
   thumbnailPath: string,
-  originalUri: string
+  assetId: string
 ): Promise<void> => {
   try {
     const cacheMapStr = await AsyncStorage.getItem(THUMBNAIL_CACHE_KEY);
@@ -134,7 +176,7 @@ const updateThumbnailCache = async (
     cacheMap[itemId] = {
       itemId,
       thumbnailPath,
-      originalUri,
+      assetId,
       createdAt: Date.now()
     };
     
@@ -144,17 +186,24 @@ const updateThumbnailCache = async (
   }
 };
 
-// MediaLibrary asset'inden tam bilgi çıkar
+/**
+ * Gallery asset'ini kalıcı formatta işle
+ */
 export const processGalleryAsset = async (
   itemId: string,
   asset: MediaLibrary.Asset
 ): Promise<GalleryImageResult> => {
   try {
-    // Gerçek galeri URI'sini al
-    const originalUri = await getRealGalleryUri(asset);
+    console.log('🔄 Processing gallery asset with persistent storage:', {
+      assetId: asset.id,
+      platform: Platform.OS
+    });
+    
+    // Kalıcı URI formatı oluştur
+    const persistentUri = getPersistentAssetUri(asset);
     
     // Thumbnail oluştur
-    const thumbnailUri = await createCachedThumbnail(itemId, originalUri);
+    const thumbnailUri = await createCachedThumbnail(itemId, asset);
     
     // Metadata hazırla
     const metadata = {
@@ -164,38 +213,48 @@ export const processGalleryAsset = async (
       mimeType: asset.mimeType
     };
     
+    console.log('✅ Asset processed with persistent storage:', {
+      assetId: asset.id,
+      persistentUri: Platform.OS === 'ios' ? persistentUri : 'content://',
+      thumbnailCreated: true,
+      platform: Platform.OS
+    });
+    
     return {
-      originalUri,
+      originalUri: persistentUri,  // Kalıcı format!
       thumbnailUri,
       assetId: asset.id,
       metadata
     };
     
   } catch (error) {
-    console.error('Error processing gallery asset:', error);
+    console.error('❌ Error processing gallery asset:', error);
     throw error;
   }
 };
 
-// URI'nin hâlâ geçerli olup olmadığını kontrol et
+/**
+ * Persistent URI'nin hâlâ geçerli olup olmadığını kontrol et
+ */
 export const validateGalleryUri = async (uri: string): Promise<boolean> => {
   try {
-    if (Platform.OS === 'ios') {
-      // iOS için file system kontrolü
-      if (uri.startsWith('file://')) {
-        const fileInfo = await FileSystem.getInfoAsync(uri);
-        return fileInfo.exists;
+    if (Platform.OS === 'ios' && uri.startsWith('ph://')) {
+      // iOS: Asset ID'nin hâlâ var olup olmadığını kontrol et
+      try {
+        const assetId = uri.replace('ph://', '');
+        const assetInfo = await MediaLibrary.getAssetInfoAsync(assetId);
+        return !!assetInfo;
+      } catch {
+        console.warn('⚠️ iOS: Asset not found:', uri);
+        return false;
       }
-    } else {
-      // Android için content:// URI kontrolü
-      if (uri.startsWith('content://')) {
-        // Content URI'leri için basit fetch testi
-        try {
-          const response = await fetch(uri, { method: 'HEAD' });
-          return response.ok;
-        } catch {
-          return false;
-        }
+    } else if (Platform.OS === 'android' && uri.startsWith('content://')) {
+      // Android: content:// URI kontrolü
+      try {
+        const response = await fetch(uri, { method: 'HEAD' });
+        return response.ok;
+      } catch {
+        return false;
       }
     }
     
@@ -206,7 +265,6 @@ export const validateGalleryUri = async (uri: string): Promise<boolean> => {
   }
 };
 
-// Kullanılmayan thumbnail'leri temizle
 export const cleanupUnusedThumbnails = async (activeItemIds: string[]): Promise<{
   deletedCount: number;
   freedSpace: number;
@@ -224,10 +282,8 @@ export const cleanupUnusedThumbnails = async (activeItemIds: string[]): Promise<
     
     for (const [itemId, thumbnail] of Object.entries(cacheMap)) {
       if (activeItemIdSet.has(itemId)) {
-        // Aktif item, cache'de tut
         newCacheMap[itemId] = thumbnail;
       } else {
-        // Kullanılmayan item, thumbnail'i sil
         try {
           const fileInfo = await FileSystem.getInfoAsync(thumbnail.thumbnailPath);
           if (fileInfo.exists) {
@@ -241,10 +297,8 @@ export const cleanupUnusedThumbnails = async (activeItemIds: string[]): Promise<
       }
     }
     
-    // Güncellenmiş cache map'ini kaydet
     await AsyncStorage.setItem(THUMBNAIL_CACHE_KEY, JSON.stringify(newCacheMap));
-    
-    console.log(`Cleaned up ${deletedCount} unused thumbnails, freed ${freedSpace} bytes`);
+    console.log(`🧹 Cleaned up ${deletedCount} unused thumbnails`);
     return { deletedCount, freedSpace };
     
   } catch (error) {
@@ -253,7 +307,6 @@ export const cleanupUnusedThumbnails = async (activeItemIds: string[]): Promise<
   }
 };
 
-// Cache istatistikleri
 export const getThumbnailCacheStats = async (): Promise<{
   totalThumbnails: number;
   totalSize: number;
@@ -274,7 +327,7 @@ export const getThumbnailCacheStats = async (): Promise<{
           validThumbnails++;
         }
       } catch (error) {
-        // Thumbnail dosyası bulunamadı, sayma
+        // Thumbnail dosyası bulunamadı
       }
     }
     
@@ -299,5 +352,64 @@ export const getThumbnailCacheStats = async (): Promise<{
       totalSize: 0,
       formattedSize: '0 KB'
     };
+  }
+};
+
+export const migrateFromCacheToAppSupport = async (): Promise<{ migratedCount: number }> => {
+  try {
+    console.log('🔄 Starting migration from cache to persistent directory...');
+    
+    const OLD_CACHE_DIR = FileSystem.cacheDirectory + 'thumbnails/';
+    const OLD_CACHE_KEY = 'thumbnail_cache_map';
+    const OLD_CACHE_KEY_V2 = 'thumbnail_cache_map_v2';
+    
+    // Eski cache map'lerini kontrol et
+    const oldCacheMapStr = await AsyncStorage.getItem(OLD_CACHE_KEY) || 
+                          await AsyncStorage.getItem(OLD_CACHE_KEY_V2);
+    
+    if (!oldCacheMapStr) {
+      console.log('✅ No old cache found, migration not needed');
+      return { migratedCount: 0 };
+    }
+    
+    const oldCacheMap: Record<string, any> = JSON.parse(oldCacheMapStr);
+    let migratedCount = 0;
+    
+    await ensureThumbnailCacheExists();
+    
+    for (const [itemId, thumbnail] of Object.entries(oldCacheMap)) {
+      try {
+        const oldPath = thumbnail.thumbnailPath;
+        const newPath = THUMBNAIL_DIR + `thumb_${itemId}.jpg`;
+        
+        const oldFileInfo = await FileSystem.getInfoAsync(oldPath);
+        if (oldFileInfo.exists) {
+          await FileSystem.copyAsync({
+            from: oldPath,
+            to: newPath
+          });
+          
+          // Yeni format için asset ID gerekli, eğer yoksa dummy değer
+          const assetId = thumbnail.assetId || 'migrated';
+          await updateThumbnailCache(itemId, newPath, assetId);
+          migratedCount++;
+          
+          await FileSystem.deleteAsync(oldPath, { idempotent: true });
+        }
+      } catch (error) {
+        console.error(`❌ Failed to migrate thumbnail for item ${itemId}:`, error);
+      }
+    }
+    
+    // Eski cache map'lerini temizle
+    await AsyncStorage.removeItem(OLD_CACHE_KEY);
+    await AsyncStorage.removeItem(OLD_CACHE_KEY_V2);
+    
+    console.log(`✅ Migration completed: ${migratedCount} thumbnails migrated to v3`);
+    return { migratedCount };
+    
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    return { migratedCount: 0 };
   }
 };

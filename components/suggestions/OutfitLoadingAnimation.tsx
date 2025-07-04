@@ -1,15 +1,20 @@
-// kodlar/components/suggestions/OutfitLoadingAnimation.tsx
-
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Image, Easing } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { Shirt } from 'lucide-react-native';
+import { getDisplayImageUriSync, getDisplayImageUri } from '@/utils/imageDisplayHelper';
 
 interface OutfitLoadingAnimationProps {
   isVisible: boolean;
   onComplete?: () => void;
+}
+
+interface ItemWithUri {
+  item: any;
+  displayUri: string;
+  isLoading: boolean;
 }
 
 export default function OutfitLoadingAnimation({
@@ -23,6 +28,7 @@ export default function OutfitLoadingAnimation({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
+  const [itemsWithUris, setItemsWithUris] = useState<ItemWithUri[]>([]);
 
   const randomClothingItems = React.useMemo(() => {
     const availableItems = clothing.filter(item => !item.isImageMissing);
@@ -32,15 +38,53 @@ export default function OutfitLoadingAnimation({
     return shuffled.slice(0, Math.min(6, availableItems.length));
   }, [clothing, isVisible]);
 
-  const getDisplayImageUri = (item: any): string => {
-    if (!item) return '';
+  useEffect(() => {
+    const loadDisplayUris = async () => {
+      if (randomClothingItems.length === 0) return;
 
-    if (item.thumbnailImageUri) return item.thumbnailImageUri;
-    if (item.originalImageUri) return item.originalImageUri;
-    if (item.imageUri) return item.imageUri;
+      const initialItems: ItemWithUri[] = randomClothingItems.map(item => ({
+        item,
+        displayUri: getDisplayImageUriSync(item),
+        isLoading: !getDisplayImageUriSync(item)
+      }));
 
-    return '';
-  };
+      setItemsWithUris(initialItems);
+
+      // Async URI'leri yükle
+      const asyncPromises = initialItems.map(async (itemWithUri, index) => {
+        if (itemWithUri.isLoading && itemWithUri.item) {
+          try {
+            const asyncUri = await getDisplayImageUri(itemWithUri.item);
+            return { index, uri: asyncUri };
+          } catch (error) {
+            console.error('Error loading async URI for loading animation:', error);
+            return { index, uri: '' };
+          }
+        }
+        return null;
+      });
+
+      const results = await Promise.all(asyncPromises);
+      
+      setItemsWithUris(prev => {
+        const updated = [...prev];
+        results.forEach(result => {
+          if (result) {
+            updated[result.index] = {
+              ...updated[result.index],
+              displayUri: result.uri,
+              isLoading: false
+            };
+          }
+        });
+        return updated;
+      });
+    };
+
+    if (isVisible && randomClothingItems.length > 0) {
+      loadDisplayUris();
+    }
+  }, [randomClothingItems.length, isVisible]);
 
   useEffect(() => {
     if (isVisible) {
@@ -51,7 +95,7 @@ export default function OutfitLoadingAnimation({
                 duration: 300,
                 useNativeDriver: true,
             }),
-            Animated.spring(scaleAnim, { // Girişte daha dinamik bir yaylanma efekti
+            Animated.spring(scaleAnim, {
                 toValue: 1,
                 speed: 14,
                 bounciness: 6,
@@ -59,40 +103,38 @@ export default function OutfitLoadingAnimation({
             }),
         ]).start();
 
-        if(randomClothingItems.length > 0) {
+        if(itemsWithUris.length > 0) {
             const interval = setInterval(() => {
-                setCurrentIndex(prev => (prev + 1) % randomClothingItems.length);
+                setCurrentIndex(prev => (prev + 1) % itemsWithUris.length);
             }, 800);
             return () => clearInterval(interval);
         }
     } else {
-        // *** YENİ ÇIKIŞ ANİMASYONU BURADA ***
-        // isVisible false olduğunda animasyonu tetikle
+        // Çıkış animasyonu
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 0,
-                duration: 400, // Süre 200ms'den 400ms'ye çıkarıldı
-                easing: Easing.inOut(Easing.ease), // Daha yumuşak bir geçiş için easing eklendi
+                duration: 400,
+                easing: Easing.inOut(Easing.ease),
                 useNativeDriver: true,
             }),
             Animated.timing(scaleAnim, {
                 toValue: 0.8,
-                duration: 400, // Süre 200ms'den 400ms'ye çıkarıldı
+                duration: 400,
                 easing: Easing.inOut(Easing.ease),
                 useNativeDriver: true,
             }),
         ]).start(() => {
-            // Animasyon bittiğinde onComplete callback'ini çağır
             setCurrentIndex(0);
             onComplete?.();
         });
     }
-  }, [isVisible, randomClothingItems.length]);
+  }, [isVisible, itemsWithUris.length]);
 
   if (!isVisible) return null;
 
   const renderClothingItem = () => {
-    if (randomClothingItems.length === 0) {
+    if (itemsWithUris.length === 0) {
       return (
         <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card }]}>
           <Shirt color={theme.colors.primary} size={48} />
@@ -103,21 +145,46 @@ export default function OutfitLoadingAnimation({
       );
     }
 
-    const currentItem = randomClothingItems[currentIndex];
-    const imageUri = getDisplayImageUri(currentItem);
+    const currentItemWithUri = itemsWithUris[currentIndex];
+    if (!currentItemWithUri) {
+      return (
+        <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card }]}>
+          <Shirt color={theme.colors.primary} size={48} />
+        </View>
+      );
+    }
+
+    const { item, displayUri, isLoading } = currentItemWithUri;
 
     return (
       <View style={[styles.itemContainer, { backgroundColor: theme.colors.card }]}>
-        {imageUri ? (
+        {isLoading ? (
+          <View style={[styles.itemPlaceholder, { backgroundColor: theme.colors.background }]}>
+            <Text style={[styles.loadingText, { color: theme.colors.textLight }]}>
+              ⏳
+            </Text>
+          </View>
+        ) : displayUri ? (
           <Image
-            source={{ uri: imageUri }}
+            source={{ uri: displayUri }}
             style={styles.itemImage}
             resizeMode="cover"
+            onError={() => {
+              console.warn('Image load error in loading animation for item:', item.id);
+              setItemsWithUris(prev => {
+                const updated = [...prev];
+                const itemIndex = updated.findIndex(u => u.item?.id === item.id);
+                if (itemIndex >= 0) {
+                  updated[itemIndex] = { ...updated[itemIndex], displayUri: '', isLoading: false };
+                }
+                return updated;
+              });
+            }}
           />
         ) : (
           <View style={[styles.itemPlaceholder, { backgroundColor: theme.colors.background }]}>
             <Text style={[styles.itemPlaceholderText, { color: theme.colors.textLight }]}>
-              {currentItem.name?.charAt(0) || '?'}
+              {item.name?.charAt(0) || '?'}
             </Text>
           </View>
         )}
@@ -128,10 +195,10 @@ export default function OutfitLoadingAnimation({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {currentItem.name}
+            {item.name}
           </Text>
           <Text style={[styles.itemCategory, { color: theme.colors.textLight }]}>
-            {t(`categories.${currentItem.category}`)}
+            {t(`categories.${item.category}`)}
           </Text>
         </View>
       </View>
@@ -163,7 +230,7 @@ export default function OutfitLoadingAnimation({
           </Animated.View>
 
           <View style={styles.dotsContainer}>
-            {randomClothingItems.length > 0 && randomClothingItems.map((_, index) => (
+            {itemsWithUris.length > 0 && itemsWithUris.map((_, index) => (
               <View
                 key={index}
                 style={[
@@ -179,7 +246,7 @@ export default function OutfitLoadingAnimation({
           </View>
 
           <Text style={[styles.progressText, { color: theme.colors.textLight }]}>
-            {randomClothingItems.length > 0
+            {itemsWithUris.length > 0
               ? t('suggestions.findingPerfectMatch')
               : t('suggestions.preparingOutfit')
             }
@@ -248,6 +315,10 @@ const styles = StyleSheet.create({
     fontSize: 36,
     fontFamily: 'Montserrat-Bold',
   },
+  loadingText: {
+    fontSize: 24,
+    fontFamily: 'Montserrat-Regular',
+  },
   itemInfo: {
     padding: 12,
   },
@@ -262,7 +333,7 @@ const styles = StyleSheet.create({
   },
   placeholderContainer: {
     width: 150,
-    height: 210,
+    height: 210, // Yüksekliği itemContainer ile tutarlı hale getirmek için ayarlandı
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',

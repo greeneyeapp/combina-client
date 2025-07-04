@@ -1,5 +1,5 @@
-// components/suggestions/OutfitSuggestion.tsx (Yeniden Tasarlandı - Daha Büyük Fotoğraflar)
-import React, { useState, useMemo } from 'react';
+// components/suggestions/OutfitSuggestion.tsx - Asset ID tabanlı görüntüleme
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Animated } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
@@ -7,6 +7,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { Heart, Shirt, Sparkles } from 'lucide-react-native';
 import { OutfitSuggestionResponse } from '@/services/aiService';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getDisplayImageUriSync, getDisplayImageUri } from '@/utils/imageDisplayHelper';
 
 interface OutfitSuggestionProps {
   outfit: OutfitSuggestionResponse;
@@ -14,11 +15,18 @@ interface OutfitSuggestionProps {
   liked: boolean;
 }
 
+interface ItemWithUri {
+  item: any;
+  suggestionName: string;
+  displayUri: string;
+  isLoading: boolean;
+}
+
 export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSuggestionProps) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { clothing } = useClothingStore();
-  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
+  const [itemsWithUris, setItemsWithUris] = useState<ItemWithUri[]>([]);
 
   // Animasyon için
   const fadeAnim = useMemo(() => new Animated.Value(0), [outfit]);
@@ -40,7 +48,6 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
     ]).start();
   }, [outfit]);
 
-
   const clothingItems = useMemo(() => outfit.items.map(suggestionItem => {
     const clothingItem = clothing.find(item => item.id === suggestionItem.id);
     return clothingItem ? { ...clothingItem, suggestionName: suggestionItem.name } : null;
@@ -49,29 +56,84 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
   const mainItems = useMemo(() => clothingItems.filter(item => item && ['top', 'bottom', 'one-piece', 'outerwear'].includes(item.category)).slice(0, 2), [clothingItems]);
   const accessoryItems = useMemo(() => clothingItems.filter(item => item && !mainItems.includes(item)), [clothingItems, mainItems]);
 
-  const getDisplayImageUri = (item: any): string => {
-    if (!item) return '';
-    if (item.originalImageUri && !imageErrors[item.id]) return item.originalImageUri;
-    if (item.imageUri && !imageErrors[item.id]) return item.imageUri;
-    if (item.thumbnailImageUri) return item.thumbnailImageUri;
-    return '';
-  };
+  useEffect(() => {
+    const loadDisplayUris = async () => {
+      const allItems = [...mainItems, ...accessoryItems].filter(Boolean);
+      
+      const initialItems: ItemWithUri[] = allItems.map(item => ({
+        item,
+        suggestionName: item.suggestionName,
+        displayUri: getDisplayImageUriSync(item),
+        isLoading: !getDisplayImageUriSync(item)
+      }));
 
-  const handleImageError = (itemId: string) => {
-    setImageErrors(prev => ({ ...prev, [itemId]: true }));
-  };
+      setItemsWithUris(initialItems);
 
-  const renderClothingItem = (item: any, isMain: boolean) => {
-    const displayUri = getDisplayImageUri(item);
-    if (!item) return null;
+      // Async URI'leri yükle
+      const asyncPromises = initialItems.map(async (itemWithUri, index) => {
+        if (itemWithUri.isLoading && itemWithUri.item) {
+          try {
+            const asyncUri = await getDisplayImageUri(itemWithUri.item);
+            return { index, uri: asyncUri };
+          } catch (error) {
+            console.error('Error loading async URI for suggestion item:', error);
+            return { index, uri: '' };
+          }
+        }
+        return null;
+      });
+
+      const results = await Promise.all(asyncPromises);
+      
+      setItemsWithUris(prev => {
+        const updated = [...prev];
+        results.forEach(result => {
+          if (result) {
+            updated[result.index] = {
+              ...updated[result.index],
+              displayUri: result.uri,
+              isLoading: false
+            };
+          }
+        });
+        return updated;
+      });
+    };
+
+    if (clothingItems.length > 0) {
+      loadDisplayUris();
+    }
+  }, [clothingItems.length, outfit.items]);
+
+  const renderClothingItem = (isMain: boolean, itemId: string) => {
+    const itemWithUri = itemsWithUris.find(i => i.item?.id === itemId);
+    if (!itemWithUri) return null;
+
+    const { item, displayUri, isLoading } = itemWithUri;
 
     return (
       <View style={isMain ? styles.mainItemContainer : styles.accessoryItemContainer}>
-        {displayUri ? (
+        {isLoading ? (
+          <View style={[isMain ? styles.mainItemImage : styles.accessoryItemImage, styles.placeholderImage]}>
+            <Text style={[styles.loadingText, { color: theme.colors.textLight }]}>
+              ⏳
+            </Text>
+          </View>
+        ) : displayUri ? (
           <Image
             source={{ uri: displayUri }}
             style={isMain ? styles.mainItemImage : styles.accessoryItemImage}
-            onError={() => handleImageError(item.id)}
+            onError={() => {
+              console.warn('Image load error in suggestion for item:', item.id);
+              setItemsWithUris(prev => {
+                const updated = [...prev];
+                const itemIndex = updated.findIndex(u => u.item?.id === item.id);
+                if (itemIndex >= 0) {
+                  updated[itemIndex] = { ...updated[itemIndex], displayUri: '', isLoading: false };
+                }
+                return updated;
+              });
+            }}
           />
         ) : (
           <View style={[isMain ? styles.mainItemImage : styles.accessoryItemImage, styles.placeholderImage]}>
@@ -88,6 +150,9 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
     );
   };
 
+  const mainItemsWithUris = itemsWithUris.filter(i => mainItems.some(m => m?.id === i.item?.id));
+  const accessoryItemsWithUris = itemsWithUris.filter(i => accessoryItems.some(a => a?.id === i.item?.id));
+
   return (
     <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
       <LinearGradient
@@ -102,18 +167,18 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
         </View>
 
         <View style={styles.outfitGrid}>
-          {mainItems.map(item => item && (
-            <View key={item.id} style={styles.mainItemWrapper}>
-              {renderClothingItem(item, true)}
+          {mainItemsWithUris.map(itemWithUri => (
+            <View key={itemWithUri.item.id} style={styles.mainItemWrapper}>
+              {renderClothingItem(true, itemWithUri.item.id)}
             </View>
           ))}
         </View>
 
-        {accessoryItems.length > 0 && (
+        {accessoryItemsWithUris.length > 0 && (
           <View style={styles.accessoryGrid}>
-            {accessoryItems.map(item => item && (
-               <View key={item.id} style={styles.accessoryItemWrapper}>
-                 {renderClothingItem(item, false)}
+            {accessoryItemsWithUris.map(itemWithUri => (
+               <View key={itemWithUri.item.id} style={styles.accessoryItemWrapper}>
+                 {renderClothingItem(false, itemWithUri.item.id)}
                </View>
             ))}
           </View>
@@ -125,7 +190,7 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
            </Text>
            {outfit.suggestion_tip && (
              <Text style={[styles.suggestionTip, { color: theme.colors.primary }]}>
-                “{outfit.suggestion_tip}”
+                "{outfit.suggestion_tip}"
              </Text>
            )}
         </View>
@@ -181,10 +246,9 @@ const styles = StyleSheet.create({
   mainItemContainer: {
     alignItems: 'center',
   },
-  // --- DEĞİŞİKLİK BURADA: Ana fotoğrafların boyutu büyütüldü.
   mainItemImage: {
     width: '100%',
-    aspectRatio: 0.75, // En-boy oranı değiştirildi (daha uzun)
+    aspectRatio: 0.75,
     borderRadius: 16,
     marginBottom: 8,
   },
@@ -207,9 +271,8 @@ const styles = StyleSheet.create({
   },
   accessoryItemContainer: {
     alignItems: 'center',
-    width: 80, // Genişlik artırıldı
+    width: 80,
   },
-  // --- DEĞİŞİKLİK BURADA: Aksesuar fotoğraflarının boyutu büyütüldü.
   accessoryItemImage: {
     width: 80,
     height: 80,
@@ -225,6 +288,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(128,128,128,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 12,
+    fontFamily: 'Montserrat-Regular',
   },
   tipContainer: {
     borderRadius: 16,

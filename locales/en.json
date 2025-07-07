@@ -139,10 +139,30 @@
     "save": "Save Language"
   },
   "tabs": {
+    "home": "Home",
     "wardrobe": "Wardrobe",
     "suggestions": "Outfits",
     "history": "History",
     "profile": "Profile"
+  },
+  "home": {
+    "title": "Discover Style",
+    "welcome": "Welcome to your personal AI stylist!",
+    "subtitle": "Create amazing outfits with what you already own",
+    "featuresTitle": "Explore Features",
+    "quickActionsTitle": "Quick Actions",
+    "wardrobeTitle": "Build Your Wardrobe",
+    "wardrobeSubtitle": "Add your clothes to get started",
+    "suggestionsTitle": "Get Outfit Ideas",
+    "suggestionsSubtitle": "AI-powered style suggestions",
+    "tipsTitle": "Pro Style Tips",
+    "tipsSubtitle": "Learn about color combinations",
+    "premiumTitle": "Upgrade Style",
+    "premiumSubtitle": "Unlock premium features",
+    "addItemTitle": "Add New Item",
+    "trendingTitle": "Trending Styles",
+    "tipTitle": "Style Tip of the Day",
+    "tipText": "Try mixing different textures and patterns for a more dynamic look. Start with neutral bases and add colorful accessories!"
   },
   "wardrobe": {
     "title": "My Wardrobe",

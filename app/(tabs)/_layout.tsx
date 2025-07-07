@@ -1,8 +1,10 @@
+// app/(tabs)/_layout.tsx - Ana sayfa ile güncellenmiş
 import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import {
+  Home,
   Shirt,
   LightbulbIcon,
   History,
@@ -52,6 +54,20 @@ export default function TabLayout() {
         },
         headerShown: false,
       }}>
+      
+      {/* YENİ: Ana Sayfa */}
+      <Tabs.Screen
+        name="home/index"
+        options={{
+          title: t('tabs.home', 'Home'),
+          tabBarIcon: ({ color, size, focused }) => (
+            <AnimatedIcon focused={focused}>
+              <Home color={color} size={size} />
+            </AnimatedIcon>
+          ),
+        }}
+      />
+      
       <Tabs.Screen
         name="wardrobe/index"
         options={{
@@ -96,6 +112,8 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      {/* Gizli sayfalar */}
       <Tabs.Screen name="wardrobe/add" options={{ href: null }} />
       <Tabs.Screen name="wardrobe/[id]" options={{ href: null }} />
       <Tabs.Screen name="wardrobe/edit/[id]" options={{ href: null }} />

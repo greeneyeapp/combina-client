@@ -1,4 +1,4 @@
-// context/AuthContext.tsx - DÜZELTME
+// context/AuthContext.tsx - Ana sayfa yönlendirmesi ile güncellenmiş
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
@@ -7,7 +7,7 @@ import axios from 'axios';
 import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useSegments } from 'expo-router';
+import { router, useRootNavigationState, useSegments } from 'expo-router';
 
 const USER_CACHE_KEY = 'cached_user_data';
 
@@ -33,6 +33,55 @@ export function useAuth() {
   return context;
 }
 
+function useProtectedRouter() {
+  const { user, loading: authLoading, isAuthFlowActive } = useAuth();
+  const segments = useSegments();
+  const navigationState = useRootNavigationState();
+
+  useEffect(() => {
+    if (!navigationState?.key) return;
+    
+    const isNotFound = segments.includes('+not-found');
+
+    if (isNotFound) {
+      const timer = setTimeout(() => {
+        if (user) {
+          const profileComplete = user.gender && user.birthDate;
+          if (profileComplete) {
+            // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
+            router.replace('/(tabs)/home');
+          } else {
+            router.replace('/(auth)/complete-profile');
+          }
+        } else {
+          router.replace('/(auth)');
+        }
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+
+    if (authLoading || isAuthFlowActive) {
+      return;
+    }
+    
+    const inAuthGroup = segments[0] === '(auth)';
+
+    if (user) {
+      const profileComplete = user.gender && user.birthDate;
+      if (!profileComplete && segments[1] !== 'complete-profile') {
+        router.replace('/(auth)/complete-profile');
+      } else if (profileComplete && inAuthGroup) {
+        // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
+        router.replace('/(tabs)/home');
+      }
+    } else {
+      if (!inAuthGroup) {
+        router.replace('/(auth)');
+      }
+    }
+  }, [navigationState?.key, user, segments, authLoading, isAuthFlowActive]);
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,9 +91,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { clearUserPlan } = useUserPlanStore();
   const segments = useSegments();
 
-  // DÜZELTME: Cached user loading JWT ile beraber kontrol et
   useEffect(() => {
-    loadJwt(); // JWT'yi yükle, user cache'ini değil
+    loadJwt();
   }, [loadJwt]);
 
   useEffect(() => {
@@ -53,16 +101,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initializeAuth = async () => {
       if (jwt) {
         try {
-          // JWT varsa backend'den user bilgisini al
           const userInfo = await getUserFromToken(jwt);
           
-          // DÜZELTME: Backend'den gelen bilgiyi cached ile karşılaştır
           let finalUser = userInfo;
           try {
             const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
             if (cachedUser) {
               const cached = JSON.parse(cachedUser);
-              // JWT geçerliyse cached bilgileri kullan (daha tam)
               finalUser = { ...userInfo, ...cached };
             }
           } catch (error) {
@@ -74,14 +119,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           await initializeUserProfile();
         } catch (error) {
           console.error('Auth initialization failed:', error);
-          // JWT geçersizse her şeyi temizle
           await clearJwt(); 
           clearUserPlan(); 
           setUser(null);
           await AsyncStorage.removeItem(USER_CACHE_KEY);
         }
       } else {
-        // JWT yoksa user da olmamalı
         setUser(null); 
         clearUserPlan();
         await AsyncStorage.removeItem(USER_CACHE_KEY);
@@ -247,30 +290,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // DÜZELTME: Yönlendirme mantığını düzelt
   useEffect(() => {
     const isReadyToRoute = !loading && !isAuthFlowActive;
     if (!isReadyToRoute) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
-    // DÜZELTME: Sadece JWT varsa ve user varsa profile kontrolü yap
     if (user && jwt) {
         const profileComplete = user.gender && user.birthDate && user.name;
         if (!profileComplete && segments[1] !== 'complete-profile') {
             router.replace('/(auth)/complete-profile');
         } else if (profileComplete && inAuthGroup) {
-            router.replace('/(tabs)/wardrobe');
+            // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
+            router.replace('/(tabs)/home');
         }
     } else {
-        // JWT yoksa auth sayfasına yönlendir
         if (!inAuthGroup) {
             router.replace('/(auth)');
         }
     }
-  }, [user, jwt, loading, isAuthFlowActive, segments]); // jwt dependency eklendi
+  }, [user, jwt, loading, isAuthFlowActive, segments]);
   
   const value = { user, loading, isAuthFlowActive, setAuthFlowActive, signInWithGoogle, signInWithApple, updateUserInfo, logout, refreshUserProfile };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      {/* Protected router hook'unu burada çağırıyoruz */}
+      <ProtectedRouterComponent />
+    </AuthContext.Provider>
+  );
 };
+
+// Hook'u component olarak wrap ediyoruz
+function ProtectedRouterComponent() {
+  useProtectedRouter();
+  return null;
+}

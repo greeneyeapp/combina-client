@@ -1,4 +1,4 @@
-// kodlar/app/(tabs)/suggestions/index.tsx
+// app/(tabs)/suggestions/index.tsx - İyileştirilmiş boş durum ve okunabilirlik
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
@@ -19,7 +19,8 @@ import { useOutfitStore, Outfit } from '@/store/outfitStore';
 import { useWeatherStore } from '@/store/weatherStore';
 import { useAuth } from '@/context/AuthContext';
 import { useUserPlanStore } from '@/store/userPlanStore';
-import { Cloud, Sun, RefreshCw, ExternalLink } from 'lucide-react-native';
+import { Cloud, Sun, RefreshCw, ExternalLink, Sparkles, Lightbulb, Heart } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import HeaderBar from '@/components/common/HeaderBar';
 import EmptyState from '@/components/common/EmptyState';
 import Button from '@/components/common/Button';
@@ -256,7 +257,10 @@ export default function SuggestionsScreen() {
     const isNearLimit = usagePercentage > 80;
 
     return (
-      <View style={[styles.usageContainer, { backgroundColor: theme.colors.card }]}>
+      <LinearGradient
+        colors={[theme.colors.primaryLight, theme.colors.card]}
+        style={styles.usageContainer}
+      >
         <View style={styles.usageHeader}>
           <Text style={[styles.usageTitle, { color: theme.colors.text }]}>
             {t('suggestions.dailyUsage')}
@@ -267,12 +271,66 @@ export default function SuggestionsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={[styles.usageText, { color: theme.colors.textLight }]}>
+        <Text style={[styles.usageText, { color: theme.colors.text }]}>
           {t('suggestions.usageLimitInfo', { used: usage.current_usage, total: usage.daily_limit })}
         </Text>
         <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
           <View style={[styles.progressFill, { backgroundColor: isNearLimit ? theme.colors.warning : theme.colors.primary, width: `${Math.min(100, usagePercentage)}%` }]} />
         </View>
+      </LinearGradient>
+    );
+  };
+
+  // İYİLEŞTİRİLMİŞ BOŞ DURUM - henüz suggestion yokken
+  const renderEmptyState = () => {
+    if (suggestion) return null;
+
+    return (
+      <View 
+        style={[styles.emptyStateContainer, { backgroundColor: theme.colors.primaryLight }]}
+        onLayout={(event: LayoutChangeEvent) => {
+          if (event.nativeEvent.layout.y > 0 && suggestionLayoutY === 0) {
+            setSuggestionLayoutY(event.nativeEvent.layout.y);
+          }
+        }}
+      >
+        <LinearGradient
+          colors={[theme.colors.primaryLight, 'transparent']}
+          style={styles.emptyStateGradient}
+        >
+          <View style={styles.emptyStateIconContainer}>
+            <Sparkles color={theme.colors.primary} size={48} />
+          </View>
+          
+          <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>
+            {t('suggestions.readyToSuggest', 'Ready for your perfect outfit?')}
+          </Text>
+          
+          <Text style={[styles.emptyStateMessage, { color: theme.colors.text }]}>
+            {t('suggestions.emptyStateMessage', 'Tap the button above to get AI-powered outfit suggestions based on your wardrobe, the weather, and your chosen occasion!')}
+          </Text>
+
+          <View style={styles.emptyStateFeatures}>
+            <View style={styles.featureItem}>
+              <Lightbulb color={theme.colors.primary} size={20} />
+              <Text style={[styles.featureText, { color: theme.colors.text }]}>
+                {t('suggestions.featureAI', 'AI-powered suggestions')}
+              </Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Sun color={theme.colors.accent} size={20} />
+              <Text style={[styles.featureText, { color: theme.colors.text }]}>
+                {t('suggestions.featureWeather', 'Weather-aware styling')}
+              </Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Heart color={theme.colors.primary} size={20} />
+              <Text style={[styles.featureText, { color: theme.colors.text }]}>
+                {t('suggestions.featurePersonal', 'Personalized for you')}
+              </Text>
+            </View>
+          </View>
+        </LinearGradient>
       </View>
     );
   };
@@ -318,6 +376,7 @@ export default function SuggestionsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {renderUsageInfo()}
+        
         <View style={styles.weatherSection}>
           {weatherLoading ? (
             <ActivityIndicator color={theme.colors.primary} />
@@ -340,8 +399,10 @@ export default function SuggestionsScreen() {
             </TouchableOpacity>
           )}
         </View>
+        
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('suggestions.selectOccasion')}</Text>
         <OccasionPicker selectedOccasion={selectedOccasion} onSelectOccasion={setSelectedOccasion} />
+        
         <Button
           label={generating ? t('suggestions.generating') : t('suggestions.generateOutfit')}
           onPress={handleGenerateSuggestion}
@@ -350,13 +411,18 @@ export default function SuggestionsScreen() {
           style={styles.generateButton}
           disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading}
         />
+        
         {!!error && (
           <View style={[styles.errorContainer, { backgroundColor: theme.colors.errorLight }]}>
             <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
           </View>
         )}
+
+        {/* İyileştirilmiş boş durum */}
+        {renderEmptyState()}
+        
         <View onLayout={(event: LayoutChangeEvent) => {
-          if (event.nativeEvent.layout.y > 0 && suggestionLayoutY === 0) {
+          if (event.nativeEvent.layout.y > 0 && suggestionLayoutY === 0 && suggestion) {
             setSuggestionLayoutY(event.nativeEvent.layout.y);
           }
         }}>
@@ -447,6 +513,49 @@ const styles = StyleSheet.create({
   generateButton: { marginTop: 16, marginBottom: 16 },
   errorContainer: { padding: 16, borderRadius: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
+  
+  // İyileştirilmiş boş durum stilleri
+  emptyStateContainer: {
+    borderRadius: 16,
+    marginTop: 24,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
+  emptyStateGradient: {
+    padding: 32,
+    alignItems: 'center',
+  },
+  emptyStateIconContainer: {
+    marginBottom: 20,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontFamily: 'PlayfairDisplay-Bold',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  emptyStateMessage: {
+    fontSize: 14,
+    fontFamily: 'Montserrat-Regular',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+    paddingHorizontal: 16,
+  },
+  emptyStateFeatures: {
+    gap: 12,
+    alignSelf: 'stretch',
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featureText: {
+    fontSize: 14,
+    fontFamily: 'Montserrat-Medium',
+  },
+  
   inspirationSection: { marginTop: 24, marginBottom: 16 },
   inspirationTitle: {
     fontFamily: 'Montserrat-Bold',

@@ -1,3 +1,5 @@
+// app/(tabs)/wardrobe/add.tsx - Çoklu renk seçimi ile güncellenmiş
+
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,7 +31,7 @@ import {
 type FormData = {
   name: string;
   category: string;
-  color: string;
+  colors: string[]; // DEĞİŞİKLİK: colors array oldu
   season: string[];
   style: string[];
   notes: string;
@@ -60,7 +62,7 @@ export default function AddClothingScreen() {
     defaultValues: {
       name: '',
       category: '',
-      color: '',
+      colors: [], // DEĞİŞİKLİK: boş array
       season: [],
       style: [],
       notes: '',
@@ -69,7 +71,14 @@ export default function AddClothingScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      reset({ name: '', category: '', color: '', season: [], style: [], notes: '' });
+      reset({ 
+        name: '', 
+        category: '', 
+        colors: [], // DEĞİŞİKLİK: boş array
+        season: [], 
+        style: [], 
+        notes: '' 
+      });
       setSelectedAsset(null);
       setProcessedImage(null);
       setIsLoading(false);
@@ -96,8 +105,6 @@ export default function AddClothingScreen() {
       console.log('Processing selected asset for permanent storage:', asset.id);
       
       const itemId = generateUniqueId();
-      
-      // Asset'i kalıcı depolamaya kopyala
       const result = await copyAssetToPermanentStorage(itemId, asset);
       
       setSelectedAsset(asset);
@@ -146,7 +153,7 @@ export default function AddClothingScreen() {
       });
       return;
     }
-    if (!data.color) {
+    if (!data.colors || data.colors.length === 0) {
       showAlert({ 
         title: t('common.error'), 
         message: t('wardrobe.colorRequired'), 
@@ -161,12 +168,12 @@ export default function AddClothingScreen() {
         id: generateUniqueId(),
         name: data.name,
         category: data.category,
-        color: data.color,
+        color: data.colors[0], // İlk rengi ana renk olarak kaydet (backward compatibility)
+        colors: data.colors, // YENİ: Tüm renkleri kaydet
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
         
-        // YENİ: Kalıcı depolama yolları
         originalImageUri: processedImage.originalPath,
         thumbnailImageUri: processedImage.thumbnailPath,
         imageMetadata: processedImage.metadata,
@@ -305,17 +312,21 @@ export default function AddClothingScreen() {
             
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.color')}
+                {t('wardrobe.colors')} {/* DEĞİŞİKLİK: colors (çoğul) */}
               </Text>
               <Controller
                 control={control}
-                name="color"
-                rules={{ required: t('wardrobe.colorRequired') as string }}
+                name="colors" // DEĞİŞİKLİK: colors field
+                rules={{ 
+                  validate: (value) => (value && value.length > 0) || (t('wardrobe.colorRequired') as string)
+                }}
                 render={({ field: { onChange, value } }) => (
                   <ColorPicker 
-                    selectedColor={value} 
-                    onSelectColor={onChange} 
-                    error={errors.color?.message} 
+                    selectedColors={value || []} // DEĞİŞİKLİK: çoklu renk modu
+                    onSelectColors={onChange} 
+                    multiSelect={true} // DEĞİŞİKLİK: çoklu seçim aktif
+                    maxColors={3} // DEĞİŞİKLİK: maksimum 3 renk
+                    error={errors.colors?.message} 
                   />
                 )}
               />

@@ -1,11 +1,13 @@
-// components/suggestions/OutfitLoadingAnimation.tsx - Opacity Fix ile Tam Kod
+// components/suggestions/OutfitLoadingAnimation.tsx - İyileştirilmiş pembe temalı
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Image, Easing } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
-import { Shirt } from 'lucide-react-native';
+import { Shirt, Sparkles, Heart } from 'lucide-react-native';
 import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface OutfitLoadingAnimationProps {
   isVisible: boolean;
@@ -29,7 +31,20 @@ export default function OutfitLoadingAnimation({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.8));
+  const [rotateAnim] = useState(new Animated.Value(0));
+  const [pulseAnim] = useState(new Animated.Value(1));
   const [itemsWithUris, setItemsWithUris] = useState<ItemWithUri[]>([]);
+
+  // Pembe temalı loading messages
+  const loadingMessages = [
+    t('suggestions.analyzingWardrobe', 'Analyzing your wardrobe...'),
+    t('suggestions.findingPerfectMatch', 'Finding the perfect match...'),
+    t('suggestions.mixingColors', 'Mixing colors harmoniously...'),
+    t('suggestions.checkingWeather', 'Checking weather conditions...'),
+    t('suggestions.creatingMagic', 'Creating fashion magic...'),
+  ];
+
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   const randomClothingItems = React.useMemo(() => {
     const availableItems = clothing.filter(item => !item.isImageMissing);
@@ -85,46 +100,94 @@ export default function OutfitLoadingAnimation({
 
   useEffect(() => {
     if (isVisible) {
+        // Giriş animasyonları
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
-                duration: 300,
+                duration: 400,
                 useNativeDriver: true,
             }),
             Animated.spring(scaleAnim, {
                 toValue: 1,
-                speed: 14,
-                bounciness: 6,
+                speed: 12,
+                bounciness: 8,
                 useNativeDriver: true,
             }),
         ]).start();
 
+        // Sürekli animasyonlar
+        const rotateAnimation = Animated.loop(
+          Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: 3000,
+            easing: Easing.linear,
+            useNativeDriver: true,
+          })
+        );
+
+        const pulseAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseAnim, {
+              toValue: 1.1,
+              duration: 1000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseAnim, {
+              toValue: 1,
+              duration: 1000,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ])
+        );
+
+        rotateAnimation.start();
+        pulseAnimation.start();
+
+        // Item ve mesaj döngüleri
         if(itemsWithUris.length > 0) {
-            const interval = setInterval(() => {
+            const itemInterval = setInterval(() => {
                 setCurrentIndex(prev => (prev + 1) % itemsWithUris.length);
-            }, 800);
-            return () => clearInterval(interval);
+            }, 1200);
+
+            const messageInterval = setInterval(() => {
+                setCurrentMessageIndex(prev => (prev + 1) % loadingMessages.length);
+            }, 2000);
+
+            return () => {
+              clearInterval(itemInterval);
+              clearInterval(messageInterval);
+              rotateAnimation.stop();
+              pulseAnimation.stop();
+            };
         }
     } else {
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 0,
-                duration: 400,
+                duration: 300,
                 easing: Easing.inOut(Easing.ease),
                 useNativeDriver: true,
             }),
             Animated.timing(scaleAnim, {
                 toValue: 0.8,
-                duration: 400,
+                duration: 300,
                 easing: Easing.inOut(Easing.ease),
                 useNativeDriver: true,
             }),
         ]).start(() => {
             setCurrentIndex(0);
+            setCurrentMessageIndex(0);
             onComplete?.();
         });
     }
-  }, [isVisible, itemsWithUris.length]);
+  }, [isVisible, itemsWithUris.length, loadingMessages.length]);
+
+  const rotateInterpolate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
 
   if (!isVisible) return null;
 
@@ -152,12 +215,20 @@ export default function OutfitLoadingAnimation({
     const { item, displayUri, isLoading } = currentItemWithUri;
 
     return (
-      <View style={[styles.itemContainer, { backgroundColor: theme.colors.card }]}>
+      <Animated.View 
+        style={[
+          styles.itemContainer, 
+          { 
+            backgroundColor: theme.colors.card,
+            transform: [{ scale: pulseAnim }]
+          }
+        ]}
+      >
         {isLoading ? (
           <View style={[styles.itemPlaceholder, { backgroundColor: theme.colors.background }]}>
-            <Text style={[styles.loadingText, { color: theme.colors.textLight }]}>
-              ⏳
-            </Text>
+            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <Sparkles color={theme.colors.primary} size={32} />
+            </Animated.View>
           </View>
         ) : displayUri ? (
           <Image
@@ -184,19 +255,19 @@ export default function OutfitLoadingAnimation({
           </View>
         )}
 
-        <View style={[styles.itemInfo, { backgroundColor: theme.colors.card }]}>
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.7)']}
+          style={styles.itemOverlay}
+        >
           <Text
-            style={[styles.itemName, { color: theme.colors.text }]}
+            style={[styles.itemName, { color: '#FFFFFF' }]}
             numberOfLines={1}
             ellipsizeMode="tail"
           >
             {item.name}
           </Text>
-          <Text style={[styles.itemCategory, { color: theme.colors.textLight }]}>
-            {t(`categories.${item.category}`)}
-          </Text>
-        </View>
-      </View>
+        </LinearGradient>
+      </Animated.View>
     );
   };
 
@@ -211,22 +282,36 @@ export default function OutfitLoadingAnimation({
           },
         ]}
       >
-        <View style={[styles.content, { backgroundColor: theme.colors.card }]}>
-          <Text style={[styles.title, { color: theme.colors.text }]}>
-            {t('suggestions.generatingOutfit')}
-          </Text>
+        <LinearGradient
+          colors={[theme.colors.primaryLight, theme.colors.background]}
+          style={styles.content}
+        >
+          {/* Ana başlık */}
+          <View style={styles.titleContainer}>
+            <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+              <Sparkles size={32} color={theme.colors.primary} />
+            </Animated.View>
+            <Text style={[styles.title, { color: theme.colors.text }]}>
+              {t('suggestions.generatingOutfit')}
+            </Text>
+          </View>
 
-          <Text style={[styles.subtitle, { color: theme.colors.textLight }]}>
-            {t('suggestions.analyzingWardrobe')}
-          </Text>
+          {/* Dinamik mesaj */}
+          <Animated.View key={currentMessageIndex} style={styles.messageContainer}>
+            <Text style={[styles.subtitle, { color: theme.colors.primary }]}>
+              {loadingMessages[currentMessageIndex]}
+            </Text>
+          </Animated.View>
 
+          {/* Kıyafet gösterimi */}
           <Animated.View style={styles.itemDisplay}>
             {renderClothingItem()}
           </Animated.View>
 
+          {/* Progress dots */}
           <View style={styles.dotsContainer}>
             {itemsWithUris.length > 0 && itemsWithUris.map((_, index) => (
-              <View
+              <Animated.View
                 key={index}
                 style={[
                   styles.dot,
@@ -234,19 +319,20 @@ export default function OutfitLoadingAnimation({
                     backgroundColor: index === currentIndex
                       ? theme.colors.primary
                       : theme.colors.border,
+                    transform: [{ 
+                      scale: index === currentIndex ? pulseAnim : 1 
+                    }]
                   },
                 ]}
               />
             ))}
           </View>
 
-          <Text style={[styles.progressText, { color: theme.colors.textLight }]}>
-            {itemsWithUris.length > 0
-              ? t('suggestions.findingPerfectMatch')
-              : t('suggestions.preparingOutfit')
-            }
-          </Text>
-        </View>
+          {/* Footer ikonu */}
+          <View style={styles.footerIcon}>
+            <Heart color={theme.colors.primary} size={24} fill={theme.colors.primary} />
+          </View>
+        </LinearGradient>
       </Animated.View>
     </View>
   );
@@ -262,90 +348,99 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
-    // ✅ SOLID BACKGROUND - Artık saydam değil
   },
   container: { 
     alignItems: 'center', 
     padding: 32,
+    maxWidth: 320,
   },
   content: { 
     alignItems: 'center', 
-    maxWidth: 280,
-    padding: 24,
-    borderRadius: 16,
+    width: '100%',
+    padding: 32,
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
   title: { 
     fontSize: 24, 
     fontFamily: 'PlayfairDisplay-Bold', 
     textAlign: 'center', 
-    marginBottom: 8,
+    marginTop: 12,
+  },
+  messageContainer: {
+    marginBottom: 32,
+    minHeight: 24,
   },
   subtitle: { 
     fontSize: 16, 
-    fontFamily: 'Montserrat-Regular', 
-    textAlign: 'center', 
-    marginBottom: 32,
+    fontFamily: 'Montserrat-Medium', 
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   itemDisplay: { 
     marginBottom: 24 
   },
   itemContainer: {
-    width: 150,
-    borderRadius: 16,
+    width: 160,
+    height: 160,
+    borderRadius: 20,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2, },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 4, },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
+    position: 'relative',
   },
   itemImage: { 
     width: '100%', 
-    height: 150 
+    height: '100%' 
   },
   itemPlaceholder: { 
     width: '100%', 
-    height: 150, 
+    height: '100%', 
     justifyContent: 'center', 
     alignItems: 'center',
   },
   itemPlaceholderText: { 
-    fontSize: 36, 
+    fontSize: 48, 
     fontFamily: 'Montserrat-Bold',
   },
-  loadingText: { 
-    fontSize: 24, 
-    fontFamily: 'Montserrat-Regular',
-  },
-  itemInfo: { 
+  itemOverlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     padding: 12,
   },
   itemName: { 
     fontSize: 14, 
-    fontFamily: 'Montserrat-SemiBold', 
-    marginBottom: 4,
-  },
-  itemCategory: { 
-    fontSize: 12, 
-    fontFamily: 'Montserrat-Regular',
+    fontFamily: 'Montserrat-SemiBold',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   placeholderContainer: {
-    width: 150,
-    height: 210,
-    borderRadius: 16,
+    width: 160,
+    height: 160,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2, },
+    shadowOffset: { width: 0, height: 4, },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowRadius: 8,
+    elevation: 6,
   },
   placeholderText: { 
     fontSize: 12, 
@@ -356,17 +451,14 @@ const styles = StyleSheet.create({
   dotsContainer: { 
     flexDirection: 'row', 
     marginBottom: 16, 
-    gap: 8 
+    gap: 12 
   },
   dot: { 
-    width: 8, 
-    height: 8, 
-    borderRadius: 4 
+    width: 10, 
+    height: 10, 
+    borderRadius: 5 
   },
-  progressText: { 
-    fontSize: 14, 
-    fontFamily: 'Montserrat-Regular', 
-    textAlign: 'center', 
-    fontStyle: 'italic',
+  footerIcon: {
+    marginTop: 8,
   },
 });

@@ -1,3 +1,5 @@
+// store/clothingStore.ts - Çoklu renk desteği ile güncellenmiş
+
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { simpleStorage } from '@/store/simpleStorage';
@@ -7,14 +9,15 @@ export type ClothingItem = {
   id: string;
   name: string;
   category: string;
-  color: string;
+  color: string; // Ana renk (backward compatibility için)
+  colors?: string[]; // YENİ: Çoklu renk desteği
   season: string[];
   style: string;
   notes: string;
   
-  // YENİ SİSTEM: Kalıcı dosya yolları
-  originalImageUri?: string;    // Kalıcı original image path
-  thumbnailImageUri?: string;   // Kalıcı thumbnail path
+  // Kalıcı dosya yolları
+  originalImageUri?: string;
+  thumbnailImageUri?: string;
   
   createdAt: string;
   
@@ -44,12 +47,14 @@ interface ClothingState {
   setValidating: (validating: boolean) => void;
   migrateToPermanentStorage: () => Promise<{ migratedCount: number }>;
   setMigrated: (migrated: boolean) => void;
+  
+  // YENİ: Çoklu renk migration fonksiyonu
+  migrateToMultiColor: () => Promise<{ migratedCount: number }>;
 }
 
 const checkImageExists = async (item: ClothingItem): Promise<boolean> => {
   if (item.isImageMissing) return false;
   
-  // Yeni sistem kontrolü
   if (item.originalImageUri && await validatePermanentImage(item.originalImageUri)) {
     return true;
   }
@@ -71,18 +76,37 @@ export const useClothingStore = create<ClothingState>()(
       
       setClothing: (newClothing) => set({ clothing: newClothing }),
       
-      addClothing: (item) => set((state) => ({ 
-        clothing: [...state.clothing, { ...item, isImageMissing: false }]
-      })),
+      addClothing: (item) => {
+        // Yeni item eklerken çoklu renk desteği kontrolü
+        const processedItem = {
+          ...item,
+          colors: item.colors || [item.color], // Eğer colors yoksa color'dan oluştur
+          isImageMissing: false
+        };
+        
+        set((state) => ({ 
+          clothing: [...state.clothing, processedItem]
+        }));
+      },
       
       removeClothing: (id) => set((state) => ({
         clothing: state.clothing.filter((item) => item.id !== id)
       })),
       
       updateClothing: (id, updatedItem) => set((state) => ({
-        clothing: state.clothing.map((item) =>
-          item.id === id ? { ...item, ...updatedItem } : item
-        ),
+        clothing: state.clothing.map((item) => {
+          if (item.id === id) {
+            const updated = { ...item, ...updatedItem };
+            
+            // Çoklu renk güncellemesi yapılıyorsa color field'ını da güncelle
+            if (updatedItem.colors && updatedItem.colors.length > 0) {
+              updated.color = updatedItem.colors[0]; // İlk rengi ana renk yap
+            }
+            
+            return updated;
+          }
+          return item;
+        }),
       })),
       
       clearAllClothing: () => set({ 
@@ -112,6 +136,33 @@ export const useClothingStore = create<ClothingState>()(
           return { migratedCount: 1 };
         } catch (error) {
           console.error('❌ Permanent storage migration failed:', error);
+          return { migratedCount: 0 };
+        }
+      },
+      
+      // YENİ: Çoklu renk migration
+      migrateToMultiColor: async () => {
+        const { clothing, updateClothing } = get();
+        let migratedCount = 0;
+        
+        console.log('🔄 Starting multi-color migration...');
+        
+        try {
+          for (const item of clothing) {
+            // Eğer colors field'ı yoksa ve color varsa, colors oluştur
+            if (!item.colors && item.color) {
+              updateClothing(item.id, {
+                colors: [item.color]
+              });
+              migratedCount++;
+              console.log(`✅ Migrated item ${item.name} to multi-color format`);
+            }
+          }
+          
+          console.log(`✅ Multi-color migration completed: ${migratedCount} items migrated`);
+          return { migratedCount };
+        } catch (error) {
+          console.error('❌ Multi-color migration failed:', error);
           return { migratedCount: 0 };
         }
       },
@@ -146,13 +197,11 @@ export const useClothingStore = create<ClothingState>()(
               console.log(`✅ Image found again for item: ${item.name}`);
             }
             
-            // Eğer görsel tamamen yoksa ve zaten missing olarak işaretliyse, item'ı kaldır
             if (!exists && item.isImageMissing) {
               itemsToRemove.push(item.id);
             }
           }
           
-          // Tamamen kayıp item'ları kaldır
           for (const itemId of itemsToRemove) {
             removeClothing(itemId);
             removedCount++;
@@ -176,12 +225,17 @@ export const useClothingStore = create<ClothingState>()(
       }
     }),
     {
-      name: 'clothing-storage-v4', // Version bump for permanent storage
+      name: 'clothing-storage-v5', // Version bump for multi-color support
       storage: createJSONStorage(() => simpleStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.isValidated = false;
           state.isValidating = false;
+          
+          // Auto-migrate to multi-color on load
+          setTimeout(() => {
+            state.migrateToMultiColor();
+          }, 1000);
         }
       },
     }

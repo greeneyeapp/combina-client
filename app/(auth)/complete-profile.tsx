@@ -1,4 +1,4 @@
-// kodlar/app/(auth)/complete-profile.tsx
+// app/(auth)/complete-profile.tsx - Ana sayfa yönlendirmesi ile güncellenmiş
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -154,7 +154,8 @@ export default function CompleteProfileScreen() {
                 buttons: [{
                     text: t('authFlow.completeProfile.continueButton'),
                     onPress: async () => {
-                        router.replace('/(tabs)/wardrobe');
+                        // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
+                        router.replace('/(tabs)/home');
 
                         setTimeout(async () => {
                             try {

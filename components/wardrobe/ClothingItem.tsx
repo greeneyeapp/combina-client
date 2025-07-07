@@ -1,3 +1,5 @@
+// components/wardrobe/ClothingItem.tsx - Çoklu renk gösterimi ile güncellenmiş
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -38,6 +40,69 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
   const handleEditPress = (e: any) => {
     e.stopPropagation();
     onEdit();
+  };
+
+  // Çoklu renk desteği - colors varsa onu kullan, yoksa color'ı kullan
+  const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
+  const colorNames = itemColors.map(color => t(`colors.${color}`)).join(', ');
+
+  const renderColorIndicators = () => {
+    // Maksimum 3 renk göster
+    const displayColors = itemColors.slice(0, 3);
+    
+    if (displayColors.length === 1) {
+      // Tek renk - büyük daire
+      return (
+        <View style={styles.singleColorContainer}>
+          <View 
+            style={[
+              styles.colorCircle, 
+              { 
+                backgroundColor: displayColors[0],
+                borderColor: theme.colors.border 
+              }
+            ]} 
+          />
+          <Text style={[styles.colorText, { color: theme.colors.textLight }]}>
+            {t(`colors.${displayColors[0]}`)}
+          </Text>
+        </View>
+      );
+    } else {
+      // Çoklu renk - küçük daireler
+      return (
+        <View style={styles.multiColorContainer}>
+          <View style={styles.colorCirclesRow}>
+            {displayColors.map((color, index) => (
+              <View 
+                key={color}
+                style={[
+                  styles.multiColorCircle, 
+                  { 
+                    backgroundColor: color,
+                    borderColor: theme.colors.border,
+                    marginLeft: index > 0 ? -4 : 0, // Overlapping effect
+                    zIndex: displayColors.length - index // Stack order
+                  }
+                ]} 
+              />
+            ))}
+            {itemColors.length > 3 && (
+              <View style={[styles.moreColorsIndicator, { backgroundColor: theme.colors.textLight }]}>
+                <Text style={styles.moreColorsText}>+</Text>
+              </View>
+            )}
+          </View>
+          <Text 
+            style={[styles.colorText, { color: theme.colors.textLight }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {colorNames}
+          </Text>
+        </View>
+      );
+    }
   };
 
   const renderImage = () => {
@@ -108,20 +173,7 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
           </Text>
         </View>
         
-        <View style={styles.colorContainer}>
-          <View 
-            style={[
-              styles.colorCircle, 
-              { 
-                backgroundColor: item.color,
-                borderColor: theme.colors.border 
-              }
-            ]} 
-          />
-          <Text style={[styles.colorText, { color: theme.colors.textLight }]}>
-            {t(`colors.${item.color}`)}
-          </Text>
-        </View>
+        {renderColorIndicators()}
       </View>
     </TouchableOpacity>
   );
@@ -180,13 +232,13 @@ const styles = StyleSheet.create({
     lineHeight: 18, 
   },
   categoryContainer: { 
-    marginBottom: 6, 
+    marginBottom: 8, 
   },
   categoryText: { 
     fontSize: 12, 
     fontFamily: 'Montserrat-Regular', 
   },
-  colorContainer: { 
+  singleColorContainer: { 
     flexDirection: 'row', 
     alignItems: 'center', 
   },
@@ -199,6 +251,33 @@ const styles = StyleSheet.create({
   },
   colorText: { 
     fontSize: 11, 
-    fontFamily: 'Montserrat-Regular', 
+    fontFamily: 'Montserrat-Regular',
+    flex: 1,
+  },
+  multiColorContainer: {
+    gap: 4,
+  },
+  colorCirclesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  multiColorCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+  },
+  moreColorsIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: -4,
+  },
+  moreColorsText: {
+    fontSize: 6,
+    fontFamily: 'Montserrat-Bold',
+    color: '#FFFFFF',
   },
 });

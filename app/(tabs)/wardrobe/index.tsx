@@ -1,4 +1,5 @@
-// app/(tabs)/wardrobe/index.tsx (Güncellenmiş - Galeri referansı tabanlı)
+// app/(tabs)/wardrobe/index.tsx - Çoklu renk desteği ve limit rengi güncellenmiş
+
 import React, { useState, useMemo, useCallback  } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -70,11 +71,11 @@ export default function WardrobeScreen() {
 
   const getUsageColor = () => {
     if (!limitInfo) return theme.colors.textLight;
-    if (limitInfo.limit === Infinity) return theme.colors.success;
+    if (limitInfo.limit === Infinity) return theme.colors.primary;
     const percentage = limitInfo.percentage;
     if (percentage > 90) return theme.colors.error;
     if (percentage > 75) return theme.colors.warning;
-    return theme.colors.success;
+    return theme.colors.primary;
   };
 
   function chunkArray<T>(array: T[], size: number): T[][] {
@@ -91,14 +92,16 @@ export default function WardrobeScreen() {
       .filter(item => {
         const name = item.name.toLowerCase();
         const cat = t(`categories.${item.category}`).toLowerCase();
-        const col = t(`colors.${item.color}`).toLowerCase();
+        const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
+        const colorTexts = itemColors.map(color => t(`colors.${color}`)).join(' ').toLowerCase();
         const seasons = item.season.map(s => t(`seasons.${s}`)).join(' ').toLowerCase();
         const style = item.style.split(',').map(s => t(`styles.${s}`)).join(' ').toLowerCase();
         const notes = item.notes?.toLowerCase() || '';
 
-        const matchesSearch = !q || name.includes(q) || cat.includes(q) || col.includes(q) || seasons.includes(q) || style.includes(q) || notes.includes(q);
+        const matchesSearch = !q || name.includes(q) || cat.includes(q) || colorTexts.includes(q) || seasons.includes(q) || style.includes(q) || notes.includes(q);
         const matchesCategory = activeFilters.categories.length === 0 || activeFilters.categories.includes(item.category);
-        const matchesColor = activeFilters.colors.length === 0 || activeFilters.colors.includes(item.color);
+        const matchesColor = activeFilters.colors.length === 0 || 
+          activeFilters.colors.some(filterColor => itemColors.includes(filterColor));
         const matchesSeason = activeFilters.seasons.length === 0 || item.season.some(s => activeFilters.seasons.includes(s));
         const matchesStyle = activeFilters.styles.length === 0 || item.style.split(',').some(s => activeFilters.styles.includes(s));
 
@@ -166,7 +169,6 @@ export default function WardrobeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('wardrobe.title')} />
-
       <View style={styles.usageContainer}>
         {isLimitLoading ? (
           <ActivityIndicator size="small" color={theme.colors.textLight} />
@@ -180,19 +182,9 @@ export default function WardrobeScreen() {
           </TouchableOpacity>
         )}
       </View>
-
       <View style={styles.searchContainer}>
-        <Input
-          placeholder={t('wardrobe.searchPlaceholder')}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          leftIcon={<Search color={theme.colors.textLight} size={20} />}
-          containerStyle={styles.searchInput}
-        />
-        <TouchableOpacity
-          style={[styles.filterButton, { backgroundColor: hasActiveFilters() ? theme.colors.primary : theme.colors.card }]}
-          onPress={() => setIsFilterModalVisible(true)}
-        >
+        <Input placeholder={t('wardrobe.searchPlaceholder')} value={searchQuery} onChangeText={setSearchQuery} leftIcon={<Search color={theme.colors.textLight} size={20} />} containerStyle={styles.searchInput} />
+        <TouchableOpacity style={[styles.filterButton, { backgroundColor: hasActiveFilters() ? theme.colors.primary : theme.colors.card }]} onPress={() => setIsFilterModalVisible(true)}>
           <SlidersHorizontal color={hasActiveFilters() ? theme.colors.white : theme.colors.text} size={20} />
           {totalActiveFilters > 0 && (
             <View style={[styles.filterBadge, { backgroundColor: theme.colors.accent }]}>
@@ -201,41 +193,17 @@ export default function WardrobeScreen() {
           )}
         </TouchableOpacity>
       </View>
-
       {sections.length > 0 ? (
-        <SectionList
-          sections={sections}
-          keyExtractor={(row, idx) => row.map(i => i.id).join('-') + '-' + idx}
-          renderSectionHeader={renderSectionHeader}
-          renderItem={renderItem}
-          stickySectionHeadersEnabled={false}
-        />
+        <SectionList sections={sections} keyExtractor={(row, idx) => row.map(i => i.id).join('-') + '-' + idx} renderSectionHeader={renderSectionHeader} renderItem={renderItem} stickySectionHeadersEnabled={false} />
       ) : (
-        <EmptyState
-          icon="shirt"
-          title={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyTitle') : t('wardrobe.noResultsTitle')}
-          message={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyMessage') : t('wardrobe.noResultsMessage')}
-          buttonText={!searchQuery && !hasActiveFilters() ? t('wardrobe.addFirstItem') : undefined}
-          onButtonPress={!searchQuery && !hasActiveFilters() ? handleAddItem : undefined}
-        />
+        <EmptyState icon="shirt" title={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyTitle') : t('wardrobe.noResultsTitle')} message={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyMessage') : t('wardrobe.noResultsMessage')} buttonText={!searchQuery && !hasActiveFilters() ? t('wardrobe.addFirstItem') : undefined} onButtonPress={!searchQuery && !hasActiveFilters() ? handleAddItem : undefined} />
       )}
-
       {!isLimitLoading && !limitInfo?.isLimitReached && (
-        <TouchableOpacity
-          style={[styles.addButton, { backgroundColor: theme.colors.primary }]}
-          onPress={handleAddItem}
-        >
+        <TouchableOpacity style={[styles.addButton, { backgroundColor: theme.colors.primary }]} onPress={handleAddItem}>
           <PlusCircle color={theme.colors.white} size={28} />
         </TouchableOpacity>
       )}
-
-      <FilterModal
-        isVisible={isFilterModalVisible}
-        onClose={() => setIsFilterModalVisible(false)}
-        onApply={handleApplyFilters}
-        initialFilters={activeFilters}
-        gender={storedUserPlan?.gender as 'female' | 'male' | undefined}
-      />
+      <FilterModal isVisible={isFilterModalVisible} onClose={() => setIsFilterModalVisible(false)} onApply={handleApplyFilters} initialFilters={activeFilters} gender={storedUserPlan?.gender as 'female' | 'male' | undefined} />
     </SafeAreaView>
   );
 }

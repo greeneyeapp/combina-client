@@ -1,4 +1,4 @@
-// app/(tabs)/home/index.tsx - YENİ ANA SAYFA
+// app/(tabs)/home/index.tsx - İyileştirilmiş Ana Sayfa
 import React from 'react';
 import {
     View,
@@ -20,9 +20,12 @@ import {
     Crown,
     Plus,
     Palette,
+    History,
+    Star,
     TrendingUp,
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2; // 2'li grid için
@@ -30,44 +33,69 @@ const cardWidth = (width - 48) / 2; // 2'li grid için
 export default function HomeScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
+    const { currentPlan, isLoading: isPlanLoading } = useRevenueCat();
 
-    const featureCards = [
-        {
-            id: 'wardrobe',
-            title: t('home.wardrobeTitle', 'Build Your Wardrobe'),
-            subtitle: t('home.wardrobeSubtitle', 'Add your clothes to get started'),
-            icon: <Shirt size={32} color={theme.colors.white} />,
-            gradient: [theme.colors.primary, theme.colors.secondary],
-            onPress: () => router.push('/(tabs)/wardrobe'),
-        },
-        {
-            id: 'suggestions',
-            title: t('home.suggestionsTitle', 'Get Outfit Ideas'),
-            subtitle: t('home.suggestionsSubtitle', 'AI-powered style suggestions'),
-            icon: <Lightbulb size={32} color={theme.colors.white} />,
-            gradient: [theme.colors.accent, '#FF6B6B'],
-            onPress: () => router.push('/(tabs)/suggestions'),
-        },
-        {
-            id: 'tips',
-            title: t('home.tipsTitle', 'Pro Style Tips'),
-            subtitle: t('home.tipsSubtitle', 'Learn about color combinations'),
-            icon: <Palette size={32} color={theme.colors.white} />,
-            gradient: [theme.colors.secondary, theme.colors.primary],
-            onPress: () => {
-                // TODO: Tips sayfası eklenebilir
-                router.push('/(tabs)/suggestions');
+    // Premium kullanıcı için farklı feature cards
+    const getFeatureCards = () => {
+        const baseCards = [
+            {
+                id: 'wardrobe',
+                title: t('home.wardrobeTitle', 'Build Your Wardrobe'),
+                subtitle: t('home.wardrobeSubtitle', 'Add your clothes to get started'),
+                icon: <Shirt size={32} color={theme.colors.white} />,
+                gradient: [theme.colors.primary, theme.colors.secondary],
+                onPress: () => router.push('/(tabs)/wardrobe'),
             },
-        },
-        {
-            id: 'premium',
-            title: t('home.premiumTitle', 'Upgrade Style'),
-            subtitle: t('home.premiumSubtitle', 'Unlock premium features'),
-            icon: <Crown size={32} color={theme.colors.white} />,
-            gradient: ['#FFD700', '#FFA500'],
-            onPress: () => router.push('/profile/subscription' as any),
-        },
-    ];
+            {
+                id: 'suggestions',
+                title: t('home.suggestionsTitle', 'Get Outfit Ideas'),
+                subtitle: t('home.suggestionsSubtitle', 'AI-powered style suggestions'),
+                icon: <Lightbulb size={32} color={theme.colors.white} />,
+                gradient: ['#F1C93B', '#FF8A65'], // Gradient düzeltildi
+                onPress: () => router.push('/(tabs)/suggestions'),
+            },
+        ];
+
+        if (currentPlan === 'premium') {
+            // Premium kullanıcılar için özel kartlar
+            baseCards.push({
+                id: 'premium-analytics',
+                title: t('home.analyticsTitle', 'Style Analytics'),
+                subtitle: t('home.analyticsSubtitle', 'Track your style journey'),
+                icon: <TrendingUp size={32} color={theme.colors.white} />,
+                gradient: ['#6366F1', '#8B5CF6'], // Gradient düzeltildi
+                onPress: () => router.push('/(tabs)/history'),
+            });
+            baseCards.push({
+                id: 'premium-tips',
+                title: t('home.premiumTipsTitle', 'Pro Style Tips'),
+                subtitle: t('home.premiumTipsSubtitle', 'Exclusive styling advice'),
+                icon: <Star size={32} color={theme.colors.white} />,
+                gradient: ['#059669', '#10B981'], // Gradient düzeltildi
+                onPress: () => router.push('/(tabs)/suggestions'),
+            });
+        } else {
+            // Free kullanıcılar için upgrade kartı
+            baseCards.push({
+                id: 'tips',
+                title: t('home.tipsTitle', 'Pro Style Tips'),
+                subtitle: t('home.tipsSubtitle', 'Learn about color combinations'),
+                icon: <Palette size={32} color={theme.colors.white} />,
+                gradient: ['#1E3D59', '#2E5984'], // Gradient düzeltildi
+                onPress: () => router.push('/(tabs)/suggestions'),
+            });
+            baseCards.push({
+                id: 'premium',
+                title: t('home.premiumTitle', 'Upgrade Style'),
+                subtitle: t('home.premiumSubtitle', 'Unlock premium features'),
+                icon: <Crown size={32} color={theme.colors.white} />,
+                gradient: ['#F59E0B', '#FBBF24'], // Gradient düzeltildi
+                onPress: () => router.push('/profile/subscription' as any),
+            });
+        }
+
+        return baseCards;
+    };
 
     const quickActions = [
         {
@@ -77,14 +105,14 @@ export default function HomeScreen() {
             onPress: () => router.push('/wardrobe/add' as any),
         },
         {
-            id: 'trending',
-            title: t('home.trendingTitle', 'Trending Styles'),
-            icon: <TrendingUp size={20} color={theme.colors.primary} />,
-            onPress: () => router.push('/(tabs)/suggestions'),
+            id: 'history',
+            title: t('home.historyTitle', 'Outfit History'),
+            icon: <History size={20} color={theme.colors.primary} />,
+            onPress: () => router.push('/(tabs)/history'),
         },
     ];
 
-    const renderFeatureCard = (card: typeof featureCards[0]) => (
+    const renderFeatureCard = (card: ReturnType<typeof getFeatureCards>[0]) => (
         <TouchableOpacity
             key={card.id}
             style={[styles.featureCard, { width: cardWidth }]}
@@ -125,25 +153,79 @@ export default function HomeScreen() {
         </TouchableOpacity>
     );
 
+    const renderWelcomeSection = () => {
+        // Premium kullanıcılar için farklı mesaj
+        const welcomeMessage = currentPlan === 'premium' 
+            ? t('home.premiumWelcome', 'Welcome back, Premium Stylist!')
+            : t('home.welcome', 'Welcome to your personal AI stylist!');
+
+        const subtitleMessage = currentPlan === 'premium'
+            ? t('home.premiumSubtitle', 'Enjoy unlimited styling with your Premium features')
+            : t('home.subtitle', 'Create amazing outfits with what you already own');
+
+        return (
+            <View style={styles.headerContent}>
+                {/* Premium badge göster */}
+                {currentPlan === 'premium' && (
+                    <View style={[styles.premiumBadge, { backgroundColor: 'rgba(255, 215, 0, 0.2)' }]}>
+                        <Crown size={16} color="#FFD700" />
+                        <Text style={[styles.premiumBadgeText, { color: '#FFD700' }]}>
+                            Premium Member
+                        </Text>
+                    </View>
+                )}
+                
+                <Text style={[styles.welcomeText, { 
+                    color: theme.colors.white,
+                    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+                    textShadowOffset: { width: 1, height: 1 },
+                    textShadowRadius: 3,
+                }]}>
+                    {welcomeMessage}
+                </Text>
+                <Text style={[styles.subtitleText, { 
+                    color: 'rgba(255, 255, 255, 0.95)',
+                    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+                    textShadowOffset: { width: 1, height: 1 },
+                    textShadowRadius: 2,
+                }]}>
+                    {subtitleMessage}
+                </Text>
+            </View>
+        );
+    };
+
+    if (isPlanLoading) {
+        return (
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+                <HeaderBar title={t('home.title', 'Discover Style')} />
+                <View style={styles.loadingContainer}>
+                    <Text style={[styles.loadingText, { color: theme.colors.textLight }]}>
+                        {t('common.loading')}
+                    </Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            {/* Pembe tonlu header */}
+            {/* Geliştirilmiş header gradient - daha iyi kontrast */}
             <LinearGradient
-                colors={[theme.colors.primary, theme.colors.primaryLight]}
+                colors={[
+                    theme.colors.primary,
+                    theme.colors.secondary,
+                    theme.colors.primaryLight
+                ]}
                 style={styles.headerGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
             >
                 <HeaderBar
                     title={t('home.title', 'Discover Style')}
                     style={{ backgroundColor: 'transparent' }}
                 />
-                <View style={styles.headerContent}>
-                    <Text style={styles.welcomeText}>
-                        {t('home.welcome', 'Welcome to your personal AI stylist!')}
-                    </Text>
-                    <Text style={styles.subtitleText}>
-                        {t('home.subtitle', 'Create amazing outfits with what you already own')}
-                    </Text>
-                </View>
+                {renderWelcomeSection()}
             </LinearGradient>
 
             <ScrollView
@@ -157,7 +239,7 @@ export default function HomeScreen() {
                         {t('home.featuresTitle', 'Explore Features')}
                     </Text>
                     <View style={styles.featuresGrid}>
-                        {featureCards.map(renderFeatureCard)}
+                        {getFeatureCards().map(renderFeatureCard)}
                     </View>
                 </View>
 
@@ -171,21 +253,30 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                {/* Pro Tips Section */}
-                <View style={[styles.tipSection, { backgroundColor: theme.colors.primaryLight }]}>
-                    <View style={styles.tipHeader}>
-                        <Sparkles color={theme.colors.primary} size={24} />
-                        <Text style={[styles.tipTitle, { color: theme.colors.primary }]}>
-                            {t('home.tipTitle', 'Style Tip of the Day')}
+                {/* Premium özellikler vurgusu - sadece free kullanıcılar için */}
+                {currentPlan !== 'premium' && (
+                    <View style={[styles.upgradeSection, { backgroundColor: theme.colors.primaryLight }]}>
+                        <View style={styles.upgradeHeader}>
+                            <Crown color={theme.colors.primary} size={24} />
+                            <Text style={[styles.upgradeTitle, { color: theme.colors.primary }]}>
+                                {t('home.upgradeTitle', 'Ready for More?')}
+                            </Text>
+                        </View>
+                        <Text style={[styles.upgradeText, { color: theme.colors.text }]}>
+                            {t('home.upgradeText', 'Upgrade to Premium for unlimited wardrobe items, advanced AI styling, and exclusive features!')}
                         </Text>
+                        <TouchableOpacity
+                            style={[styles.upgradeButton, { backgroundColor: theme.colors.primary }]}
+                            onPress={() => router.push('/profile/subscription' as any)}
+                            activeOpacity={0.8}
+                        >
+                            <Crown size={16} color={theme.colors.white} />
+                            <Text style={styles.upgradeButtonText}>
+                                {t('home.upgradeButton', 'Upgrade Now')}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-                    <Text style={[styles.tipText, { color: theme.colors.text }]}>
-                        {t(
-                            'home.tipText',
-                            'Try mixing different textures and patterns for a more dynamic look. Start with neutral bases and add colorful accessories!'
-                        )}
-                    </Text>
-                </View>
+                )}
             </ScrollView>
         </SafeAreaView>
     );
@@ -195,24 +286,56 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
     },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        fontSize: 16,
+        fontFamily: 'Montserrat-Medium',
+    },
     headerGradient: {
         paddingBottom: 24,
+        // Gradient'e daha fazla derinlik ekle
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 8,
     },
     headerContent: {
         paddingHorizontal: 16,
         paddingTop: 8,
+        alignItems: 'center',
+    },
+    premiumBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        marginBottom: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+    },
+    premiumBadgeText: {
+        fontSize: 12,
+        fontFamily: 'Montserrat-Bold',
+        marginLeft: 6,
     },
     welcomeText: {
         fontSize: 20,
         fontFamily: 'PlayfairDisplay-Bold',
-        color: '#FFFFFF',
         textAlign: 'center',
         marginBottom: 8,
     },
     subtitleText: {
         fontSize: 14,
         fontFamily: 'Montserrat-Regular',
-        color: 'rgba(255, 255, 255, 0.9)',
         textAlign: 'center',
     },
     scrollView: {
@@ -239,19 +362,25 @@ const styles = StyleSheet.create({
     featureCard: {
         borderRadius: 20,
         overflow: 'hidden',
-        elevation: 4,
+        elevation: 6,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 2,
+            height: 3,
         },
-        shadowOpacity: 0.15,
-        shadowRadius: 6,
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        // Kartın alt kısmındaki renk sorunu için ek stil
+        backgroundColor: 'transparent',
+        borderWidth: 0,
     },
     cardGradient: {
         padding: 20,
         minHeight: 160,
         justifyContent: 'space-between',
+        // Gradient'in tüm alanı kaplamasını sağla
+        flex: 1,
+        width: '100%',
     },
     cardIconContainer: {
         marginBottom: 12,
@@ -304,24 +433,40 @@ const styles = StyleSheet.create({
         fontFamily: 'Montserrat-SemiBold',
         flex: 1,
     },
-    tipSection: {
+    upgradeSection: {
         padding: 20,
         borderRadius: 16,
         marginTop: 8,
+        alignItems: 'center',
     },
-    tipHeader: {
+    upgradeHeader: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 12,
     },
-    tipTitle: {
-        fontSize: 16,
+    upgradeTitle: {
+        fontSize: 18,
         fontFamily: 'Montserrat-Bold',
         marginLeft: 8,
     },
-    tipText: {
+    upgradeText: {
         fontSize: 14,
         fontFamily: 'Montserrat-Regular',
         lineHeight: 20,
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    upgradeButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        borderRadius: 25,
+        gap: 8,
+    },
+    upgradeButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontFamily: 'Montserrat-Bold',
     },
 });

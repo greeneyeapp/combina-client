@@ -1,3 +1,5 @@
+// services/purchaseService.ts - Sadeleştirilmiş plan yapısı
+
 import Purchases, { PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import { updateUserPlan, getUserProfile } from '@/services/userService';
 import API_URL from '@/config';
@@ -7,27 +9,39 @@ export interface PurchaseResult {
   success: boolean;
   customerInfo?: CustomerInfo;
   error?: string;
-  newPlan?: 'free' | 'standard' | 'premium';
+  newPlan?: 'free' | 'premium'; // Standard kaldırıldı
 }
 
 export interface RestoreResult {
   success: boolean;
   customerInfo?: CustomerInfo;
   error?: string;
-  restoredPlan?: 'free' | 'standard' | 'premium';
+  restoredPlan?: 'free' | 'premium'; // Standard kaldırıldı
 }
 
-// Map RevenueCat entitlements to plan type
-const mapEntitlementsToPlan = (entitlements: any): 'free' | 'standard' | 'premium' => {
+// Map RevenueCat entitlements to plan type - Sadeleştirilmiş
+const mapEntitlementsToPlan = (entitlements: any): 'free' | 'premium' => {
   if (!entitlements) return 'free';
+  // Sadece premium_access kontrolü - standard_access kaldırıldı
   if (entitlements.premium_access?.isActive) return 'premium';
-  if (entitlements.standard_access?.isActive) return 'standard';
   return 'free';
 };
 
-// Purchase a package
+// Purchase a package with duplicate subscription prevention
 export const purchasePackage = async (packageToPurchase: PurchasesPackage): Promise<PurchaseResult> => {
   try {
+    // Önce mevcut durumu kontrol et
+    const currentCustomerInfo = await Purchases.getCustomerInfo();
+    const currentPlan = mapEntitlementsToPlan(currentCustomerInfo.entitlements.active);
+    
+    // Eğer kullanıcının zaten Premium aboneliği varsa, yeni satın alma işlemini engelle
+    if (currentPlan === 'premium') {
+      return {
+        success: false,
+        error: 'User already has an active Premium subscription',
+      };
+    }
+    
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
     
     const newPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
@@ -63,8 +77,8 @@ export const restorePurchases = async (): Promise<RestoreResult> => {
     
     const restoredPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
     
-    // Arka plan senkronizasyonu sadece bir plan bulunursa ve bu plan 'free' değilse yapılır.
-    if (restoredPlan !== 'free') {
+    // Arka plan senkronizasyonu sadece Premium plan bulunursa yapılır
+    if (restoredPlan === 'premium') {
         await syncPurchaseWithBackend(customerInfo, restoredPlan);
     }
     
@@ -75,8 +89,6 @@ export const restorePurchases = async (): Promise<RestoreResult> => {
     };
   } catch (error: any) {
     console.error('Restore failed with error:', error);
-    // --- DÜZELTME BURADA ---
-    // Hatayı fırlatmak yerine, başarısız bir sonuç nesnesi döndür.
     return {
       success: false,
       error: error.message || 'Restore failed',
@@ -85,7 +97,7 @@ export const restorePurchases = async (): Promise<RestoreResult> => {
 };
 
 // Sync purchase with backend
-const syncPurchaseWithBackend = async (customerInfo: CustomerInfo, newPlan: 'free' | 'standard' | 'premium') => {
+const syncPurchaseWithBackend = async (customerInfo: CustomerInfo, newPlan: 'free' | 'premium') => {
   try {
     await updateUserPlan(newPlan);
     await verifyPurchaseWithBackend(customerInfo);
@@ -123,7 +135,7 @@ const verifyPurchaseWithBackend = async (customerInfo: CustomerInfo) => {
 };
 
 // Check for any active subscriptions on app start
-export const checkSubscriptionStatus = async (): Promise<'free' | 'standard' | 'premium'> => {
+export const checkSubscriptionStatus = async (): Promise<'free' | 'premium'> => {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const currentPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
@@ -138,9 +150,40 @@ export const checkSubscriptionStatus = async (): Promise<'free' | 'standard' | '
     console.error('Subscription status check failed:', error);
     try {
         const profile = await getUserProfile();
-        return profile.plan as 'free' | 'standard' | 'premium';
+        return profile.plan as 'free' | 'premium';
     } catch(e) {
         return 'free';
     }
+  }
+};
+
+// Prevent subscription conflicts - Check if user can purchase
+export const canPurchaseSubscription = async (): Promise<{
+  canPurchase: boolean;
+  reason?: string;
+  currentPlan?: 'free' | 'premium';
+}> => {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const currentPlan = mapEntitlementsToPlan(customerInfo.entitlements.active);
+    
+    if (currentPlan === 'premium') {
+      return {
+        canPurchase: false,
+        reason: 'User already has Premium subscription',
+        currentPlan,
+      };
+    }
+    
+    return {
+      canPurchase: true,
+      currentPlan,
+    };
+  } catch (error) {
+    console.error('Error checking purchase eligibility:', error);
+    return {
+      canPurchase: true, // Default to allowing purchase if check fails
+      currentPlan: 'free',
+    };
   }
 };

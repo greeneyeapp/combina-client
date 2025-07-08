@@ -47,6 +47,7 @@
     "tryAgain": "Please try again.",
     "saving": "Saving...",
     "today": "Today",
+    "loading": "Loading...",
     "yesterday": "Yesterday",
     "daysAgo_one": "{{count}} day ago",
     "daysAgo_other": "{{count}} days ago",
@@ -145,7 +146,7 @@
     "history": "History",
     "profile": "Profile"
   },
-  "home": {
+    "home": {
     "title": "Discover Style",
     "welcome": "Welcome to your personal AI stylist!",
     "subtitle": "Create amazing outfits with what you already own",
@@ -153,16 +154,22 @@
     "quickActionsTitle": "Quick Actions",
     "wardrobeTitle": "Build Your Wardrobe",
     "wardrobeSubtitle": "Add your clothes to get started",
-    "suggestionsTitle": "Get Outfit Ideas",
+    "suggestionsTitle": "Get Outfit Ideas", 
     "suggestionsSubtitle": "AI-powered style suggestions",
     "tipsTitle": "Pro Style Tips",
     "tipsSubtitle": "Learn about color combinations",
     "premiumTitle": "Upgrade Style",
-    "premiumSubtitle": "Unlock premium features",
     "addItemTitle": "Add New Item",
-    "trendingTitle": "Trending Styles",
-    "tipTitle": "Style Tip of the Day",
-    "tipText": "Try mixing different textures and patterns for a more dynamic look. Start with neutral bases and add colorful accessories!"
+    "historyTitle": "Outfit History",
+    "premiumWelcome": "Welcome back, Premium Stylist!",
+    "premiumSubtitle": "Enjoy unlimited styling with your Premium features",
+    "analyticsTitle": "Style Analytics", 
+    "analyticsSubtitle": "Track your style journey",
+    "premiumTipsTitle": "Pro Style Tips",
+    "premiumTipsSubtitle": "Exclusive styling advice",
+    "upgradeTitle": "Ready for More?",
+    "upgradeText": "Upgrade to Premium for unlimited wardrobe items, advanced AI styling, and exclusive features!",
+    "upgradeButton": "Upgrade Now"
   },
   "wardrobe": {
     "title": "My Wardrobe",
@@ -223,7 +230,14 @@
     "missingImagesRemoved": "{{count}} items with missing images were removed",
     "itemsAvailable": "items available",
     "removedItem": "Removed Item",
-    "newImage": "New Image"
+    "newImage": "New Image",
+    "colors": "Colors",
+    "selectColorsPlaceholder": "Select colors...",
+    "colorSelectionInfo": "{{selected}}/{{max}} colors selected",
+    "colorLimitReached": "Maximum colors reached",
+    "addMoreColors": "Add more",
+    "selectColors": "Select Colors",
+    "selectedColors": "Selected Colors"
   },
   "onboarding": {
     "step1": {
@@ -344,7 +358,17 @@
     "suggestedOutfit": "Suggested Outfit",
     "someItemsMissing": "Some items in this outfit are not in your wardrobe.",
     "itemNotInWardrobe": "Item not in wardrobe",
-    "preparingOutfit": "Preparing your outfit..."
+    "readyToSuggest": "Ready for your perfect outfit?",
+    "emptyStateMessage": "Tap the button above to get AI-powered outfit suggestions based on your wardrobe, the weather, and your chosen occasion!",
+    "featureAI": "AI-powered suggestions",
+    "featureWeather": "Weather-aware styling",
+    "featurePersonal": "Personalized for you",
+    "mixingColors": "Mixing colors harmoniously...",
+    "checkingWeather": "Checking weather conditions...",
+    "creatingMagic": "Creating fashion magic...",
+    "gettingProfile": "Getting your profile...",
+    "preparingOutfit": "Preparing your outfit...",
+    "usageCheckFailed": "Could not check usage limits"
   },
   "storage": {
     "title": "Storage Management",
@@ -548,7 +572,6 @@
     "upgrade": "Upgrade Plan",
     "plans": {
       "free": "Free",
-      "standard": "Standard",
       "premium": "Premium"
     },
     "preferences": "Preferences",
@@ -620,6 +643,16 @@
         "Ad-supported experience"
       ]
     },
+    "alreadySubscribedTitle": "Already Subscribed",
+    "alreadySubscribedMessage": "You already have an active Premium subscription. You can manage it through your App Store account.",
+    "switchTo": "Switch to {{period}}",
+    "premiumHeroTitle": "Unlock Premium Features",
+    "premiumHeroSubtitle": "Get unlimited wardrobe items, advanced AI styling, and exclusive features.",
+    "whyPremiumTitle": "Why Choose Premium?",
+    "whyPremiumText": "Transform your style with unlimited wardrobe space, personalized AI styling advice, and exclusive Pinterest integration for endless inspiration.",
+    "cannotDowngrade": "Cannot Downgrade",
+    "cannotDowngradeMessage": "You cannot downgrade from your current Premium subscription. You can manage your subscription through your App Store account.",
+    "manageThroughAppStore": "Manage through App Store",
     "noPlansAvailable": "No plans available for this billing period."
   },
   "navigation": {

@@ -1,3 +1,5 @@
+// services/userService.ts - Sadeleştirilmiş plan yapısı
+
 import API_URL from '@/config';
 import { auth } from '@/firebaseConfig';
 import { useUserPlanStore, UserPlan } from '@/store/userPlanStore';
@@ -9,7 +11,7 @@ interface UserProfileResponse {
   fullname: string;
   gender: string;
   age?: number;
-  plan: 'free' | 'standard' | 'premium';
+  plan: 'free' | 'premium'; // Standard kaldırıldı
   usage: {
     daily_limit: number;
     current_usage: number;
@@ -44,7 +46,6 @@ const getAuthToken = async (): Promise<string> => {
   if (!tokenResponse.ok) throw new Error('Failed to get auth token');
   const { access_token } = await tokenResponse.json();
 
-  // Update the store with new token
   useApiAuthStore.getState().setJwt(access_token);
   return access_token;
 };
@@ -67,7 +68,6 @@ export const initializeProfile = async (profileData: ProfileInitData): Promise<v
     throw new Error(`Failed to initialize profile: ${response.status} ${errorData}`);
   }
 
-  // After initialization, fetch the complete profile
   await getUserProfile(true);
 };
 
@@ -94,11 +94,10 @@ export const fetchUserProfile = async (): Promise<UserProfileResponse> => {
 export const getUserProfile = async (forceRefresh: boolean = false): Promise<UserPlan> => {
   const { userPlan, lastFetched, setUserPlan, setLoading } = useUserPlanStore.getState();
 
-  // Check if we need to fetch (force refresh or no cached data or stale data)
   const shouldFetch = forceRefresh ||
     !userPlan ||
     !lastFetched ||
-    (Date.now() - new Date(lastFetched).getTime()) > 5 * 60 * 1000; // 5 minutes
+    (Date.now() - new Date(lastFetched).getTime()) > 5 * 60 * 1000;
 
   if (!shouldFetch && userPlan) {
     return userPlan;
@@ -123,7 +122,6 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   } catch (error) {
     console.error('Failed to fetch user profile:', error);
 
-    // If we have cached data, return it even if refresh failed
     if (userPlan) {
       console.warn('Using cached profile data due to fetch error');
       return userPlan;
@@ -135,8 +133,8 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   }
 };
 
-// Update user plan (for subscription changes)
-export const updateUserPlan = async (plan: 'free' | 'standard' | 'premium'): Promise<void> => {
+// Update user plan (for subscription changes) - Sadeleştirilmiş
+export const updateUserPlan = async (plan: 'free' | 'premium'): Promise<void> => {
   const token = await getAuthToken();
 
   const response = await fetch(`${API_URL}/api/users/plan`, {
@@ -153,11 +151,9 @@ export const updateUserPlan = async (plan: 'free' | 'standard' | 'premium'): Pro
     throw new Error(`Failed to update plan: ${response.status} ${errorData}`);
   }
 
-  // Update local store
   const { setPlan } = useUserPlanStore.getState();
   setPlan(plan);
 
-  // Refresh profile to get updated usage limits
   await getUserProfile(true);
 };
 
@@ -173,7 +169,6 @@ export const initializeUserProfile = async (): Promise<void> => {
     await getUserProfile();
   } catch (error) {
     console.error('Failed to initialize user profile:', error);
-    // Don't throw - let the app continue with fallback behavior
   }
 };
 
@@ -195,7 +190,6 @@ export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: 
 
   } catch (error) {
     console.error('Error checking wardrobe limit:', error);
-    // If we can't check, assume they can add (fail open)
     return { canAdd: true };
   }
 };
@@ -220,23 +214,28 @@ export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?
   }
 };
 
-// Get plan features for display
-export const getPlanFeatures = (planType: 'free' | 'standard' | 'premium') => {
+// Get plan features for display - Sadeleştirilmiş
+export const getPlanFeatures = (planType: 'free' | 'premium') => {
   const features = {
     free: {
       wardrobe_limit: 30,
       daily_suggestions: 2,
-      features: ['Basic outfit suggestions', 'Weather integration', 'Basic wardrobe management']
-    },
-    standard: {
-      wardrobe_limit: 100,
-      daily_suggestions: 10,
-      features: ['Advanced outfit suggestions', 'Style tips', 'Unlimited photo storage', 'Priority support']
+      features: [
+        'Basic outfit suggestions', 
+        'Weather integration', 
+        'Basic wardrobe management'
+      ]
     },
     premium: {
       wardrobe_limit: 'Unlimited',
       daily_suggestions: 50,
-      features: ['Unlimited everything', 'Pinterest inspiration', 'Advanced AI styling', 'Personal stylist chat', 'Premium support']
+      features: [
+        'Unlimited wardrobe items',
+        'Advanced AI styling', 
+        'Pinterest inspiration',
+        'Ad-free experience',
+        'Priority support'
+      ]
     }
   };
 

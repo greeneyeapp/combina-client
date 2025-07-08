@@ -1,4 +1,5 @@
-// hooks/useRevenueCat.ts (Düzeltilmiş - Auth state sync)
+// hooks/useRevenueCat.ts - Sadeleştirilmiş plan yapısı
+
 import { useEffect, useState, useCallback } from 'react';
 import Purchases, { CustomerInfo, PurchasesEntitlementInfo } from 'react-native-purchases';
 import { updateUserPlan, getUserProfile } from '@/services/userService';
@@ -7,19 +8,20 @@ import { useAuth } from '@/context/AuthContext';
 interface RevenueCatState {
   customerInfo: CustomerInfo | null;
   isLoading: boolean;
-  currentPlan: 'free' | 'standard' | 'premium';
+  currentPlan: 'free' | 'premium'; // Standard kaldırıldı
   refreshCustomerInfo: () => Promise<void>;
 }
 
-const mapEntitlementsToPlan = (entitlements?: { [key: string]: PurchasesEntitlementInfo }): 'free' | 'standard' | 'premium' => {
+// Sadeleştirilmiş entitlement mapping - sadece Premium kontrolü
+const mapEntitlementsToPlan = (entitlements?: { [key: string]: PurchasesEntitlementInfo }): 'free' | 'premium' => {
   if (!entitlements) return 'free';
+  // Sadece premium_access kontrolü yapılıyor
   if (entitlements.premium_access?.isActive) return 'premium';
-  if (entitlements.standard_access?.isActive) return 'standard';
   return 'free';
 };
 
 export const useRevenueCat = () => {
-  const { user } = useAuth(); // Auth state'ini izle
+  const { user } = useAuth();
   const [state, setState] = useState<RevenueCatState>({
     customerInfo: null,
     isLoading: true,
@@ -33,7 +35,7 @@ export const useRevenueCat = () => {
       console.log('🧹 User logged out, clearing RevenueCat state');
       setState({
         customerInfo: null,
-        isLoading: false, // ÖNEMLİ: Loading'i false yap
+        isLoading: false,
         currentPlan: 'free',
         refreshCustomerInfo: async () => { console.log("User logged out, RefreshCustomerInfo disabled"); },
       });
@@ -41,9 +43,7 @@ export const useRevenueCat = () => {
     }
   }, [user]);
 
-  // useCallback ile fonksiyonu memoize ediyoruz
   const fetchAndProcessCustomerInfo = useCallback(async () => {
-    // User yoksa işlem yapma
     if (!user) {
       console.log('⚠️ No user, skipping RevenueCat fetch');
       return;
@@ -65,15 +65,14 @@ export const useRevenueCat = () => {
       console.error("RevenueCat: Error fetching customer info:", e);
       try {
           const profile = await getUserProfile();
-          setState(s => ({ ...s, isLoading: false, currentPlan: profile.plan as 'free' | 'standard' | 'premium' }));
+          setState(s => ({ ...s, isLoading: false, currentPlan: profile.plan as 'free' | 'premium' }));
       } catch (profileError) {
           setState(s => ({...s, isLoading: false }));
       }
     }
-  }, [user]); // user'ı dependency'ye ekle
+  }, [user]);
 
   useEffect(() => {
-    // User yoksa hiçbir şey yapma
     if (!user) {
       return;
     }
@@ -82,7 +81,6 @@ export const useRevenueCat = () => {
     fetchAndProcessCustomerInfo();
 
     const listener = (info: CustomerInfo) => {
-      // User hala varsa listener'ı çalıştır
       if (user) {
         const newPlan = mapEntitlementsToPlan(info.entitlements.active);
         setState(s => ({ ...s, customerInfo: info, currentPlan: newPlan }));
@@ -96,11 +94,9 @@ export const useRevenueCat = () => {
       console.log('🧹 Cleaning up RevenueCat listener');
       Purchases.removeCustomerInfoUpdateListener(listener);
     };
-  }, [fetchAndProcessCustomerInfo, user]); // user'ı dependency'ye ekle
+  }, [fetchAndProcessCustomerInfo, user]);
 
-  // refreshCustomerInfo fonksiyonu
   const refreshCustomerInfo = useCallback(async () => {
-    // User yoksa refresh yapma
     if (!user) {
       console.log('⚠️ No user, skipping RevenueCat refresh');
       return;
@@ -109,9 +105,8 @@ export const useRevenueCat = () => {
     console.log("Refreshing customer info...");
     setState(s => ({ ...s, isLoading: true }));
     await fetchAndProcessCustomerInfo();
-  }, [fetchAndProcessCustomerInfo, user]); // user'ı dependency'ye ekle
+  }, [fetchAndProcessCustomerInfo, user]);
 
-  // Bu useEffect, refreshCustomerInfo fonksiyonu oluşturulduğunda state'i günceller.
   useEffect(() => {
     setState(s => ({...s, refreshCustomerInfo}));
   }, [refreshCustomerInfo]);

@@ -1,3 +1,5 @@
+// app/(tabs)/wardrobe/edit/[id].tsx - ScrollView import hatası düzeltildi
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,17 +21,18 @@ import StylePicker from '@/components/wardrobe/StylePicker';
 import GalleryPicker from '@/components/common/GalleryPicker';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import { 
+import {
   copyAssetToPermanentStorage,
   checkImagePermissions,
   getPermanentImagePaths,
   validatePermanentImage
 } from '@/utils/permanentImageStorage';
+import { ALL_COLORS } from '@/utils/constants';
 
 type FormData = {
   name: string;
   category: string;
-  color: string;
+  colors: string[];
   season: string[];
   style: string[];
   notes: string;
@@ -61,16 +64,23 @@ export default function EditClothingScreen() {
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<FormData>({
-    defaultValues: { name: '', category: '', color: '', season: [], style: [], notes: '' },
+    defaultValues: { name: '', category: '', colors: [], season: [], style: [], notes: '' },
   });
+
+  const watchedColors = watch('colors', []);
 
   useEffect(() => {
     if (itemToEdit) {
+      const itemColors = itemToEdit.colors && itemToEdit.colors.length > 0
+        ? itemToEdit.colors
+        : [itemToEdit.color];
+
       reset({
         name: itemToEdit.name || '',
         category: itemToEdit.category || '',
-        color: itemToEdit.color || '',
+        colors: itemColors,
         season: itemToEdit.season || [],
         style: itemToEdit.style ? itemToEdit.style.split(',') : [],
         notes: itemToEdit.notes || '',
@@ -86,7 +96,7 @@ export default function EditClothingScreen() {
 
     try {
       const { thumbnailPath, originalPath } = await getPermanentImagePaths(itemToEdit.id);
-      
+
       if (thumbnailPath && await validatePermanentImage(thumbnailPath)) {
         setCurrentImageUri(thumbnailPath);
       } else if (originalPath && await validatePermanentImage(originalPath)) {
@@ -163,6 +173,8 @@ export default function EditClothingScreen() {
         ...itemToEdit,
         ...data,
         style: data.style.join(','),
+        color: data.colors[0] || itemToEdit.color,
+        colors: data.colors,
       };
 
       if (imageChanged && processedImage) {
@@ -242,8 +254,7 @@ export default function EditClothingScreen() {
       <HeaderBar
         title={t('wardrobe.editItem')}
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-        onLeftPress={() => router.back()}
-      />
+        onLeftPress={() => router.replace('/(tabs)/wardrobe')} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -304,17 +315,48 @@ export default function EditClothingScreen() {
 
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.color')}
+                {t('wardrobe.colors')}
               </Text>
+
+              {watchedColors.length > 0 && (
+                <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
+                  <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
+                    {t('wardrobe.selectedColors', 'Selected Colors')}: {watchedColors.length}/3
+                  </Text>
+                  <View style={styles.selectedColorsPreview}>
+                    {watchedColors.map(colorName => {
+                      const colorData = ALL_COLORS.find(c => c.name === colorName);
+                      return (
+                        <View
+                          key={colorName}
+                          style={[
+                            styles.previewColorCircle,
+                            {
+                              backgroundColor: colorData?.hex || '#CCCCCC',
+                              borderColor: colorData?.name === 'white' ? theme.colors.border : 'transparent',
+                              borderWidth: colorData?.name === 'white' ? 1 : 0
+                            }
+                          ]}
+                        />
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
+
               <Controller
                 control={control}
-                name="color"
-                rules={{ required: t('wardrobe.colorRequired') as string }}
+                name="colors"
+                rules={{
+                  validate: (value) => (value && value.length > 0) || (t('wardrobe.colorRequired') as string)
+                }}
                 render={({ field: { onChange, value } }) => (
                   <ColorPicker
-                    selectedColor={value}
-                    onSelectColor={onChange}
-                    error={errors.color?.message}
+                    selectedColors={value || []}
+                    onSelectColors={onChange}
+                    multiSelect={true}
+                    maxColors={3}
+                    error={errors.colors?.message}
                   />
                 )}
               />
@@ -443,6 +485,26 @@ const styles = StyleSheet.create({
   imageButton: { flex: 1, marginHorizontal: 4 },
   formSection: { gap: 16 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },
+  selectedColorsHeader: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  selectedColorsHeaderText: {
+    fontSize: 14,
+    fontFamily: 'Montserrat-SemiBold',
+    marginBottom: 8,
+  },
+  selectedColorsPreview: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  previewColorCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
   errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },
   saveButton: { marginTop: 16 },
 });

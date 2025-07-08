@@ -1,9 +1,11 @@
+// store/userPlanStore.ts - Sadeleştirilmiş plan limitleri
+
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 export interface UserPlan {
-  plan: 'free' | 'standard' | 'premium';
+  plan: 'free' | 'premium'; // Standard kaldırıldı
   usage: {
     daily_limit: number;
     current_usage: number;
@@ -25,7 +27,7 @@ interface UserPlanState {
   // Actions
   setUserPlan: (plan: UserPlan) => void;
   updateUsage: (usage: UserPlan['usage']) => void;
-  setPlan: (plan: 'free' | 'standard' | 'premium') => void;
+  setPlan: (plan: 'free' | 'premium') => void; // Standard kaldırıldı
   clearUserPlan: () => void;
   setLoading: (loading: boolean) => void;
   
@@ -36,9 +38,9 @@ interface UserPlanState {
   getPlanLimits: () => { wardrobe: number; daily_suggestions: number };
 }
 
+// Sadeleştirilmiş plan limitleri - sadece Free ve Premium
 const PLAN_LIMITS = {
   free: { wardrobe: 30, daily_suggestions: 2 },
-  standard: { wardrobe: 100, daily_suggestions: 10 },
   premium: { wardrobe: Infinity, daily_suggestions: 50 },
 };
 
@@ -105,7 +107,7 @@ export const useUserPlanStore = create<UserPlanState>()(
       },
     }),
     {
-      name: 'user-plan-storage',
+      name: 'user-plan-storage-v2', // Version bump for simplified plans
       storage: createJSONStorage(() => AsyncStorage),
       
       // Only persist essential data, not loading states

@@ -1,4 +1,5 @@
-// hooks/useWardrobeLimit.ts (Düzeltilmiş - Auth state sync)
+// hooks/useWardrobeLimit.ts - Sadeleştirilmiş plan yapısı
+
 import { useEffect, useState } from 'react';
 import { useClothingStore } from '@/store/clothingStore';
 import { useRevenueCat } from './useRevenueCat';
@@ -11,19 +12,18 @@ interface WardrobeLimitInfo {
   isLimitReached: boolean;
   percentage: number;
   canAdd: boolean;
-  plan: 'free' | 'standard' | 'premium';
+  plan: 'free' | 'premium'; // Standard kaldırıldı
 }
 
 export const useWardrobeLimit = () => {
-  // Plan bilgisini doğrudan RevenueCat'ten alıyoruz
   const { currentPlan, isLoading: isPlanLoading } = useRevenueCat();
   const { clothing } = useClothingStore();
-  const { user } = useAuth(); // Auth state'ini izle
+  const { user } = useAuth();
   const [limitInfo, setLimitInfo] = useState<WardrobeLimitInfo | null>(null);
 
+  // Sadeleştirilmiş wardrobe limitleri
   const WARDROBE_LIMITS = {
     free: 30,
-    standard: 100,
     premium: Infinity,
   };
 
@@ -37,7 +37,6 @@ export const useWardrobeLimit = () => {
   }, [user]);
 
   useEffect(() => {
-    // User yoksa hiçbir şey yapma
     if (!user) {
       setLimitInfo(null);
       return;
@@ -69,9 +68,8 @@ export const useWardrobeLimit = () => {
         user: !!user
       });
     }
-  }, [clothing.length, currentPlan, isPlanLoading, user]); // user'ı dependency'ye ekle
+  }, [clothing.length, currentPlan, isPlanLoading, user]);
 
-  // Yükleme durumu: user yoksa loading false, user varsa normal logic
   const isLoading = !user ? false : (isPlanLoading || limitInfo === null);
 
   return { limitInfo, isLoading };

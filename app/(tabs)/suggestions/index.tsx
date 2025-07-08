@@ -146,7 +146,7 @@ export default function SuggestionsScreen() {
 
   const handleGenerateSuggestion = async () => {
     if (isLimitLoading || !limitInfo) return;
-    
+
     if (!wardrobeStatus.hasEnough || !weather) return;
 
     if (limitInfo.isLimitReached) {
@@ -157,7 +157,7 @@ export default function SuggestionsScreen() {
           limit: limitInfo.limit,
         }),
         buttons: [
-          { text: t('common.cancel'), variant: 'outline', onPress: ()=>{} },
+          { text: t('common.cancel'), variant: 'outline', onPress: () => { } },
           {
             text: t('profile.upgrade'),
             onPress: () => router.push('/profile/subscription' as any),
@@ -247,14 +247,13 @@ export default function SuggestionsScreen() {
     if (!userPlan || !userPlan.usage) {
       return (
         <View style={[styles.usageContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-            <ActivityIndicator color={theme.colors.primary} />
+          <ActivityIndicator color={theme.colors.primary} />
         </View>
       );
     }
-    
+
     const usage = userPlan.usage;
-    const usagePercentage = usage.percentage_used;
-    const isNearLimit = usagePercentage > 80;
+    const isUnlimited = userPlan.plan === 'premium';
 
     return (
       <LinearGradient
@@ -263,7 +262,7 @@ export default function SuggestionsScreen() {
       >
         <View style={styles.usageHeader}>
           <Text style={[styles.usageTitle, { color: theme.colors.text }]}>
-            {t('suggestions.dailyUsage')}
+            {isUnlimited ? t('suggestions.unlimitedAccess') : t('suggestions.dailyUsage')}
           </Text>
           {userPlan.plan !== 'premium' && (
             <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
@@ -271,12 +270,29 @@ export default function SuggestionsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <Text style={[styles.usageText, { color: theme.colors.text }]}>
-          {t('suggestions.usageLimitInfo', { used: usage.current_usage, total: usage.daily_limit })}
-        </Text>
-        <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
-          <View style={[styles.progressFill, { backgroundColor: isNearLimit ? theme.colors.warning : theme.colors.primary, width: `${Math.min(100, usagePercentage)}%` }]} />
-        </View>
+
+        {isUnlimited ? (
+          <View style={styles.unlimitedContainer}>
+            <Text style={[styles.unlimitedText, { color: theme.colors.primary }]}>
+              {t('suggestions.unlimitedSuggestionsText')}
+            </Text>
+            <View style={styles.unlimitedIndicator}>
+              <Text style={[styles.infinitySymbol, { color: theme.colors.primary }]}>∞</Text>
+            </View>
+          </View>
+        ) : (
+          <>
+            <Text style={[styles.usageText, { color: theme.colors.text }]}>
+              {t('suggestions.usageLimitInfo', { used: usage.current_usage, total: usage.daily_limit })}
+            </Text>
+            <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
+              <View style={[styles.progressFill, {
+                backgroundColor: usage.percentage_used > 80 ? theme.colors.warning : theme.colors.primary,
+                width: `${Math.min(100, usage.percentage_used)}%`
+              }]} />
+            </View>
+          </>
+        )}
       </LinearGradient>
     );
   };
@@ -286,7 +302,7 @@ export default function SuggestionsScreen() {
     if (suggestion) return null;
 
     return (
-      <View 
+      <View
         style={[styles.emptyStateContainer, { backgroundColor: theme.colors.primaryLight }]}
         onLayout={(event: LayoutChangeEvent) => {
           if (event.nativeEvent.layout.y > 0 && suggestionLayoutY === 0) {
@@ -301,11 +317,11 @@ export default function SuggestionsScreen() {
           <View style={styles.emptyStateIconContainer}>
             <Sparkles color={theme.colors.primary} size={48} />
           </View>
-          
+
           <Text style={[styles.emptyStateTitle, { color: theme.colors.text }]}>
             {t('suggestions.readyToSuggest', 'Ready for your perfect outfit?')}
           </Text>
-          
+
           <Text style={[styles.emptyStateMessage, { color: theme.colors.text }]}>
             {t('suggestions.emptyStateMessage', 'Tap the button above to get AI-powered outfit suggestions based on your wardrobe, the weather, and your chosen occasion!')}
           </Text>
@@ -376,7 +392,7 @@ export default function SuggestionsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {renderUsageInfo()}
-        
+
         <View style={styles.weatherSection}>
           {weatherLoading ? (
             <ActivityIndicator color={theme.colors.primary} />
@@ -399,10 +415,10 @@ export default function SuggestionsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        
+
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('suggestions.selectOccasion')}</Text>
         <OccasionPicker selectedOccasion={selectedOccasion} onSelectOccasion={setSelectedOccasion} />
-        
+
         <Button
           label={generating ? t('suggestions.generating') : t('suggestions.generateOutfit')}
           onPress={handleGenerateSuggestion}
@@ -411,7 +427,7 @@ export default function SuggestionsScreen() {
           style={styles.generateButton}
           disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading}
         />
-        
+
         {!!error && (
           <View style={[styles.errorContainer, { backgroundColor: theme.colors.errorLight }]}>
             <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
@@ -420,7 +436,7 @@ export default function SuggestionsScreen() {
 
         {/* İyileştirilmiş boş durum */}
         {renderEmptyState()}
-        
+
         <View onLayout={(event: LayoutChangeEvent) => {
           if (event.nativeEvent.layout.y > 0 && suggestionLayoutY === 0 && suggestion) {
             setSuggestionLayoutY(event.nativeEvent.layout.y);
@@ -470,6 +486,24 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     minHeight: 90,
   },
+  unlimitedContainer: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  unlimitedText: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  unlimitedIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  infinitySymbol: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 24,
+  },
   usageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -513,7 +547,7 @@ const styles = StyleSheet.create({
   generateButton: { marginTop: 16, marginBottom: 16 },
   errorContainer: { padding: 16, borderRadius: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
-  
+
   // İyileştirilmiş boş durum stilleri
   emptyStateContainer: {
     borderRadius: 16,
@@ -555,7 +589,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Montserrat-Medium',
   },
-  
+
   inspirationSection: { marginTop: 24, marginBottom: 16 },
   inspirationTitle: {
     fontFamily: 'Montserrat-Bold',

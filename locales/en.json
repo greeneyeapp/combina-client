@@ -148,6 +148,10 @@
   },
   "home": {
     "title": "Discover Style",
+    "styleTipsTitle": "Style Tips",
+    "styleTipsSubtitle": "Learn color & styling basics",
+    "inspirationTitle": "Style Inspiration",
+    "inspirationSubtitle": "Browse fashion trends & tips",
     "welcome": "Welcome to your personal AI stylist!",
     "subtitle": "Create amazing outfits with what you already own",
     "featuresTitle": "Explore Features",
@@ -169,7 +173,9 @@
     "premiumTipsSubtitle": "Exclusive styling advice",
     "upgradeTitle": "Ready for More?",
     "upgradeText": "Upgrade to Premium for unlimited wardrobe items, advanced AI styling, and exclusive features!",
-    "upgradeButton": "Upgrade Now"
+    "upgradeButton": "Upgrade Now",
+    "unlimitedTitle": "Unlimited Everything",
+    "unlimitedSubtitle": "No limits on your style journey"
   },
   "wardrobe": {
     "title": "My Wardrobe",
@@ -338,6 +344,7 @@
     "linkError": "Could not open link.",
     "weatherError": "Weather data unavailable. Tap to retry.",
     "selectOccasion": "What's the occasion?",
+    "usageLimitInfo": "{{used}} / {{total}} suggestions used today",
     "generateOutfit": "Generate Outfit",
     "limitExceededTitle": "Daily Limit Reached",
     "limitExceededMessage": "You have reached your daily outfit suggestion limit. Please try again tomorrow or upgrade your plan for more.",
@@ -353,8 +360,6 @@
     "likeSuccess": "Outfit saved to history!",
     "likeInfo": "You can now see it in your history tab.",
     "alreadyLiked": "This outfit is already in your history.",
-    "usageLimitInfo": "{{used}} of {{total}} suggestions used today",
-    "dailyUsage": "Daily Usage",
     "suggestedOutfit": "Suggested Outfit",
     "someItemsMissing": "Some items in this outfit are not in your wardrobe.",
     "itemNotInWardrobe": "Item not in wardrobe",
@@ -368,7 +373,10 @@
     "creatingMagic": "Creating fashion magic...",
     "gettingProfile": "Getting your profile...",
     "preparingOutfit": "Preparing your outfit...",
-    "usageCheckFailed": "Could not check usage limits"
+    "usageCheckFailed": "Could not check usage limits",
+    "unlimitedAccess": "Unlimited Access",
+    "unlimitedSuggestionsText": "Generate unlimited outfit suggestions",
+    "dailyUsage": "Daily Usage"
   },
   "storage": {
     "title": "Storage Management",
@@ -627,12 +635,11 @@
     "year": "year",
     "savePercent": "Save {{percent}}%",
     "features": {
-      "wardrobeItems": "Add up to {{count}} items to your wardrobe",
-      "unlimitedItems": "Build your collection with unlimited pieces",
-      "dailySuggestions": "{{count}} new outfit ideas, personalized for you daily",
-      "noAds": "A seamless, ad-free experience",
-      "advancedTips": "Advice to take your style to the next level",
-      "pinterestInspiration": "Inspiration from your Pinterest boards to elevate your style"
+      "unlimitedItems": "Unlimited wardrobe items",
+      "advancedTips": "Advanced styling tips",
+      "pinterestInspiration": "Pinterest inspiration",
+      "noAds": "Ad-free experience",
+      "unlimitedSuggestions": "Unlimited outfit suggestions"
     },
     "free": {
       "title": "Your Current Plan: Free",

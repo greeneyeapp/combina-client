@@ -23,14 +23,14 @@ interface UserPlanState {
   userPlan: UserPlan | null;
   loading: boolean;
   lastFetched: string | null;
-  
+
   // Actions
   setUserPlan: (plan: UserPlan) => void;
   updateUsage: (usage: UserPlan['usage']) => void;
   setPlan: (plan: 'free' | 'premium') => void; // Standard kaldırıldı
   clearUserPlan: () => void;
   setLoading: (loading: boolean) => void;
-  
+
   // Helper methods
   isLimitReached: () => boolean;
   canAddItem: () => boolean;
@@ -41,7 +41,7 @@ interface UserPlanState {
 // Sadeleştirilmiş plan limitleri - sadece Free ve Premium
 const PLAN_LIMITS = {
   free: { wardrobe: 30, daily_suggestions: 2 },
-  premium: { wardrobe: Infinity, daily_suggestions: 50 },
+  premium: { wardrobe: Infinity, daily_suggestions: Infinity }, // Unlimited!
 };
 
 export const useUserPlanStore = create<UserPlanState>()(
@@ -51,9 +51,9 @@ export const useUserPlanStore = create<UserPlanState>()(
       loading: false,
       lastFetched: null,
 
-      setUserPlan: (plan) => set({ 
-        userPlan: plan, 
-        lastFetched: new Date().toISOString() 
+      setUserPlan: (plan) => set({
+        userPlan: plan,
+        lastFetched: new Date().toISOString()
       }),
 
       updateUsage: (usage) => set((state) => ({
@@ -64,9 +64,9 @@ export const useUserPlanStore = create<UserPlanState>()(
         userPlan: state.userPlan ? { ...state.userPlan, plan } : null
       })),
 
-      clearUserPlan: () => set({ 
-        userPlan: null, 
-        lastFetched: null 
+      clearUserPlan: () => set({
+        userPlan: null,
+        lastFetched: null
       }),
 
       setLoading: (loading) => set({ loading }),
@@ -75,28 +75,28 @@ export const useUserPlanStore = create<UserPlanState>()(
       isLimitReached: () => {
         const state = get();
         if (!state.userPlan) return false;
-        
+
         const limits = PLAN_LIMITS[state.userPlan.plan];
-        return limits.wardrobe !== Infinity && 
-               state.userPlan.usage.current_usage >= limits.wardrobe;
+        return limits.wardrobe !== Infinity &&
+          state.userPlan.usage.current_usage >= limits.wardrobe;
       },
 
       canAddItem: () => {
         const state = get();
         if (!state.userPlan) return true; // Assume can add if no plan data
-        
+
         const limits = PLAN_LIMITS[state.userPlan.plan];
-        return limits.wardrobe === Infinity || 
-               state.userPlan.usage.current_usage < limits.wardrobe;
+        return limits.wardrobe === Infinity ||
+          state.userPlan.usage.current_usage < limits.wardrobe;
       },
 
       getRemainingItems: () => {
         const state = get();
         if (!state.userPlan) return 0;
-        
+
         const limits = PLAN_LIMITS[state.userPlan.plan];
         if (limits.wardrobe === Infinity) return Infinity;
-        
+
         return Math.max(0, limits.wardrobe - state.userPlan.usage.current_usage);
       },
 
@@ -109,7 +109,7 @@ export const useUserPlanStore = create<UserPlanState>()(
     {
       name: 'user-plan-storage-v2', // Version bump for simplified plans
       storage: createJSONStorage(() => AsyncStorage),
-      
+
       // Only persist essential data, not loading states
       partialize: (state) => ({
         userPlan: state.userPlan,

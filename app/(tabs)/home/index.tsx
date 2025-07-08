@@ -51,7 +51,7 @@ export default function HomeScreen() {
                 title: t('home.suggestionsTitle', 'Get Outfit Ideas'),
                 subtitle: t('home.suggestionsSubtitle', 'AI-powered style suggestions'),
                 icon: <Lightbulb size={32} color={theme.colors.white} />,
-                gradient: ['#F1C93B', '#FF8A65'], // Gradient düzeltildi
+                gradient: ['#F1C93B', '#FF8A65'],
                 onPress: () => router.push('/(tabs)/suggestions'),
             },
         ];
@@ -59,37 +59,62 @@ export default function HomeScreen() {
         if (currentPlan === 'premium') {
             // Premium kullanıcılar için özel kartlar
             baseCards.push({
-                id: 'premium-analytics',
+                id: 'style-analytics',
                 title: t('home.analyticsTitle', 'Style Analytics'),
                 subtitle: t('home.analyticsSubtitle', 'Track your style journey'),
                 icon: <TrendingUp size={32} color={theme.colors.white} />,
-                gradient: ['#6366F1', '#8B5CF6'], // Gradient düzeltildi
+                gradient: ['#6366F1', '#8B5CF6'],
                 onPress: () => router.push('/(tabs)/history'),
             });
             baseCards.push({
-                id: 'premium-tips',
-                title: t('home.premiumTipsTitle', 'Pro Style Tips'),
-                subtitle: t('home.premiumTipsSubtitle', 'Exclusive styling advice'),
+                id: 'style-inspiration',
+                title: t('home.inspirationTitle', 'Style Inspiration'),
+                subtitle: t('home.inspirationSubtitle', 'Browse fashion trends & tips'),
                 icon: <Star size={32} color={theme.colors.white} />,
-                gradient: ['#059669', '#10B981'], // Gradient düzeltildi
-                onPress: () => router.push('/(tabs)/suggestions'),
+                gradient: ['#059669', '#10B981'],
+                onPress: () => {
+                    // YENİ: Style Tips & Inspiration sayfası
+                    router.push('/style-inspiration' as any);
+                },
             });
         } else {
-            // Free kullanıcılar için upgrade kartı
+            // Free kullanıcılar için farklı yaklaşım
             baseCards.push({
-                id: 'tips',
-                title: t('home.tipsTitle', 'Pro Style Tips'),
-                subtitle: t('home.tipsSubtitle', 'Learn about color combinations'),
+                id: 'style-tips',
+                title: t('home.styleTipsTitle', 'Style Tips'),
+                subtitle: t('home.styleTipsSubtitle', 'Learn color & styling basics'),
                 icon: <Palette size={32} color={theme.colors.white} />,
-                gradient: ['#1E3D59', '#2E5984'], // Gradient düzeltildi
-                onPress: () => router.push('/(tabs)/suggestions'),
+                gradient: ['#1E3D59', '#2E5984'],
+                onPress: () => {
+                    // YENİ: Basit style tips modal/sayfası
+                    showAlert({
+                        title: t('styleTips.basicTitle', 'Basic Style Tips'),
+                        message: t('styleTips.basicMessage',
+                            'Here are some quick styling tips:\n\n' +
+                            '• Match complementary colors\n' +
+                            '• Balance proportions (loose + fitted)\n' +
+                            '• Consider the occasion\n' +
+                            '• Layer for depth\n' +
+                            '• Accessorize thoughtfully\n\n' +
+                            'Upgrade to Premium for personalized AI styling advice!'
+                        ),
+                        buttons: [
+                            { text: t('common.gotIt'), variant: 'outline' },
+                            {
+                                text: t('profile.upgradePremium'),
+                                onPress: () => router.push('/profile/subscription' as any),
+                                variant: 'primary'
+                            }
+                        ]
+                    });
+                },
             });
             baseCards.push({
                 id: 'premium',
                 title: t('home.premiumTitle', 'Upgrade Style'),
                 subtitle: t('home.premiumSubtitle', 'Unlock premium features'),
                 icon: <Crown size={32} color={theme.colors.white} />,
-                gradient: ['#F59E0B', '#FBBF24'], // Gradient düzeltildi
+                gradient: ['#F59E0B', '#FBBF24'],
                 onPress: () => router.push('/profile/subscription' as any),
             });
         }
@@ -155,7 +180,7 @@ export default function HomeScreen() {
 
     const renderWelcomeSection = () => {
         // Premium kullanıcılar için farklı mesaj
-        const welcomeMessage = currentPlan === 'premium' 
+        const welcomeMessage = currentPlan === 'premium'
             ? t('home.premiumWelcome', 'Welcome back, Premium Stylist!')
             : t('home.welcome', 'Welcome to your personal AI stylist!');
 
@@ -174,8 +199,8 @@ export default function HomeScreen() {
                         </Text>
                     </View>
                 )}
-                
-                <Text style={[styles.welcomeText, { 
+
+                <Text style={[styles.welcomeText, {
                     color: theme.colors.white,
                     textShadowColor: 'rgba(0, 0, 0, 0.3)',
                     textShadowOffset: { width: 1, height: 1 },
@@ -183,7 +208,7 @@ export default function HomeScreen() {
                 }]}>
                     {welcomeMessage}
                 </Text>
-                <Text style={[styles.subtitleText, { 
+                <Text style={[styles.subtitleText, {
                     color: 'rgba(255, 255, 255, 0.95)',
                     textShadowColor: 'rgba(0, 0, 0, 0.2)',
                     textShadowOffset: { width: 1, height: 1 },

@@ -7,6 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { Edit2, ImageOff } from 'lucide-react-native';
 import { ClothingItem as TClothingItem } from '@/store/clothingStore';
 import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { ALL_COLORS } from '@/utils/constants';
 
 interface ClothingItemProps {
   item: TClothingItem;
@@ -52,14 +53,18 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
     
     if (displayColors.length === 1) {
       // Tek renk - büyük daire
+      const colorData = ALL_COLORS.find(c => c.name === displayColors[0]);
+      const colorHex = colorData?.hex || '#CCCCCC';
+      
       return (
         <View style={styles.singleColorContainer}>
           <View 
             style={[
               styles.colorCircle, 
               { 
-                backgroundColor: displayColors[0],
-                borderColor: theme.colors.border 
+                backgroundColor: colorHex,
+                borderColor: displayColors[0] === 'white' ? theme.colors.border : 'transparent',
+                borderWidth: displayColors[0] === 'white' ? 1 : 0 
               }
             ]} 
           />
@@ -73,20 +78,26 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
       return (
         <View style={styles.multiColorContainer}>
           <View style={styles.colorCirclesRow}>
-            {displayColors.map((color, index) => (
-              <View 
-                key={color}
-                style={[
-                  styles.multiColorCircle, 
-                  { 
-                    backgroundColor: color,
-                    borderColor: theme.colors.border,
-                    marginLeft: index > 0 ? -4 : 0, // Overlapping effect
-                    zIndex: displayColors.length - index // Stack order
-                  }
-                ]} 
-              />
-            ))}
+            {displayColors.map((colorName, index) => {
+              const colorData = ALL_COLORS.find(c => c.name === colorName);
+              const colorHex = colorData?.hex || '#CCCCCC';
+              
+              return (
+                <View 
+                  key={colorName}
+                  style={[
+                    styles.multiColorCircle, 
+                    { 
+                      backgroundColor: colorHex,
+                      borderColor: colorName === 'white' ? theme.colors.border : 'transparent',
+                      borderWidth: colorName === 'white' ? 1 : 0,
+                      marginLeft: index > 0 ? -4 : 0, // Overlapping effect
+                      zIndex: displayColors.length - index // Stack order
+                    }
+                  ]} 
+                />
+              );
+            })}
             {itemColors.length > 3 && (
               <View style={[styles.moreColorsIndicator, { backgroundColor: theme.colors.textLight }]}>
                 <Text style={styles.moreColorsText}>+</Text>
@@ -247,7 +258,6 @@ const styles = StyleSheet.create({
     height: 12, 
     borderRadius: 6, 
     marginRight: 6, 
-    borderWidth: 1, 
   },
   colorText: { 
     fontSize: 11, 
@@ -265,7 +275,6 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    borderWidth: 1,
   },
   moreColorsIndicator: {
     width: 10,

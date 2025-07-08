@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/add.tsx - Merkezi renk paleti kullanımı ile güncellenmiş
+// app/(tabs)/wardrobe/add.tsx - Çoklu renk desteği ile güncellenmiş
 
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -133,8 +133,8 @@ export default function AddClothingScreen() {
         id: generateUniqueId(),
         name: data.name,
         category: data.category,
-        color: data.colors[0],
-        colors: data.colors,
+        color: data.colors[0], // Ana renk (backward compatibility)
+        colors: data.colors, // Çoklu renk desteği
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
@@ -174,7 +174,7 @@ export default function AddClothingScreen() {
             <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
               {processedImage.metadata.width} × {processedImage.metadata.height}
               {processedImage.metadata.fileSize && ` • ${Math.round(processedImage.metadata.fileSize / 1024)} KB`}
-              <Text style={{ color: theme.colors.success }}> • Kalıcı</Text>
+              <Text style={{ color: theme.colors.success }}> • Permanent</Text>
             </Text>
           </View>
         </View>
@@ -200,13 +200,18 @@ export default function AddClothingScreen() {
           </View>
           <View style={styles.formSection}>
             <Controller control={control} name="name" rules={{ required: t('wardrobe.nameRequired') as string }} render={({ field: { onChange, onBlur, value } }) => (<Input label={t('wardrobe.name')} placeholder={t('wardrobe.namePlaceholder')} onBlur={onBlur} onChangeText={onChange} value={value} error={errors.name?.message} editable={!isLoading} />)} />
+            
             <Controller control={control} name="category" rules={{ required: t('wardrobe.categoryRequired') as string }} render={({ field: { onChange, value } }) => (<CategoryPicker selectedCategory={value} onSelectCategory={onChange} error={errors.category?.message} gender={userPlan?.gender as 'female' | 'male' | undefined} />)} />
+            
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.colors')}</Text>
               {watchedColors.length > 0 && (
                 <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
                   <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
-                    {t('wardrobe.selectedColors', 'Selected Colors')}: {watchedColors.length}/3
+                    {t('wardrobe.colorSelectionInfo', { 
+                      selected: watchedColors.length, 
+                      max: 3 
+                    })}
                   </Text>
                   <View style={styles.selectedColorsPreview}>
                     {watchedColors.map(colorName => {
@@ -220,16 +225,19 @@ export default function AddClothingScreen() {
               )}
               <Controller control={control} name="colors" rules={{ validate: (value) => (value && value.length > 0) || (t('wardrobe.colorRequired') as string) }} render={({ field: { onChange, value } }) => (<ColorPicker selectedColors={value || []} onSelectColors={onChange} multiSelect={true} maxColors={3} error={errors.colors?.message} />)} />
             </View>
+            
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.season')}</Text>
               <Controller control={control} name="season" rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }} render={({ field: { onChange, value } }) => (<SeasonPicker selectedSeasons={value} onSelectSeason={onChange} />)} />
               {errors.season && (<Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>)}
             </View>
+            
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.style')}</Text>
               <Controller control={control} name="style" rules={{ validate: (value) => value.length > 0 || (t('wardrobe.styleRequired') as string) }} render={({ field: { onChange, value } }) => (<StylePicker selectedStyles={value} onSelectStyles={onChange} multiSelect={true} />)} />
               {errors.style && (<Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>)}
             </View>
+            
             <Controller control={control} name="notes" render={({ field: { onChange, onBlur, value } }) => (<Input label={t('wardrobe.notes')} placeholder={t('wardrobe.notesPlaceholder')} onBlur={onBlur} onChangeText={onChange} value={value} multiline numberOfLines={4} textAlignVertical="top" editable={!isLoading} />)} />
             <Button label={isLoading ? t('common.saving') : t('wardrobe.saveItem')} onPress={handleSubmit(onSubmit)} variant="primary" style={styles.saveButton} disabled={isLoading} loading={isLoading} />
           </View>

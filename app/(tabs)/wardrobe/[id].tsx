@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/[id].tsx - Tema ile tam uyumlu çoklu renk gösterimi
+// app/(tabs)/wardrobe/[id].tsx - Çoklu renk desteği ile güncellenmiş
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
@@ -14,12 +14,6 @@ import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
 import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
 import { ALL_COLORS } from '@/utils/constants';
-
-const findColorHex = (colorName: string) => {
-    const colorData = ALL_COLORS.find(c => c.name === colorName);
-    return colorData?.hex || '#CCCCCC';
-};
-
 
 export default function ClothingDetailScreen() {
     const { t, i18n } = useTranslation();
@@ -61,6 +55,7 @@ export default function ClothingDetailScreen() {
         return null;
     }
 
+    // Çoklu renk desteği
     const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
     const stylesArray = item.style ? item.style.split(',') : [];
 
@@ -138,7 +133,8 @@ export default function ClothingDetailScreen() {
                         <Text style={[styles.detailLabel, { color: theme.colors.textLight }]}>{t('wardrobe.color', { count: itemColors.length })}</Text>
                         <View style={styles.tagContainer}>
                             {itemColors.map((colorName) => {
-                                const hex = findColorHex(colorName);
+                                const colorData = ALL_COLORS.find(c => c.name === colorName);
+                                const hex = colorData?.hex || '#CCCCCC';
                                 return (
                                     <View key={colorName} style={[styles.colorTag, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                                         <View style={[styles.colorCircle, { backgroundColor: hex, borderColor: colorName === 'white' ? theme.colors.border : 'transparent', borderWidth: 1 }]} />

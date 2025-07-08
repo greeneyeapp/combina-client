@@ -146,7 +146,7 @@
     "history": "History",
     "profile": "Profile"
   },
-    "home": {
+  "home": {
     "title": "Discover Style",
     "welcome": "Welcome to your personal AI stylist!",
     "subtitle": "Create amazing outfits with what you already own",
@@ -154,7 +154,7 @@
     "quickActionsTitle": "Quick Actions",
     "wardrobeTitle": "Build Your Wardrobe",
     "wardrobeSubtitle": "Add your clothes to get started",
-    "suggestionsTitle": "Get Outfit Ideas", 
+    "suggestionsTitle": "Get Outfit Ideas",
     "suggestionsSubtitle": "AI-powered style suggestions",
     "tipsTitle": "Pro Style Tips",
     "tipsSubtitle": "Learn about color combinations",
@@ -163,7 +163,7 @@
     "historyTitle": "Outfit History",
     "premiumWelcome": "Welcome back, Premium Stylist!",
     "premiumSubtitle": "Enjoy unlimited styling with your Premium features",
-    "analyticsTitle": "Style Analytics", 
+    "analyticsTitle": "Style Analytics",
     "analyticsSubtitle": "Track your style journey",
     "premiumTipsTitle": "Pro Style Tips",
     "premiumTipsSubtitle": "Exclusive styling advice",
@@ -216,7 +216,6 @@
     "itemAddedSuccessfully": "Item added successfully!",
     "itemUpdatedSuccessfully": "Item updated successfully!",
     "selectCategoryPlaceholder": "Select a Category...",
-    "selectColorPlaceholder": "Select a color...",
     "errorAddingItem": "Error adding item. Please try again.",
     "selectedCount": "{{count}} selected",
     "imageOptimized": "Image optimized",
@@ -232,12 +231,13 @@
     "removedItem": "Removed Item",
     "newImage": "New Image",
     "colors": "Colors",
-    "selectColorsPlaceholder": "Select colors...",
-    "colorSelectionInfo": "{{selected}}/{{max}} colors selected",
     "colorLimitReached": "Maximum colors reached",
     "addMoreColors": "Add more",
     "selectColors": "Select Colors",
-    "selectedColors": "Selected Colors"
+    "selectColorsPlaceholder": "Select colors...",
+    "selectColorPlaceholder": "Select a color...",
+    "selectedColors": "Selected Colors",
+    "colorSelectionInfo": "Selected: {{selected}}/{{max}}"
   },
   "onboarding": {
     "step1": {

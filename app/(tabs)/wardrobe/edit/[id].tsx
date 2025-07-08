@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx - ScrollView import hatası düzeltildi
+// app/(tabs)/wardrobe/edit/[id].tsx - Çoklu renk desteği ile güncellenmiş
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -73,6 +73,7 @@ export default function EditClothingScreen() {
 
   useEffect(() => {
     if (itemToEdit) {
+      // Çoklu renk desteği - colors varsa onu kullan, yoksa color'dan oluştur
       const itemColors = itemToEdit.colors && itemToEdit.colors.length > 0
         ? itemToEdit.colors
         : [itemToEdit.color];
@@ -173,8 +174,8 @@ export default function EditClothingScreen() {
         ...itemToEdit,
         ...data,
         style: data.style.join(','),
-        color: data.colors[0] || itemToEdit.color,
-        colors: data.colors,
+        color: data.colors[0] || itemToEdit.color, // Ana renk (backward compatibility)
+        colors: data.colors, // Çoklu renk desteği
       };
 
       if (imageChanged && processedImage) {
@@ -321,7 +322,10 @@ export default function EditClothingScreen() {
               {watchedColors.length > 0 && (
                 <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
                   <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
-                    {t('wardrobe.selectedColors', 'Selected Colors')}: {watchedColors.length}/3
+                    {t('wardrobe.colorSelectionInfo', { 
+                      selected: watchedColors.length, 
+                      max: 3 
+                    })}
                   </Text>
                   <View style={styles.selectedColorsPreview}>
                     {watchedColors.map(colorName => {

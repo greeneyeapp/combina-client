@@ -1,4 +1,4 @@
-// Dosya: kodlar/components/wardrobe/FilterModal.tsx (TAM KOD)
+// components/wardrobe/FilterModal.tsx - GENDERED_CATEGORY_HIERARCHY ile güncellenmiş
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
@@ -23,7 +23,7 @@ interface FilterModalProps {
     seasons: string[];
     styles: string[];
   };
-  gender: 'female' | 'male' | undefined;
+  gender: 'female' | 'male' | 'unisex' | undefined;
 }
 
 const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, initialFilters, gender }) => {
@@ -38,7 +38,38 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
   const [expandedSection, setExpandedSection] = useState<string | null>('category');
 
   const categoryHierarchy = useMemo(() => {
-    return gender === 'male' ? GENDERED_CATEGORY_HIERARCHY.male : GENDERED_CATEGORY_HIERARCHY.female;
+    if (gender === 'male') {
+      return GENDERED_CATEGORY_HIERARCHY.male;
+    } else if (gender === 'unisex') {
+      // Unisex için her iki cinsiyetin kategorilerini birleştir
+      const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
+      const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
+      const merged: Record<string, string[]> = {};
+      
+      // Önce erkek kategorilerini ekle
+      Object.entries(maleCategories).forEach(([mainCat, subcats]) => {
+        merged[mainCat] = [...subcats];
+      });
+      
+      // Sonra kadın kategorilerini ekle (duplicate olmayan)
+      Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
+        if (merged[mainCat]) {
+          // Mevcut kategoriye yeni alt kategorileri ekle (duplicate olmayan)
+          subcats.forEach(subcat => {
+            if (!merged[mainCat].includes(subcat)) {
+              merged[mainCat].push(subcat);
+            }
+          });
+        } else {
+          // Yeni ana kategori
+          merged[mainCat] = [...subcats];
+        }
+      });
+      
+      return merged;
+    }
+    // Default olarak female kategorilerini kullan
+    return GENDERED_CATEGORY_HIERARCHY.female;
   }, [gender]);
 
   useEffect(() => {

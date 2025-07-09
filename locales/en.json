@@ -593,6 +593,7 @@
   },
   "subscription": {
     "title": "Subscription",
+    "restorePurchases": "Restore Purchases",
     "loadingPlans": "Loading subscription plans...",
     "loadError": "Failed to load subscription plans.",
     "currentPlan": "Current Plan",

@@ -1,4 +1,4 @@
-// Dosya: kodlar/components/suggestions/OccasionPicker.tsx (DÜZENLENMIŞ)
+// components/suggestions/OccasionPicker.tsx - OCCASION_HIERARCHY ile güncellenmiş
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, FlatList, SafeAreaView as ModalSafeArea } from 'react-native';
@@ -12,7 +12,6 @@ interface OccasionPickerProps {
   onSelectOccasion: (occasion: string) => void;
 }
 
-
 const OccasionPicker: React.FC<OccasionPickerProps> = ({
   selectedOccasion,
   onSelectOccasion,
@@ -21,13 +20,11 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
   const { t } = useTranslation();
 
   const [modalVisible, setModalVisible] = useState(false);
-  // Değişken adını OCCASION_HIERARCHY'ye göre güncelle
   const [currentCategory, setCurrentCategory] = useState<keyof typeof OCCASION_HIERARCHY>('casual');
 
   const getSelectedCategory = () => {
     if (!selectedOccasion) return null;
 
-    // "occasionCategories" yerine "OCCASION_HIERARCHY" kullan
     for (const category in OCCASION_HIERARCHY) {
       if (OCCASION_HIERARCHY[category as keyof typeof OCCASION_HIERARCHY].includes(selectedOccasion)) {
         return category;
@@ -65,7 +62,6 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
               </TouchableOpacity>
             </View>
             <FlatList
-              // "occasionCategories" yerine "OCCASION_HIERARCHY" kullan
               data={OCCASION_HIERARCHY[currentCategory]}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
@@ -96,7 +92,6 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {/* "occasionCategories" yerine "OCCASION_HIERARCHY" kullan */}
         {Object.keys(OCCASION_HIERARCHY).map((category) => {
           const isSelected = getSelectedCategory() === category;
           return (
@@ -129,8 +124,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   scrollContainer: {
-    paddingHorizontal: 0, // Gereksiz padding kaldırıldı
-    paddingRight: 16, // Sadece sağda biraz boşluk
+    paddingHorizontal: 0,
+    paddingRight: 16,
   },
   categoryItem: {
     paddingHorizontal: 16,
@@ -151,7 +146,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    height: '60%', // Yükseklik azaltıldı, gereksiz boşluk kaldırıldı
+    height: '60%',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingHorizontal: 16,

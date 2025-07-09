@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/add.tsx - Çoklu renk desteği ile güncellenmiş
+// app/(tabs)/wardrobe/add.tsx - Gender type güncellenmiş
 
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -201,7 +201,7 @@ export default function AddClothingScreen() {
           <View style={styles.formSection}>
             <Controller control={control} name="name" rules={{ required: t('wardrobe.nameRequired') as string }} render={({ field: { onChange, onBlur, value } }) => (<Input label={t('wardrobe.name')} placeholder={t('wardrobe.namePlaceholder')} onBlur={onBlur} onChangeText={onChange} value={value} error={errors.name?.message} editable={!isLoading} />)} />
             
-            <Controller control={control} name="category" rules={{ required: t('wardrobe.categoryRequired') as string }} render={({ field: { onChange, value } }) => (<CategoryPicker selectedCategory={value} onSelectCategory={onChange} error={errors.category?.message} gender={userPlan?.gender as 'female' | 'male' | undefined} />)} />
+            <Controller control={control} name="category" rules={{ required: t('wardrobe.categoryRequired') as string }} render={({ field: { onChange, value } }) => (<CategoryPicker selectedCategory={value} onSelectCategory={onChange} error={errors.category?.message} gender={userPlan?.gender as 'female' | 'male' | 'unisex' | undefined} />)} />
             
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.colors')}</Text>

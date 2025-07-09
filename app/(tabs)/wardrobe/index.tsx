@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/index.tsx - Çoklu renk desteği ve limit rengi güncellenmiş
+// app/(tabs)/wardrobe/index.tsx - Gender type güncellenmiş
 
 import React, { useState, useMemo, useCallback  } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
@@ -113,7 +113,40 @@ export default function WardrobeScreen() {
   const sections = useMemo<SectionData[]>(() => {
     const grouped: { [key: string]: TClothingItem[] } = {};
     const gender = storedUserPlan?.gender || 'female';
-    const hierarchy = gender === 'male' ? GENDERED_CATEGORY_HIERARCHY.male : GENDERED_CATEGORY_HIERARCHY.female;
+    
+    // Gender için doğru kategori hiyerarşisini seç
+    let hierarchy;
+    if (gender === 'male') {
+      hierarchy = GENDERED_CATEGORY_HIERARCHY.male;
+    } else if (gender === 'unisex') {
+      // Unisex için her iki cinsiyetin kategorilerini birleştir
+      const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
+      const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
+      const merged: Record<string, string[]> = {};
+      
+      // Önce erkek kategorilerini ekle
+      Object.entries(maleCategories).forEach(([mainCat, subcats]) => {
+        merged[mainCat] = [...subcats];
+      });
+      
+      // Sonra kadın kategorilerini ekle (duplicate olmayan)
+      Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
+        if (merged[mainCat]) {
+          subcats.forEach(subcat => {
+            if (!merged[mainCat].includes(subcat)) {
+              merged[mainCat].push(subcat);
+            }
+          });
+        } else {
+          merged[mainCat] = [...subcats];
+        }
+      });
+      
+      hierarchy = merged;
+    } else {
+      // Default female
+      hierarchy = GENDERED_CATEGORY_HIERARCHY.female;
+    }
 
     filteredClothing.forEach(item => {
       let mainCategory = '';
@@ -130,7 +163,7 @@ export default function WardrobeScreen() {
     });
 
     return Object.keys(grouped).map(mainCat => ({
-      title: t(`categories.${mainCat}`).toUpperCase(),
+      title: t(`categories.${mainCat}`),
       data: chunkArray(grouped[mainCat], 3),
       id: mainCat,
     }));
@@ -203,7 +236,7 @@ export default function WardrobeScreen() {
           <PlusCircle color={theme.colors.white} size={28} />
         </TouchableOpacity>
       )}
-      <FilterModal isVisible={isFilterModalVisible} onClose={() => setIsFilterModalVisible(false)} onApply={handleApplyFilters} initialFilters={activeFilters} gender={storedUserPlan?.gender as 'female' | 'male' | undefined} />
+      <FilterModal isVisible={isFilterModalVisible} onClose={() => setIsFilterModalVisible(false)} onApply={handleApplyFilters} initialFilters={activeFilters} gender={storedUserPlan?.gender as 'female' | 'male' | 'unisex' | undefined} />
     </SafeAreaView>
   );
 }

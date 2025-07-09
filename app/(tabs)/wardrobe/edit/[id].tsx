@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx - Çoklu renk desteği ile güncellenmiş
+// app/(tabs)/wardrobe/edit/[id].tsx - Gender type güncellenmiş
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -309,7 +309,7 @@ export default function EditClothingScreen() {
                   selectedCategory={value}
                   onSelectCategory={onChange}
                   error={errors.category?.message}
-                  gender={userPlan?.gender as 'female' | 'male' | undefined}
+                  gender={userPlan?.gender as 'female' | 'male' | 'unisex' | undefined}
                 />
               )}
             />

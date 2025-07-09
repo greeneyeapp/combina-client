@@ -1,4 +1,4 @@
-// Dosya: kodlar/components/wardrobe/CategoryPicker.tsx (TAM KOD)
+// components/wardrobe/CategoryPicker.tsx - GENDERED_CATEGORY_HIERARCHY ile güncellenmiş
 
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +8,7 @@ import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 interface CategoryPickerProps {
   selectedCategory: string;
   onSelectCategory: (category: string) => void;
-  gender: 'female' | 'male' | undefined; // Cinsiyet prop'u eklendi
+  gender: 'female' | 'male' | 'unisex' | undefined;
   error?: string;
 }
 
@@ -16,23 +16,49 @@ const CategoryPicker: React.FC<CategoryPickerProps> = ({ selectedCategory, onSel
   const { t } = useTranslation();
 
   // Cinsiyete göre doğru kategori hiyerarşisini seçer.
-  // Eğer 'gender' prop'u 'male' ise erkek kategorilerini, değilse (veya tanımsızsa) varsayılan olarak kadın kategorilerini kullanır.
   const categoryHierarchy = useMemo(() => {
     if (gender === 'male') {
       return GENDERED_CATEGORY_HIERARCHY.male;
+    } else if (gender === 'unisex') {
+      // Unisex için her iki cinsiyetin kategorilerini birleştir
+      const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
+      const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
+      const merged: Record<string, string[]> = {};
+      
+      // Önce erkek kategorilerini ekle
+      Object.entries(maleCategories).forEach(([mainCat, subcats]) => {
+        merged[mainCat] = [...subcats];
+      });
+      
+      // Sonra kadın kategorilerini ekle (duplicate olmayan)
+      Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
+        if (merged[mainCat]) {
+          // Mevcut kategoriye yeni alt kategorileri ekle (duplicate olmayan)
+          subcats.forEach(subcat => {
+            if (!merged[mainCat].includes(subcat)) {
+              merged[mainCat].push(subcat);
+            }
+          });
+        } else {
+          // Yeni ana kategori
+          merged[mainCat] = [...subcats];
+        }
+      });
+      
+      return merged;
     }
+    // Default olarak female kategorilerini kullan
     return GENDERED_CATEGORY_HIERARCHY.female;
   }, [gender]);
 
   // Seçilen hiyerarşiye göre açılır menü seçeneklerini oluşturur.
-  // Her ana kategoriyi bir başlık, alt kategorileri ise seçilebilir bir öğe olarak formatlar.
   const categoryOptions = useMemo(() => {
     const options: { label: string; value: string; isGroupHeader?: boolean }[] = [];
     Object.entries(categoryHierarchy).forEach(([mainCategory, subCategories]) => {
       // Ana Kategori Başlığı
       options.push({
         label: t(`categories.${mainCategory}`),
-        value: `header-${mainCategory}`, // Seçilemez olmasını sağlamak için benzersiz bir value
+        value: `header-${mainCategory}`,
         isGroupHeader: true,
       });
       // Alt Kategoriler

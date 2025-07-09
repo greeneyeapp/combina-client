@@ -97,8 +97,41 @@ export default function SuggestionsScreen() {
 
   const wardrobeStatus = useMemo(() => {
     const required: Record<string, number> = { top: 2, bottom: 2, outerwear: 2, shoes: 2 };
-    const gender = userPlan?.gender === 'male' ? 'male' : 'female';
-    const hierarchy = GENDERED_CATEGORY_HIERARCHY[gender];
+    const gender = userPlan?.gender === 'male' ? 'male' : userPlan?.gender === 'unisex' ? 'unisex' : 'female';
+
+    let hierarchy;
+    if (gender === 'male') {
+      hierarchy = GENDERED_CATEGORY_HIERARCHY.male;
+    } else if (gender === 'unisex') {
+      // Unisex için her iki cinsiyetin kategorilerini birleştir
+      const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
+      const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
+      const merged: Record<string, string[]> = {};
+
+      // Önce erkek kategorilerini ekle
+      Object.entries(maleCategories).forEach(([mainCat, subcats]) => {
+        merged[mainCat] = [...subcats];
+      });
+
+      // Sonra kadın kategorilerini ekle (duplicate olmayan)
+      Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
+        if (merged[mainCat]) {
+          subcats.forEach(subcat => {
+            if (!merged[mainCat].includes(subcat)) {
+              merged[mainCat].push(subcat);
+            }
+          });
+        } else {
+          merged[mainCat] = [...subcats];
+        }
+      });
+
+      hierarchy = merged;
+    } else {
+      // Default female
+      hierarchy = GENDERED_CATEGORY_HIERARCHY.female;
+    }
+
     const counts: Record<string, number> = {};
 
     availableClothing.forEach(item => {

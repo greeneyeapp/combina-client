@@ -99,7 +99,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
         </Text>
         {currentSelectedColors.length > 1 && (
           <Text style={[styles.plusMore, {color: theme.colors.textLight}]}>
-            + {currentSelectedColors.length - 1} more
+            + {currentSelectedColors.length - 1} {t('wardrobe.moreColors')}
           </Text>
         )}
       </View>

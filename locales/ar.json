@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "اختر الألوان...",
     "selectColorPlaceholder": "اختر لونًا...",
     "selectedColors": "الألوان المختارة",
-    "colorSelectionInfo": "المحدد: {{selected}}/{{max}}"
+    "colorSelectionInfo": "المحدد: {{selected}}/{{max}}",
+    "moreColors": "المزيد"
   },
   "onboarding": {
     "step1": {

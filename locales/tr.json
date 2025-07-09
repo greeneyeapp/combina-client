@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "Renkleri seçin...",
     "selectColorPlaceholder": "Bir renk seçin...",
     "selectedColors": "Seçilen Renkler",
-    "colorSelectionInfo": "Seçilen: {{selected}}/{{max}}"
+    "colorSelectionInfo": "Seçilen: {{selected}}/{{max}}",
+    "moreColors": "daha"
   },
   "onboarding": {
     "step1": {

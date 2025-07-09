@@ -1,4 +1,4 @@
-// store/clothingStore.ts - Çoklu renk desteği ile güncellenmiş
+// store/clothingStore.ts - Çoklu renk desteği ile güncellenmiş ve KALICI DEPOLAMA SÜRÜM AYARLARI EKLENMİŞ
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -225,7 +225,8 @@ export const useClothingStore = create<ClothingState>()(
       }
     }),
     {
-      name: 'clothing-storage-v5', // Version bump for multi-color support
+      name: 'clothing-storage-v5', // Depolama adını sabitledik.
+      version: 5, // Bu, depolama şemasının 5. versiyonu olduğunu belirtir.
       storage: createJSONStorage(() => simpleStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
@@ -237,6 +238,27 @@ export const useClothingStore = create<ClothingState>()(
             state.migrateToMultiColor();
           }, 1000);
         }
+      },
+      // Gelecekteki şema değişiklikleri için taşıma (migration) fonksiyonu
+      // Örneğin, eğer v4'ten v5'e bir taşıma yapmanız gerekseydi:
+      migrate: (persistedState, version) => {
+        // Bu kısım, 'clothing-storage-v5' adını ve 5. sürümü kullanmaya başladığınız için
+        // şu anki mevcut şemanızı temsil eder.
+        // Eğer gelecekte şemayı v6'ya güncellerseniz, buraya bir 'if (version < 5)' bloğu eklersiniz.
+        if (version < 5) {
+            console.warn('🔄 Attempting to migrate old clothing data. Current version:', version);
+            // Burada eski veri şemasını yeniye dönüştürme mantığını yazarsınız.
+            // Örnek:
+            // if (version === 4 && (persistedState as any).clothing) {
+            //   (persistedState as any).clothing = (persistedState as any).clothing.map((item: any) => {
+            //     if (!item.colors && item.color) {
+            //       return { ...item, colors: [item.color] };
+            //     }
+            //     return item;
+            //   });
+            // }
+        }
+        return persistedState; // Dönüştürülmüş state'i döndürün
       },
     }
   )

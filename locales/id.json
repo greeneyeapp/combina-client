@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "Pilih warna...",
     "selectColorPlaceholder": "Pilih warna...",
     "selectedColors": "Warna yang dipilih",
-    "colorSelectionInfo": "Dipilih: {{selected}}/{{max}}"
+    "colorSelectionInfo": "Dipilih: {{selected}}/{{max}}",
+    "moreColors": "lainnya"
   },
   "onboarding": {
     "step1": {

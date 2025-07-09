@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "Pumili ng mga kulay...",
     "selectColorPlaceholder": "Pumili ng kulay...",
     "selectedColors": "Mga Napiling Kulay",
-    "colorSelectionInfo": "Napili: {{selected}}/{{max}}"
+    "colorSelectionInfo": "Napili: {{selected}}/{{max}}",
+    "moreColors": "pa"
   },
   "onboarding": {
     "step1": {

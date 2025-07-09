@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "रंग चुनें...",
     "selectColorPlaceholder": "एक रंग चुनें...",
     "selectedColors": "चयनित रंग",
-    "colorSelectionInfo": "चयनित: {{selected}}/{{max}}"
+    "colorSelectionInfo": "चयनित: {{selected}}/{{max}}",
+    "moreColors": "और"
   },
   "onboarding": {
     "step1": {
@@ -540,7 +541,6 @@
     "year": "वर्ष",
     "saveUpTo": "{{percent}}% तक बचाएं",
     "savePercent": "{{percent}}% बचाएं",
-
     "comparedToMonthly": "मासिक योजना की तुलना में",
     "billedMonthly": "मासिक बिल किया जाता है।",
     "whatsIncluded": "क्या शामिल है?",

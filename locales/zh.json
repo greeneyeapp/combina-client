@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "选择颜色...",
     "selectColorPlaceholder": "选择一种颜色...",
     "selectedColors": "已选颜色",
-    "colorSelectionInfo": "已选：{{selected}}/{{max}}"
+    "colorSelectionInfo": "已选：{{selected}}/{{max}}",
+    "moreColors": "更多"
   },
   "onboarding": {
     "step1": {

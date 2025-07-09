@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "בחר צבעים...",
     "selectColorPlaceholder": "בחר צבע...",
     "selectedColors": "צבעים נבחרים",
-    "colorSelectionInfo": "נבחרו: {{selected}}/{{max}}"
+    "colorSelectionInfo": "נבחרו: {{selected}}/{{max}}",
+    "moreColors": "עוד"
   },
   "onboarding": {
     "step1": {

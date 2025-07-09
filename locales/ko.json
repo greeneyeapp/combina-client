@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "색상 선택...",
     "selectColorPlaceholder": "색상 선택...",
     "selectedColors": "선택된 색상",
-    "colorSelectionInfo": "선택됨: {{selected}}/{{max}}"
+    "colorSelectionInfo": "선택됨: {{selected}}/{{max}}",
+    "moreColors": "더보기"
   },
   "onboarding": {
     "step1": {

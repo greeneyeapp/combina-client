@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "Seleziona colori...",
     "selectColorPlaceholder": "Seleziona un colore...",
     "selectedColors": "Colori selezionati",
-    "colorSelectionInfo": "Selezionati: {{selected}}/{{max}}"
+    "colorSelectionInfo": "Selezionati: {{selected}}/{{max}}",
+    "moreColors": "altro"
   },
   "onboarding": {
     "step1": {

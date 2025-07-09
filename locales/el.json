@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "Επιλέξτε χρώματα...",
     "selectColorPlaceholder": "Επιλέξτε ένα χρώμα...",
     "selectedColors": "Επιλεγμένα χρώματα",
-    "colorSelectionInfo": "Επιλεγμένα: {{selected}}/{{max}}"
+    "colorSelectionInfo": "Επιλεγμένα: {{selected}}/{{max}}",
+    "moreColors": "περισσότερα"
   },
   "onboarding": {
     "step1": {

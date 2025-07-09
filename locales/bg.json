@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "Избери цветове...",
     "selectColorPlaceholder": "Избери цвят...",
     "selectedColors": "Избрани цветове",
-    "colorSelectionInfo": "Избрани: {{selected}}/{{max}}"
+    "colorSelectionInfo": "Избрани: {{selected}}/{{max}}",
+    "moreColors": "още"
   },
   "onboarding": {
     "step1": {

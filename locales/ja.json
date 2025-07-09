@@ -195,7 +195,8 @@
     "selectColorsPlaceholder": "色を選択...",
     "selectColorPlaceholder": "色を選択...",
     "selectedColors": "選択した色",
-    "colorSelectionInfo": "選択済み: {{selected}}/{{max}}"
+    "colorSelectionInfo": "選択済み: {{selected}}/{{max}}",
+    "moreColors": "もっと"
   },
   "onboarding": {
     "step1": {

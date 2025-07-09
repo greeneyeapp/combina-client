@@ -54,30 +54,12 @@ export const COLOR_SECTIONS = [
 }));
 
 export const OCCASION_HIERARCHY = {
-  casual: [
-    'errands-run', 'friends-gathering', 'weekend-brunch',
-    'coffee-date', 'shopping-trip', 'park-walk'
-  ],
-  work: [
-    'office-day', 'business-meeting', 'business-lunch',
-    'networking-event', 'university-lecture'
-  ],
-  formal: [
-    'wedding-guest', 'evening-reception', 'cocktail-party',
-    'gala-event', 'graduation-ceremony'
-  ],
-  social: [
-    'dinner-date', 'birthday-party', 'live-concert',
-    'art-gallery-visit', 'rooftop-bar', 'house-party'
-  ],
-  active: [
-    'gym-workout', 'yoga-or-pilates', 'outdoor-run',
-    'hiking-trip', 'sports-activity'
-  ],
-  special: [
-    'airport-travel', 'weekend-getaway', 'beach-vacation',
-    'music-festival', 'sightseeing-tour'
-  ],
+  casual: ['daily-errands', 'friends-gathering', 'weekend-brunch', 'coffee-date', 'shopping', 'walk'],
+  work: ['office-day', 'business-meeting', 'business-lunch', 'networking', 'university'],
+  formal: ['wedding', 'special-event', 'celebration', 'formal-dinner'],
+  social: ['dinner-date', 'birthday-party', 'concert', 'night-out', 'house-party'],
+  active: ['gym', 'yoga-pilates', 'outdoor-sports', 'hiking'],
+  special: ['travel', 'weekend-getaway', 'holiday', 'festival', 'sightseeing']
 };
 
 

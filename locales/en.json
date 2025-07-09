@@ -604,64 +604,72 @@
   },
   "subscription": {
     "title": "Subscription",
-    "notAvailable": "Subscriptions Not Available",
-    "currentPlan": "Current Plan",
-    "selectPlan": "Select Plan",
-    "iosOnly": "Subscriptions are currently only available on iOS.",
-    "loadError": "Failed to load subscription plans.",
-    "purchaseNotAvailable": "Purchase is not available on this device.",
-    "purchaseSuccessTitle": "Purchase Successful!",
-    "purchaseSuccessMessage": "Your {{plan}} plan has been activated.",
-    "purchaseFailTitle": "Purchase Failed",
-    "unexpectedError": "An unexpected error occurred. Please try again.",
-    "restorePurchases": "Restore Purchases",
-    "restoreSuccessTitle": "Purchases Restored",
-    "restoreSuccessMessage": "Your {{plan}} subscription has been successfully restored.",
-    "noRestoreTitle": "No Purchases Found",
-    "noRestoreMessage": "No active subscriptions were found to restore for your account.",
-    "restoreFailTitle": "Restore Failed",
-    "restoreFailMessage": "We were unable to restore your purchases. Please try again or contact support.",
-    "mostPopular": "Most Popular",
-    "processing": "Processing...",
-    "upgrade": "Upgrade",
-    "comingSoon": "Coming Soon!",
-    "androidComingSoon": "Subscriptions are currently available on iOS. Android support is coming soon!",
     "loadingPlans": "Loading subscription plans...",
-    "heroTitle": "Unlock Your Full Style Potential",
-    "heroSubtitle": "Expand your wardrobe, get more suggestions, and enjoy an enhanced experience.",
+    "loadError": "Failed to load subscription plans.",
+    "currentPlan": "Current Plan",
+    "processing": "Processing...",
     "monthly": "Monthly",
     "yearly": "Yearly",
     "month": "month",
     "year": "year",
+    "saveUpTo": "Save up to {{percent}}%",
+    "comparedToMonthly": "compared to monthly",
+    "billedMonthly": "Billed monthly.",
+    "whatsIncluded": "What's Included?",
+    "selectPlan": "Select Plan",
+    "startPlan": "Start {{plan}} Plan",
+    "upgradeToYearly": "Upgrade to Yearly",
+    "manageInAppStore": "Manage in App Store",
+    "premiumHeroTitle": "Unlock Your Full Potential",
+    "premiumHeroSubtitle": "Get unlimited wardrobe items, advanced AI styling, and an ad-free experience.",
+    "activeSubscription": "Active Subscription: Premium {{type}}",
+    "renewsOn": "Renews on: {{date}}",
+    "expiresOn": "Expires on: {{date}}",
+    "purchaseSuccessTitle": "Purchase Successful!",
+    "purchaseSuccessMessage": "Your Premium subscription has been successfully activated.",
+    "upgradeSuccessMessage": "Upgrade successful! You are now on the Premium Yearly plan.",
+    "purchaseFailTitle": "Purchase Failed",
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "alreadySubscribedTitle": "Already Subscribed",
+    "alreadySubscribedMessage": "You already have an active Premium subscription. You can manage it in your App Store settings.",
+    "downgradeTitle": "Downgrade Not Possible",
+    "downgradeMessage": "To switch from a yearly to a monthly plan, you need to manage your subscription directly through the App Store.",
+    "manageSubscription": "Manage Subscription",
+    "upgradeConfirmTitle": "Confirm Upgrade",
+    "upgradeConfirmMessage": "You are about to upgrade from the monthly to the yearly plan. This will affect your current billing cycle. Do you want to proceed?",
+    "confirmUpgrade": "Confirm Upgrade",
     "savePercent": "Save {{percent}}%",
-    "features": {
-      "unlimitedItems": "Unlimited wardrobe items",
-      "dailySuggestions":"Unlimited outfit suggestions",
-      "advancedTips": "Advanced styling tips",
-      "pinterestInspiration": "Pinterest inspiration",
-      "noAds": "Ad-free experience",
-      "unlimitedSuggestions": "Unlimited outfit suggestions"
-    },
+    "premium": "Premium",
     "free": {
       "title": "Your Current Plan: Free",
-      "description": "You can upgrade at any time to unlock more features.",
       "features": [
-        "Up to 30 items in your wardrobe",
-        "2 personalized outfit ideas daily",
+        "Up to 50 items in your wardrobe",
+        "3 personalized outfit ideas daily",
         "Ad-supported experience"
       ]
     },
-    "alreadySubscribedTitle": "Already Subscribed",
-    "alreadySubscribedMessage": "You already have an active Premium subscription. You can manage it through your App Store account.",
-    "switchTo": "Switch to {{period}}",
-    "premiumHeroTitle": "Unlock Premium Features",
-    "premiumHeroSubtitle": "Get unlimited wardrobe items, advanced AI styling, and exclusive features.",
-    "whyPremiumTitle": "Why Choose Premium?",
-    "whyPremiumText": "Transform your style with unlimited wardrobe space, personalized AI styling advice, and exclusive Pinterest integration for endless inspiration.",
-    "cannotDowngrade": "Cannot Downgrade",
-    "cannotDowngradeMessage": "You cannot downgrade from your current Premium subscription. You can manage your subscription through your App Store account.",
-    "manageThroughAppStore": "Manage through App Store",
-    "noPlansAvailable": "No plans available for this billing period."
+    "features": [
+      {
+        "icon": "Shirt",
+        "text": "Unlimited wardrobe items"
+      },
+      {
+        "icon": "TrendingUp",
+        "text": "Unlimited outfit suggestions"
+      },
+      {
+        "icon": "Sparkles",
+        "text": "Advanced styling tips"
+      },
+      {
+        "icon": "Heart",
+        "text": "Pinterest board inspiration"
+      },
+      {
+        "icon": "ShieldX",
+        "text": "Ad-free experience"
+      }
+    ]
   },
   "navigation": {
     "redirecting": "Redirecting..."

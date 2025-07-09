@@ -292,10 +292,6 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
             <View style={styles.accessorySection}>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <View style={styles.accessorySectionHeader}>
-                <Palette size={16} color={theme.colors.textLight} />
-                <Text style={[styles.accessoryTitle, { color: theme.colors.textLight }]}>
-                  {t('suggestions.accessories', 'Accessories')}
-                </Text>
               </View>
               <View style={styles.accessoryGrid}>
                 {accessoryItemsWithUris.map(itemWithUri => (

@@ -1,4 +1,4 @@
-// app/(tabs)/home/index.tsx - İyileştirilmiş Ana Sayfa
+// app/(tabs)/home/index.tsx - Kartlar Alt Alta Düzenlendi
 import React from 'react';
 import {
     View,
@@ -19,23 +19,19 @@ import {
     Sparkles,
     Crown,
     Plus,
-    Palette,
     History,
-    Star,
-    TrendingUp,
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 48) / 2; // 2'li grid için
 
 export default function HomeScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
     const { currentPlan, isLoading: isPlanLoading } = useRevenueCat();
 
-    // Premium kullanıcı için farklı feature cards
+    // Feature cards - alt alta gösterilecek
     const getFeatureCards = () => {
         const baseCards = [
             {
@@ -56,59 +52,18 @@ export default function HomeScreen() {
             },
         ];
 
+        // Premium kullanıcılar için 3. kart eklenir
         if (currentPlan === 'premium') {
-            // Premium kullanıcılar için özel kartlar
             baseCards.push({
-                id: 'style-analytics',
-                title: t('home.analyticsTitle', 'Style Analytics'),
-                subtitle: t('home.analyticsSubtitle', 'Track your style journey'),
-                icon: <TrendingUp size={32} color={theme.colors.white} />,
+                id: 'history-premium',
+                title: t('home.historyTitle', 'Outfit History'),
+                subtitle: t('home.historySubtitle', 'Track your style journey'),
+                icon: <History size={32} color={theme.colors.white} />,
                 gradient: ['#6366F1', '#8B5CF6'],
                 onPress: () => router.push('/(tabs)/history'),
             });
-            baseCards.push({
-                id: 'style-inspiration',
-                title: t('home.inspirationTitle', 'Style Inspiration'),
-                subtitle: t('home.inspirationSubtitle', 'Browse fashion trends & tips'),
-                icon: <Star size={32} color={theme.colors.white} />,
-                gradient: ['#059669', '#10B981'],
-                onPress: () => {
-                    // YENİ: Style Tips & Inspiration sayfası
-                    router.push('/style-inspiration' as any);
-                },
-            });
         } else {
-            // Free kullanıcılar için farklı yaklaşım
-            baseCards.push({
-                id: 'style-tips',
-                title: t('home.styleTipsTitle', 'Style Tips'),
-                subtitle: t('home.styleTipsSubtitle', 'Learn color & styling basics'),
-                icon: <Palette size={32} color={theme.colors.white} />,
-                gradient: ['#1E3D59', '#2E5984'],
-                onPress: () => {
-                    // YENİ: Basit style tips modal/sayfası
-                    showAlert({
-                        title: t('styleTips.basicTitle', 'Basic Style Tips'),
-                        message: t('styleTips.basicMessage',
-                            'Here are some quick styling tips:\n\n' +
-                            '• Match complementary colors\n' +
-                            '• Balance proportions (loose + fitted)\n' +
-                            '• Consider the occasion\n' +
-                            '• Layer for depth\n' +
-                            '• Accessorize thoughtfully\n\n' +
-                            'Upgrade to Premium for personalized AI styling advice!'
-                        ),
-                        buttons: [
-                            { text: t('common.gotIt'), variant: 'outline' },
-                            {
-                                text: t('profile.upgradePremium'),
-                                onPress: () => router.push('/profile/subscription' as any),
-                                variant: 'primary'
-                            }
-                        ]
-                    });
-                },
-            });
+            // Free kullanıcılar için Premium upgrade kartı
             baseCards.push({
                 id: 'premium',
                 title: t('home.premiumTitle', 'Upgrade Style'),
@@ -137,10 +92,10 @@ export default function HomeScreen() {
         },
     ];
 
-    const renderFeatureCard = (card: ReturnType<typeof getFeatureCards>[0]) => (
+    const renderFeatureCard = (card: ReturnType<typeof getFeatureCards>[0], index: number) => (
         <TouchableOpacity
             key={card.id}
-            style={[styles.featureCard, { width: cardWidth }]}
+            style={[styles.featureCard, { marginBottom: index === getFeatureCards().length - 1 ? 0 : 16 }]}
             onPress={card.onPress}
             activeOpacity={0.8}
         >
@@ -148,15 +103,21 @@ export default function HomeScreen() {
                 colors={card.gradient}
                 style={styles.cardGradient}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                end={{ x: 1, y: 0 }}
             >
-                <View style={styles.cardIconContainer}>
-                    {card.icon}
-                </View>
-                <Text style={styles.cardTitle}>{card.title}</Text>
-                <Text style={styles.cardSubtitle}>{card.subtitle}</Text>
-                <View style={styles.cardAction}>
-                    <Sparkles size={16} color={theme.colors.white} />
+                <View style={styles.cardContent}>
+                    <View style={styles.cardLeft}>
+                        <View style={styles.cardIconContainer}>
+                            {card.icon}
+                        </View>
+                        <View style={styles.cardTextContainer}>
+                            <Text style={styles.cardTitle}>{card.title}</Text>
+                            <Text style={styles.cardSubtitle}>{card.subtitle}</Text>
+                        </View>
+                    </View>
+                    <View style={styles.cardAction}>
+                        <Sparkles size={20} color={theme.colors.white} />
+                    </View>
                 </View>
             </LinearGradient>
         </TouchableOpacity>
@@ -179,7 +140,6 @@ export default function HomeScreen() {
     );
 
     const renderWelcomeSection = () => {
-        // Premium kullanıcılar için farklı mesaj
         const welcomeMessage = currentPlan === 'premium'
             ? t('home.premiumWelcome', 'Welcome back, Premium Stylist!')
             : t('home.welcome', 'Welcome to your personal AI stylist!');
@@ -235,7 +195,7 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            {/* Geliştirilmiş header gradient - daha iyi kontrast */}
+            {/* Header gradient */}
             <LinearGradient
                 colors={[
                     theme.colors.primary,
@@ -258,12 +218,12 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Feature Cards */}
+                {/* Feature Cards - Alt alta düzenlendi */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         {t('home.featuresTitle', 'Explore Features')}
                     </Text>
-                    <View style={styles.featuresGrid}>
+                    <View style={styles.featuresContainer}>
                         {getFeatureCards().map(renderFeatureCard)}
                     </View>
                 </View>
@@ -322,7 +282,6 @@ const styles = StyleSheet.create({
     },
     headerGradient: {
         paddingBottom: 24,
-        // Gradient'e daha fazla derinlik ekle
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
@@ -378,11 +337,9 @@ const styles = StyleSheet.create({
         fontFamily: 'PlayfairDisplay-Bold',
         marginBottom: 16,
     },
-    featuresGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        gap: 16,
+    // YENİ: Alt alta kart düzeni
+    featuresContainer: {
+        // Alt alta kart containerı
     },
     featureCard: {
         borderRadius: 20,
@@ -395,20 +352,32 @@ const styles = StyleSheet.create({
         },
         shadowOpacity: 0.2,
         shadowRadius: 8,
-        // Kartın alt kısmındaki renk sorunu için ek stil
         backgroundColor: 'transparent',
         borderWidth: 0,
+        width: '100%', // Full width
     },
     cardGradient: {
         padding: 20,
-        minHeight: 160,
-        justifyContent: 'space-between',
-        // Gradient'in tüm alanı kaplamasını sağla
-        flex: 1,
+        minHeight: 100, // Daha kompakt yükseklik
+        justifyContent: 'center',
         width: '100%',
     },
+    // YENİ: Horizontal card layout
+    cardContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    cardLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
     cardIconContainer: {
-        marginBottom: 12,
+        marginRight: 16,
+    },
+    cardTextContainer: {
+        flex: 1,
     },
     cardTitle: {
         fontSize: 16,
@@ -421,10 +390,9 @@ const styles = StyleSheet.create({
         fontFamily: 'Montserrat-Regular',
         color: 'rgba(255, 255, 255, 0.9)',
         lineHeight: 16,
-        marginBottom: 8,
     },
     cardAction: {
-        alignSelf: 'flex-end',
+        marginLeft: 12,
     },
     quickActionsContainer: {
         flexDirection: 'row',

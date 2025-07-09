@@ -5,50 +5,12 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, FlatList, 
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, X } from 'lucide-react-native';
+import { OCCASION_HIERARCHY } from '@/utils/constants';
 
 interface OccasionPickerProps {
   selectedOccasion: string;
   onSelectOccasion: (occasion: string) => void;
 }
-
-// --- YENİ, DAHA SPESİFİK VE GENİŞLETİLMİŞ KATEGORİLER ---
-const occasionCategories = {
-  // Günlük
-  casual: [
-    'errands-run', 'friends-gathering', 'weekend-brunch',
-    'coffee-date', 'shopping-trip', 'park-walk'
-  ],
-
-  // Profesyonel
-  work: [
-    'office-day', 'business-meeting', 'business-lunch',
-    'networking-event', 'university-lecture'
-  ],
-
-  // Kutlama & Davet
-  formal: [
-    'wedding-guest', 'evening-reception', 'cocktail-party',
-    'gala-event', 'graduation-ceremony'
-  ],
-
-  // Sosyal
-  social: [
-    'dinner-date', 'birthday-party', 'live-concert',
-    'art-gallery-visit', 'rooftop-bar', 'house-party'
-  ],
-
-  // Aktif
-  active: [
-    'gym-workout', 'yoga-or-pilates', 'outdoor-run',
-    'hiking-trip', 'sports-activity'
-  ],
-
-  // Seyahat & Özel
-  special: [
-    'airport-travel', 'weekend-getaway', 'beach-vacation',
-    'music-festival', 'sightseeing-tour'
-  ],
-};
 
 
 const OccasionPicker: React.FC<OccasionPickerProps> = ({
@@ -59,20 +21,22 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
   const { t } = useTranslation();
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [currentCategory, setCurrentCategory] = useState<keyof typeof occasionCategories>('casual');
+  // Değişken adını OCCASION_HIERARCHY'ye göre güncelle
+  const [currentCategory, setCurrentCategory] = useState<keyof typeof OCCASION_HIERARCHY>('casual');
 
   const getSelectedCategory = () => {
     if (!selectedOccasion) return null;
 
-    for (const category in occasionCategories) {
-      if (occasionCategories[category as keyof typeof occasionCategories].includes(selectedOccasion)) {
+    // "occasionCategories" yerine "OCCASION_HIERARCHY" kullan
+    for (const category in OCCASION_HIERARCHY) {
+      if (OCCASION_HIERARCHY[category as keyof typeof OCCASION_HIERARCHY].includes(selectedOccasion)) {
         return category;
       }
     }
     return 'casual';
   };
 
-  const handleCategoryPress = (category: keyof typeof occasionCategories) => {
+  const handleCategoryPress = (category: keyof typeof OCCASION_HIERARCHY) => {
     setCurrentCategory(category);
     setModalVisible(true);
   };
@@ -101,7 +65,8 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
               </TouchableOpacity>
             </View>
             <FlatList
-              data={occasionCategories[currentCategory]}
+              // "occasionCategories" yerine "OCCASION_HIERARCHY" kullan
+              data={OCCASION_HIERARCHY[currentCategory]}
               keyExtractor={(item) => item}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -131,7 +96,8 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}
       >
-        {Object.keys(occasionCategories).map((category) => {
+        {/* "occasionCategories" yerine "OCCASION_HIERARCHY" kullan */}
+        {Object.keys(OCCASION_HIERARCHY).map((category) => {
           const isSelected = getSelectedCategory() === category;
           return (
             <TouchableOpacity
@@ -143,7 +109,7 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
                   borderColor: isSelected ? theme.colors.primary : theme.colors.border,
                 },
               ]}
-              onPress={() => handleCategoryPress(category as keyof typeof occasionCategories)}
+              onPress={() => handleCategoryPress(category as keyof typeof OCCASION_HIERARCHY)}
             >
               <Text style={[styles.categoryText, { color: isSelected ? theme.colors.white : theme.colors.text }]}>
                 {t(`occasions.categories.${category}`)}

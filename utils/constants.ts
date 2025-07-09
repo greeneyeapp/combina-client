@@ -53,32 +53,73 @@ export const COLOR_SECTIONS = [
   data: section.data.map(colorName => ALL_COLORS.find(c => c.name === colorName)).filter(Boolean) as ColorInfo[]
 }));
 
+export const OCCASION_HIERARCHY = {
+  casual: [
+    'errands-run', 'friends-gathering', 'weekend-brunch',
+    'coffee-date', 'shopping-trip', 'park-walk'
+  ],
+  work: [
+    'office-day', 'business-meeting', 'business-lunch',
+    'networking-event', 'university-lecture'
+  ],
+  formal: [
+    'wedding-guest', 'evening-reception', 'cocktail-party',
+    'gala-event', 'graduation-ceremony'
+  ],
+  social: [
+    'dinner-date', 'birthday-party', 'live-concert',
+    'art-gallery-visit', 'rooftop-bar', 'house-party'
+  ],
+  active: [
+    'gym-workout', 'yoga-or-pilates', 'outdoor-run',
+    'hiking-trip', 'sports-activity'
+  ],
+  special: [
+    'airport-travel', 'weekend-getaway', 'beach-vacation',
+    'music-festival', 'sightseeing-tour'
+  ],
+};
+
 
 export const GENDERED_CATEGORY_HIERARCHY = {
-  // --- KADIN KATEGORİLERİ ---
+  // --- KADIN KATEGORİLERİ --- (Değişiklik yok)
   female: {
     'top': ['t-shirt', 'blouse', 'shirt', 'bodysuit', 'crop-top', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck'],
     'bottom': ['jeans', 'trousers', 'leggings', 'joggers', 'skirt', 'shorts', 'culottes'],
     'sets': ['dress', 'jumpsuit', 'romper', 'co-ord-set', 'tracksuit'],
     'outerwear': ['coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'leather-jacket', 'blazer', 'vest'],
     'modest-wear': ['tunic', 'long-cardigan', 'abaya', 'hijab-shawl', 'long-skirt', 'wide-leg-trousers'],
-    'beachwear': ['swimsuit', 'bikini', 'beach-dress', 'kaftan'],
     'shoes': ['sneakers', 'heels', 'boots', 'sandals', 'flats', 'loafers', 'wedges'],
     'bags': ['handbag', 'crossbody-bag', 'backpack', 'clutch', 'tote-bag', 'fanny-pack'],
     'accessories': ['jewelry', 'scarf', 'sunglasses', 'belt', 'hat', 'beanie', 'watch']
   },
-  // --- ERKEK KATEGORİLERİ ---
+  // --- ERKEK KATEGORİLERİ --- (Değişiklik yok)
   male: {
     'top': ['t-shirt', 'shirt', 'polo-shirt', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck', 'henley-shirt'],
     'bottom': ['jeans', 'trousers', 'chino-trousers', 'joggers', 'cargo-pants', 'shorts'],
     'outerwear': ['coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'leather-jacket', 'blazer', 'vest', 'gilet'],
     'suits': ['suit-jacket', 'suit-trousers', 'waistcoat'],
-    'beachwear': ['swim-shorts'],
     'shoes': ['sneakers', 'boots', 'sandals', 'loafers', 'classic-shoes', 'boat-shoes'],
     'bags': ['backpack', 'messenger-bag', 'briefcase', 'fanny-pack'],
-    'accessories': ['sunglasses', 'belt', 'hat', 'beanie', 'watch', 'tie', 'cufflinks']
+    'accessories': ['sunglasses', 'belt', 'hat', 'beanie', 'watch', 'tie']
   }
 };
+
+// Hangi ürünlerin UNISEX olarak kabul edileceğini belirten anahtar listesi.
+export const UNISEX_ITEMS: string[] = [
+  // Üst Giyim
+  't-shirt', 'shirt', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck',
+  // Alt Giyim
+  'jeans', 'trousers', 'joggers', 'shorts',
+  // Dış Giyim
+  'coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'vest', 'gilet',
+  // Ayakkabılar
+  'sneakers', 'boots', 'sandals',
+  // Çantalar
+  'backpack', 'fanny-pack', 'tote-bag',
+  // Aksesuarlar
+  'sunglasses', 'belt', 'hat', 'beanie', 'watch', 'scarf'
+];
 
 export const ALL_SEASONS = ['spring', 'summer', 'fall', 'winter'];
 export const ALL_STYLES = ['casual', 'formal', 'business', 'sportswear', 'party', 'beachwear'];

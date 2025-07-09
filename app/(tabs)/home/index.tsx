@@ -7,6 +7,7 @@ import {
     ScrollView,
     TouchableOpacity,
     Dimensions,
+    ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -185,9 +186,7 @@ export default function HomeScreen() {
             <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
                 <HeaderBar title={t('home.title', 'Discover Style')} />
                 <View style={styles.loadingContainer}>
-                    <Text style={[styles.loadingText, { color: theme.colors.textLight }]}>
-                        {t('common.loading')}
-                    </Text>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
                 </View>
             </SafeAreaView>
         );

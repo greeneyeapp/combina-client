@@ -174,7 +174,6 @@ export default function AddClothingScreen() {
             <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
               {processedImage.metadata.width} × {processedImage.metadata.height}
               {processedImage.metadata.fileSize && ` • ${Math.round(processedImage.metadata.fileSize / 1024)} KB`}
-              <Text style={{ color: theme.colors.success }}> • Permanent</Text>
             </Text>
           </View>
         </View>

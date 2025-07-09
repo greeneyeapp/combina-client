@@ -376,7 +376,12 @@
     "usageCheckFailed": "Could not check usage limits",
     "unlimitedAccess": "Unlimited Access",
     "unlimitedSuggestionsText": "Generate unlimited outfit suggestions",
-    "dailyUsage": "Daily Usage"
+    "dailyUsage": "Daily Usage",
+    "checklist": {
+      "title": "Complete Your Wardrobe",
+      "subtitle": "You just need a few more key pieces for great outfit suggestions.",
+      "progress": "{{current}} / {{total}} added"
+    }
   },
   "storage": {
     "title": "Storage Management",

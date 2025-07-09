@@ -1,5 +1,3 @@
-// app/(tabs)/suggestions/index.tsx - İyileştirilmiş boş durum ve okunabilirlik
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
@@ -22,11 +20,11 @@ import { useUserPlanStore } from '@/store/userPlanStore';
 import { Cloud, Sun, RefreshCw, ExternalLink, Sparkles, Lightbulb, Heart } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import HeaderBar from '@/components/common/HeaderBar';
-import EmptyState from '@/components/common/EmptyState';
 import Button from '@/components/common/Button';
 import OccasionPicker from '@/components/suggestions/OccasionPicker';
 import OutfitSuggestion from '@/components/suggestions/OutfitSuggestion';
 import OutfitLoadingAnimation from '@/components/suggestions/OutfitLoadingAnimation';
+import WardrobeChecklist from '@/components/common/WardrobeChecklist'; // YENİ BİLEŞEN
 import { getWeatherCondition } from '@/utils/weatherUtils';
 import { router } from 'expo-router';
 import { getOutfitSuggestion, OutfitSuggestionResponse } from '@/services/aiService';
@@ -55,7 +53,7 @@ export default function SuggestionsScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const [suggestion, setSuggestion] = useState<OutfitSuggestionResponse | null>(null);
   const [suggestionLayoutY, setSuggestionLayoutY] = useState<number>(0);
-  const [selectedOccasion, setSelectedOccasion] = useState('errands-run');
+  const [selectedOccasion, setSelectedOccasion] = useState('daily-errands');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pinterestLinks, setPinterestLinks] = useState<PinterestLink[]>([]);
@@ -97,47 +95,18 @@ export default function SuggestionsScreen() {
 
   const wardrobeStatus = useMemo(() => {
     const required: Record<string, number> = { top: 2, bottom: 2, outerwear: 2, shoes: 2 };
-    const gender = userPlan?.gender === 'male' ? 'male' : userPlan?.gender === 'unisex' ? 'unisex' : 'female';
-
-    let hierarchy;
-    if (gender === 'male') {
-      hierarchy = GENDERED_CATEGORY_HIERARCHY.male;
-    } else if (gender === 'unisex') {
-      // Unisex için her iki cinsiyetin kategorilerini birleştir
-      const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
-      const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
-      const merged: Record<string, string[]> = {};
-
-      // Önce erkek kategorilerini ekle
-      Object.entries(maleCategories).forEach(([mainCat, subcats]) => {
-        merged[mainCat] = [...subcats];
-      });
-
-      // Sonra kadın kategorilerini ekle (duplicate olmayan)
-      Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
-        if (merged[mainCat]) {
-          subcats.forEach(subcat => {
-            if (!merged[mainCat].includes(subcat)) {
-              merged[mainCat].push(subcat);
-            }
-          });
-        } else {
-          merged[mainCat] = [...subcats];
-        }
-      });
-
-      hierarchy = merged;
-    } else {
-      // Default female
-      hierarchy = GENDERED_CATEGORY_HIERARCHY.female;
-    }
+    const gender = userPlan?.gender || 'female';
+    const hierarchy = gender === 'male' ? GENDERED_CATEGORY_HIERARCHY.male : GENDERED_CATEGORY_HIERARCHY.female;
 
     const counts: Record<string, number> = {};
+    Object.keys(required).forEach(key => counts[key] = 0);
 
     availableClothing.forEach(item => {
       for (const [mainCat, subcats] of Object.entries(hierarchy)) {
         if ((subcats as string[]).includes(item.category)) {
-          counts[mainCat] = (counts[mainCat] || 0) + 1;
+          if (counts[mainCat] !== undefined) {
+             counts[mainCat]++;
+          }
           break;
         }
       }
@@ -150,7 +119,7 @@ export default function SuggestionsScreen() {
         needed: minCount - (counts[mainCat] || 0),
       }));
 
-    return { hasEnough: missing.length === 0, missing };
+    return { hasEnough: missing.length === 0, missing, counts };
   }, [availableClothing, t, userPlan?.gender]);
 
   const handleLike = () => {
@@ -330,7 +299,6 @@ export default function SuggestionsScreen() {
     );
   };
 
-  // İYİLEŞTİRİLMİŞ BOŞ DURUM - henüz suggestion yokken
   const renderEmptyState = () => {
     if (suggestion) return null;
 
@@ -388,27 +356,13 @@ export default function SuggestionsScreen() {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <HeaderBar title={t('suggestions.title')} />
-        <View style={styles.centered}>
-          <EmptyState
-            icon="shirt"
-            title={t('suggestions.notEnoughItemsTitle')}
-            message={t('suggestions.notEnoughItemsMessage')}
-            buttonText={t('suggestions.addMoreItems')}
-            onButtonPress={() => {
-              try { router.push('/wardrobe/add' as any); }
-              catch (error) { console.error('Router navigation error:', error); }
-            }}
-          >
-            <View style={[styles.missingItemsContainer, { borderColor: theme.colors.border }]}>
-              <Text style={[styles.missingItemsTitle, { color: theme.colors.textLight }]}>{t('suggestions.youNeed')}</Text>
-              {wardrobeStatus.missing.map(item => (
-                <Text key={item.category} style={[styles.missingItemText, { color: theme.colors.text }]}>
-                  • {t('suggestions.moreItems', { count: item.needed, category: item.category })}
-                </Text>
-              ))}
-            </View>
-          </EmptyState>
-        </View>
+        <WardrobeChecklist
+          counts={wardrobeStatus.counts}
+          onButtonPress={() => {
+            try { router.push('/wardrobe/add' as any); }
+            catch (error) { console.error('Router navigation error:', error); }
+          }}
+        />
       </SafeAreaView>
     );
   }
@@ -467,7 +421,6 @@ export default function SuggestionsScreen() {
           </View>
         )}
 
-        {/* İyileştirilmiş boş durum */}
         {renderEmptyState()}
 
         <View onLayout={(event: LayoutChangeEvent) => {
@@ -580,8 +533,6 @@ const styles = StyleSheet.create({
   generateButton: { marginTop: 16, marginBottom: 16 },
   errorContainer: { padding: 16, borderRadius: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
-
-  // İyileştirilmiş boş durum stilleri
   emptyStateContainer: {
     borderRadius: 16,
     marginTop: 24,
@@ -622,7 +573,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Montserrat-Medium',
   },
-
   inspirationSection: { marginTop: 24, marginBottom: 16 },
   inspirationTitle: {
     fontFamily: 'Montserrat-Bold',

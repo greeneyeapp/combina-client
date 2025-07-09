@@ -636,6 +636,7 @@
     "savePercent": "Save {{percent}}%",
     "features": {
       "unlimitedItems": "Unlimited wardrobe items",
+      "dailySuggestions":"Unlimited outfit suggestions",
       "advancedTips": "Advanced styling tips",
       "pinterestInspiration": "Pinterest inspiration",
       "noAds": "Ad-free experience",

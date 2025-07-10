@@ -1,9 +1,9 @@
-// store/clothingStore.ts - Çoklu renk desteği ile güncellenmiş ve KALICI DEPOLAMA SÜRÜM AYARLARI EKLENMİŞ
+// store/clothingStore.ts - UUID değişimi migration'ı eklendi
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { simpleStorage } from '@/store/simpleStorage';
-import { validatePermanentImage, migrateLegacyImages } from '@/utils/permanentImageStorage';
+import { validatePermanentImage, migrateLegacyImages, migrateRegistryToRelativePaths } from '@/utils/permanentImageStorage';
 
 export type ClothingItem = {
   id: string;
@@ -36,6 +36,7 @@ interface ClothingState {
   isValidated: boolean;
   isValidating: boolean;
   isMigrated: boolean;
+  isRegistryMigrated: boolean; // 🔧 NEW: Registry migration flag
   
   setClothing: (newClothing: ClothingItem[]) => void;
   addClothing: (item: ClothingItem) => void;
@@ -47,6 +48,10 @@ interface ClothingState {
   setValidating: (validating: boolean) => void;
   migrateToPermanentStorage: () => Promise<{ migratedCount: number }>;
   setMigrated: (migrated: boolean) => void;
+  
+  // 🔧 NEW: Registry migration için
+  migrateRegistryPaths: () => Promise<{ migratedCount: number }>;
+  setRegistryMigrated: (migrated: boolean) => void;
   
   // YENİ: Çoklu renk migration fonksiyonu
   migrateToMultiColor: () => Promise<{ migratedCount: number }>;
@@ -73,6 +78,7 @@ export const useClothingStore = create<ClothingState>()(
       isValidated: false,
       isValidating: false,
       isMigrated: false,
+      isRegistryMigrated: false, // 🔧 NEW
       
       setClothing: (newClothing) => set({ clothing: newClothing }),
       
@@ -112,12 +118,36 @@ export const useClothingStore = create<ClothingState>()(
       clearAllClothing: () => set({ 
         clothing: [],
         isValidated: false,
-        isMigrated: false
+        isMigrated: false,
+        isRegistryMigrated: false
       }),
       
       setValidated: (validated) => set({ isValidated: validated }),
       setValidating: (validating) => set({ isValidating: validating }),
       setMigrated: (migrated) => set({ isMigrated: migrated }),
+      setRegistryMigrated: (migrated) => set({ isRegistryMigrated: migrated }), // 🔧 NEW
+      
+      // 🔧 NEW: Registry migration fonksiyonu
+      migrateRegistryPaths: async () => {
+        const { isRegistryMigrated } = get();
+        
+        if (isRegistryMigrated) {
+          console.log('✅ Registry migration already completed');
+          return { migratedCount: 0 };
+        }
+        
+        console.log('🔄 Starting registry paths migration...');
+        
+        try {
+          const result = await migrateRegistryToRelativePaths();
+          set({ isRegistryMigrated: true });
+          console.log(`✅ Registry migration completed: ${result.migratedCount} entries migrated`);
+          return result;
+        } catch (error) {
+          console.error('❌ Registry migration failed:', error);
+          return { migratedCount: 0 };
+        }
+      },
       
       migrateToPermanentStorage: async () => {
         const { isMigrated } = get();
@@ -225,40 +255,40 @@ export const useClothingStore = create<ClothingState>()(
       }
     }),
     {
-      name: 'clothing-storage-v5', // Depolama adını sabitledik.
-      version: 5, // Bu, depolama şemasının 5. versiyonu olduğunu belirtir.
+      name: 'clothing-storage-v6', // 🔧 Version bump for UUID migration
+      version: 6, // Bu, depolama şemasının 6. versiyonu
       storage: createJSONStorage(() => simpleStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.isValidated = false;
           state.isValidating = false;
           
-          // Auto-migrate to multi-color on load
+          // 🔧 NEW: Registry migration'ı da sıfırla (her başlangıçta kontrol edilsin)
+          // Bu sayede UUID değişimi durumunda migration otomatik çalışır
+          if (state.isRegistryMigrated) {
+            // Geliştirme aşamasında her zaman migration kontrol etsin
+            state.isRegistryMigrated = false;
+          }
+          
+          // Registry migration'ı önce çalıştır
+          setTimeout(() => {
+            state.migrateRegistryPaths();
+          }, 500);
+          
+          // Multi-color migration'ı sonra çalıştır
           setTimeout(() => {
             state.migrateToMultiColor();
           }, 1000);
         }
       },
-      // Gelecekteki şema değişiklikleri için taşıma (migration) fonksiyonu
-      // Örneğin, eğer v4'ten v5'e bir taşıma yapmanız gerekseydi:
+      // Gelecekteki şema değişiklikleri için migration fonksiyonu
       migrate: (persistedState, version) => {
-        // Bu kısım, 'clothing-storage-v5' adını ve 5. sürümü kullanmaya başladığınız için
-        // şu anki mevcut şemanızı temsil eder.
-        // Eğer gelecekte şemayı v6'ya güncellerseniz, buraya bir 'if (version < 5)' bloğu eklersiniz.
-        if (version < 5) {
-            console.warn('🔄 Attempting to migrate old clothing data. Current version:', version);
-            // Burada eski veri şemasını yeniye dönüştürme mantığını yazarsınız.
-            // Örnek:
-            // if (version === 4 && (persistedState as any).clothing) {
-            //   (persistedState as any).clothing = (persistedState as any).clothing.map((item: any) => {
-            //     if (!item.colors && item.color) {
-            //       return { ...item, colors: [item.color] };
-            //     }
-            //     return item;
-            //   });
-            // }
+        if (version < 6) {
+          console.warn('🔄 Migrating clothing storage from version', version, 'to version 6');
+          // v6'ya migration: registry migration flag eklendi
+          (persistedState as any).isRegistryMigrated = false;
         }
-        return persistedState; // Dönüştürülmüş state'i döndürün
+        return persistedState;
       },
     }
   )

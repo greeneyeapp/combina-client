@@ -1,4 +1,4 @@
-import { ensurePermanentDirectories, migrateLegacyImages } from '@/utils/permanentImageStorage';
+import { ensurePermanentDirectories, migrateLegacyImages, migrateRegistryToRelativePaths } from '@/utils/permanentImageStorage';
 import { useClothingStore } from '@/store/clothingStore';
 
 export const initializeApp = async () => {
@@ -9,7 +9,20 @@ export const initializeApp = async () => {
     await ensurePermanentDirectories();
     console.log('✅ Permanent directories initialized');
 
-    // 2. Legacy migration (async)
+    // 🔧 FIX: 2. UUID değişimi için registry migration (ÖNCE YAPILMALI)
+    setTimeout(async () => {
+      try {
+        console.log('🔄 Starting registry migration to relative paths...');
+        const registryResult = await migrateRegistryToRelativePaths();
+        if (registryResult.migratedCount > 0) {
+          console.log(`✅ Registry migration completed: ${registryResult.migratedCount} entries migrated`);
+        }
+      } catch (error) {
+        console.error('❌ Registry migration failed:', error);
+      }
+    }, 500);
+
+    // 3. Legacy migration (async)
     setTimeout(async () => {
       try {
         const { migrateToPermanentStorage } = useClothingStore.getState();
@@ -20,7 +33,7 @@ export const initializeApp = async () => {
       }
     }, 1000);
 
-    // 3. Görsel validation (async)
+    // 4. Görsel validation (async) - Registry migration'dan sonra
     setTimeout(async () => {
       try {
         const { validateClothingImages } = useClothingStore.getState();
@@ -33,7 +46,7 @@ export const initializeApp = async () => {
       }
     }, 2000);
 
-    console.log('✅ App initialization completed with permanent storage');
+    console.log('✅ App initialization completed with UUID-resistant storage');
   } catch (error) {
     console.error('❌ App initialization failed:', error);
   }

@@ -121,6 +121,72 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
   }
 };
 
+// Restore purchases function
+export const restorePurchases = async (): Promise<PurchaseResult> => {
+  try {
+    console.log('🔄 Restoring purchases...');
+    
+    // Restore purchases through RevenueCat
+    const customerInfo = await Purchases.restorePurchases();
+    const planInfo = mapEntitlementsToDetailedPlan(customerInfo.entitlements.active);
+    
+    // Sync with backend
+    await syncPurchaseWithBackend(customerInfo, planInfo.plan);
+    
+    console.log(`✅ Purchases restored: Plan is ${planInfo.plan}`);
+    
+    return {
+      success: true,
+      customerInfo,
+      newPlan: planInfo.plan,
+      planType: planInfo.type,
+    };
+  } catch (error: any) {
+    console.error('❌ Restore purchases failed:', error);
+    
+    return {
+      success: false,
+      error: error.message || 'Failed to restore purchases',
+    };
+  }
+};
+
+// Get current customer info
+export const getCurrentCustomerInfo = async (): Promise<{
+  plan: 'free' | 'premium';
+  type: 'monthly' | 'yearly' | null;
+  hasActiveSubscription: boolean;
+}> => {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    const planInfo = mapEntitlementsToDetailedPlan(customerInfo.entitlements.active);
+    
+    return {
+      plan: planInfo.plan,
+      type: planInfo.type,
+      hasActiveSubscription: planInfo.plan === 'premium',
+    };
+  } catch (error) {
+    console.error('Error getting customer info:', error);
+    return {
+      plan: 'free',
+      type: null,
+      hasActiveSubscription: false,
+    };
+  }
+};
+
+// Check if user has active entitlements
+export const checkEntitlements = async (): Promise<boolean> => {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    return customerInfo.entitlements.active.premium_access?.isActive || false;
+  } catch (error) {
+    console.error('Error checking entitlements:', error);
+    return false;
+  }
+};
+
 // Check subscription transition possibility
 export const canTransitionToPlan = async (targetPackage: PurchasesPackage): Promise<{
   canTransition: boolean;
@@ -262,7 +328,7 @@ const syncPurchaseWithBackend = async (customerInfo: CustomerInfo, newPlan: 'fre
   }
 };
 
-// Send purchase verification to backend (existing function)
+// Send purchase verification to backend
 const verifyPurchaseWithBackend = async (customerInfo: CustomerInfo) => {
   try {
     const token = useApiAuthStore.getState().jwt;

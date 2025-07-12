@@ -1,9 +1,15 @@
-// store/clothingStore.ts - UUID değişimi migration'ı eklendi
+// store/clothingStore.ts - UUID değişimi migration'ı eklendi + RELATIVE PATH
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { simpleStorage } from '@/store/simpleStorage';
-import { validatePermanentImage, migrateLegacyImages, migrateRegistryToRelativePaths } from '@/utils/permanentImageStorage';
+import { 
+  validatePermanentImage, 
+  migrateLegacyImages, 
+  migrateRegistryToRelativePaths, 
+  getAbsolutePathFromRelative,
+  getRelativePathFromAbsolute
+} from '@/utils/permanentImageStorage';
 import * as FileSystem from 'expo-file-system';
 
 export type ClothingItem = {
@@ -16,9 +22,9 @@ export type ClothingItem = {
   style: string;
   notes: string;
 
-  // Kalıcı dosya yolları
-  originalImageUri?: string;
-  thumbnailImageUri?: string;
+  // ✅ FIX: Kalıcı dosya yolları - ARTIK RELATIVE PATH
+  originalImageUri?: string;   // ✅ Relative path: "permanent_images/item_original.jpg"
+  thumbnailImageUri?: string;  // ✅ Relative path: "permanent_thumbnails/item_thumb.jpg"
 
   createdAt: string;
 
@@ -37,7 +43,7 @@ interface ClothingState {
   isValidated: boolean;
   isValidating: boolean;
   isMigrated: boolean;
-  isRegistryMigrated: boolean; // 🔧 NEW: Registry migration flag
+  isRegistryMigrated: boolean;
 
   setClothing: (newClothing: ClothingItem[]) => void;
   addClothing: (item: ClothingItem) => void;
@@ -50,23 +56,34 @@ interface ClothingState {
   migrateToPermanentStorage: () => Promise<{ migratedCount: number }>;
   setMigrated: (migrated: boolean) => void;
 
-  // 🔧 NEW: Registry migration için
+  // Registry migration için
   migrateRegistryPaths: () => Promise<{ migratedCount: number }>;
   setRegistryMigrated: (migrated: boolean) => void;
 
   // YENİ: Çoklu renk migration fonksiyonu
   migrateToMultiColor: () => Promise<{ migratedCount: number }>;
-}
+  
+  // ✅ NEW: Absolute/Relative path migration
+  migrateToRelativePaths: () => Promise<{ migratedCount: number }>;
+};
 
+// ✅ FIX: Image existence checker - relative path desteği
 const checkImageExists = async (item: ClothingItem): Promise<boolean> => {
   if (item.isImageMissing) return false;
 
-  if (item.originalImageUri && await validatePermanentImage(item.originalImageUri)) {
-    return true;
+  // ✅ Relative path'leri absolute'e çevir
+  if (item.originalImageUri) {
+    const absolutePath = getAbsolutePathFromRelative(item.originalImageUri);
+    if (await validatePermanentImage(absolutePath)) {
+      return true;
+    }
   }
 
-  if (item.thumbnailImageUri && await validatePermanentImage(item.thumbnailImageUri)) {
-    return true;
+  if (item.thumbnailImageUri) {
+    const absolutePath = getAbsolutePathFromRelative(item.thumbnailImageUri);
+    if (await validatePermanentImage(absolutePath)) {
+      return true;
+    }
   }
 
   return false;
@@ -79,35 +96,29 @@ export const useClothingStore = create<ClothingState>()(
       isValidated: false,
       isValidating: false,
       isMigrated: false,
-      isRegistryMigrated: false, // 🔧 NEW
+      isRegistryMigrated: false,
 
       setClothing: (newClothing) => set({ clothing: newClothing }),
 
+      // ✅ FIX: addClothing - relative path olarak kaydet
       addClothing: async (item) => {
         try {
-          let newImageUri = item.originalImageUri;
+          // ✅ Gelen path'i relative'e çevir (eğer absolute ise)
+          let newOriginalImageUri = item.originalImageUri;
+          let newThumbnailImageUri = item.thumbnailImageUri;
 
-          const shouldCopy =
-            newImageUri &&
-            newImageUri.startsWith('file://') &&
-            !newImageUri.includes('permanent_images');
+          if (newOriginalImageUri) {
+            newOriginalImageUri = getRelativePathFromAbsolute(newOriginalImageUri);
+          }
 
-          if (shouldCopy) {
-            const extension = newImageUri.split('.').pop() || 'jpg';
-            const newFileName = `${item.id}_original.${extension}`;
-            const newPath = `${FileSystem.documentDirectory}permanent_images/${newFileName}`;
-
-            await FileSystem.copyAsync({
-              from: newImageUri,
-              to: newPath,
-            });
-
-            newImageUri = newPath;
+          if (newThumbnailImageUri) {
+            newThumbnailImageUri = getRelativePathFromAbsolute(newThumbnailImageUri);
           }
 
           const processedItem = {
             ...item,
-            originalImageUri: newImageUri,
+            originalImageUri: newOriginalImageUri,
+            thumbnailImageUri: newThumbnailImageUri,
             colors: item.colors || [item.color],
             isImageMissing: false,
           };
@@ -115,6 +126,13 @@ export const useClothingStore = create<ClothingState>()(
           set((state) => ({
             clothing: [...state.clothing, processedItem],
           }));
+
+          console.log('✅ Added clothing item with relative paths:', {
+            id: item.id,
+            originalImageUri: newOriginalImageUri,
+            thumbnailImageUri: newThumbnailImageUri
+          });
+
         } catch (error) {
           console.error('❌ Failed to store clothing item with image:', error);
         }
@@ -125,13 +143,16 @@ export const useClothingStore = create<ClothingState>()(
         const item = clothing.find((c) => c.id === id);
 
         if (item) {
-          const urisToDelete = [item.originalImageUri, item.thumbnailImageUri].filter(Boolean);
+          // ✅ Relative path'leri absolute'e çevir ve sil
+          const urisToDelete = [item.originalImageUri, item.thumbnailImageUri]
+            .filter(Boolean)
+            .map(uri => getAbsolutePathFromRelative(uri!));
 
           for (const uri of urisToDelete) {
             try {
-              const fileInfo = await FileSystem.getInfoAsync(uri!);
+              const fileInfo = await FileSystem.getInfoAsync(uri);
               if (fileInfo.exists) {
-                await FileSystem.deleteAsync(uri!, { idempotent: true });
+                await FileSystem.deleteAsync(uri, { idempotent: true });
                 console.log(`🗑️ Deleted image file: ${uri}`);
               }
             } catch (error) {
@@ -145,40 +166,33 @@ export const useClothingStore = create<ClothingState>()(
         }));
       },
 
-
+      // ✅ FIX: updateClothing - relative path olarak kaydet
       updateClothing: async (id, updatedItem) => {
         try {
           const state = get();
           const currentItem = state.clothing.find((item) => item.id === id);
           if (!currentItem) return;
 
-          let newImageUri = updatedItem.originalImageUri || currentItem.originalImageUri;
+          // ✅ Path'leri relative'e çevir
+          let newOriginalImageUri = updatedItem.originalImageUri || currentItem.originalImageUri;
+          let newThumbnailImageUri = updatedItem.thumbnailImageUri || currentItem.thumbnailImageUri;
 
-          const shouldCopy =
-            newImageUri &&
-            newImageUri.startsWith('file://') &&
-            !newImageUri.includes('permanent_images');
+          if (newOriginalImageUri) {
+            newOriginalImageUri = getRelativePathFromAbsolute(newOriginalImageUri);
+          }
 
-          if (shouldCopy) {
-            const extension = newImageUri.split('.').pop() || 'jpg';
-            const newFileName = `${id}_original.${extension}`;
-            const newPath = `${FileSystem.documentDirectory}permanent_images/${newFileName}`;
-
-            await FileSystem.copyAsync({
-              from: newImageUri,
-              to: newPath,
-            });
-
-            newImageUri = newPath;
+          if (newThumbnailImageUri) {
+            newThumbnailImageUri = getRelativePathFromAbsolute(newThumbnailImageUri);
           }
 
           const updated = {
             ...currentItem,
             ...updatedItem,
-            originalImageUri: newImageUri,
+            originalImageUri: newOriginalImageUri,
+            thumbnailImageUri: newThumbnailImageUri,
           };
 
-          // Çoklu renk güncellemesi varsa color’ı da eşitle
+          // Çoklu renk güncellemesi varsa color'ı da eşitle
           if (updated.colors && updated.colors.length > 0) {
             updated.color = updated.colors[0];
           }
@@ -188,11 +202,17 @@ export const useClothingStore = create<ClothingState>()(
               item.id === id ? updated : item
             ),
           });
+
+          console.log('✅ Updated clothing item with relative paths:', {
+            id,
+            originalImageUri: newOriginalImageUri,
+            thumbnailImageUri: newThumbnailImageUri
+          });
+
         } catch (error) {
           console.error('❌ Failed to update clothing item:', error);
         }
       },
-
 
       clearAllClothing: async () => {
         try {
@@ -215,13 +235,12 @@ export const useClothingStore = create<ClothingState>()(
         });
       },
 
-
       setValidated: (validated) => set({ isValidated: validated }),
       setValidating: (validating) => set({ isValidating: validating }),
       setMigrated: (migrated) => set({ isMigrated: migrated }),
-      setRegistryMigrated: (migrated) => set({ isRegistryMigrated: migrated }), // 🔧 NEW
+      setRegistryMigrated: (migrated) => set({ isRegistryMigrated: migrated }),
 
-      // 🔧 NEW: Registry migration fonksiyonu
+      // Registry migration fonksiyonu
       migrateRegistryPaths: async () => {
         const { isRegistryMigrated } = get();
 
@@ -275,7 +294,7 @@ export const useClothingStore = create<ClothingState>()(
           for (const item of clothing) {
             // Eğer colors field'ı yoksa ve color varsa, colors oluştur
             if (!item.colors && item.color) {
-              updateClothing(item.id, {
+              await updateClothing(item.id, {
                 colors: [item.color]
               });
               migratedCount++;
@@ -287,6 +306,45 @@ export const useClothingStore = create<ClothingState>()(
           return { migratedCount };
         } catch (error) {
           console.error('❌ Multi-color migration failed:', error);
+          return { migratedCount: 0 };
+        }
+      },
+
+      // ✅ NEW: Absolute'den Relative path'e migration
+      migrateToRelativePaths: async () => {
+        const { clothing, updateClothing } = get();
+        let migratedCount = 0;
+
+        console.log('🔄 Starting absolute to relative path migration...');
+
+        try {
+          for (const item of clothing) {
+            let needsUpdate = false;
+            const updates: Partial<ClothingItem> = {};
+
+            // originalImageUri kontrolü
+            if (item.originalImageUri && item.originalImageUri.startsWith(FileSystem.documentDirectory!)) {
+              updates.originalImageUri = getRelativePathFromAbsolute(item.originalImageUri);
+              needsUpdate = true;
+            }
+
+            // thumbnailImageUri kontrolü
+            if (item.thumbnailImageUri && item.thumbnailImageUri.startsWith(FileSystem.documentDirectory!)) {
+              updates.thumbnailImageUri = getRelativePathFromAbsolute(item.thumbnailImageUri);
+              needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+              await updateClothing(item.id, updates);
+              migratedCount++;
+              console.log(`✅ Migrated item ${item.name} to relative paths`);
+            }
+          }
+
+          console.log(`✅ Relative path migration completed: ${migratedCount} items migrated`);
+          return { migratedCount };
+        } catch (error) {
+          console.error('❌ Relative path migration failed:', error);
           return { migratedCount: 0 };
         }
       },
@@ -313,11 +371,11 @@ export const useClothingStore = create<ClothingState>()(
             const exists = await checkImageExists(item);
 
             if (!exists && !item.isImageMissing) {
-              updateClothing(item.id, { isImageMissing: true });
+              await updateClothing(item.id, { isImageMissing: true });
               updatedCount++;
               console.warn(`⚠️ Marking item as missing image: ${item.name}`);
             } else if (exists && item.isImageMissing) {
-              updateClothing(item.id, { isImageMissing: false });
+              await updateClothing(item.id, { isImageMissing: false });
               console.log(`✅ Image found again for item: ${item.name}`);
             }
 
@@ -349,37 +407,41 @@ export const useClothingStore = create<ClothingState>()(
       }
     }),
     {
-      name: 'clothing-storage-v6', // 🔧 Version bump for UUID migration
-      version: 6, // Bu, depolama şemasının 6. versiyonu
+      name: 'clothing-storage-v7', // ✅ Version bump for relative path migration
+      version: 7, // Bu, depolama şemasının 7. versiyonu
       storage: createJSONStorage(() => simpleStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
           state.isValidated = false;
           state.isValidating = false;
 
-          // 🔧 NEW: Registry migration'ı da sıfırla (her başlangıçta kontrol edilsin)
-          // Bu sayede UUID değişimi durumunda migration otomatik çalışır
+          // Registry migration'ı da sıfırla (her başlangıçta kontrol edilsin)
           if (state.isRegistryMigrated) {
-            // Geliştirme aşamasında her zaman migration kontrol etsin
             state.isRegistryMigrated = false;
           }
 
-          // Registry migration'ı önce çalıştır
+          // Migration sırası önemli:
+          // 1. Registry migration'ı önce çalıştır
           setTimeout(() => {
             state.migrateRegistryPaths();
           }, 500);
 
-          // Multi-color migration'ı sonra çalıştır
+          // 2. Relative path migration'ı çalıştır
+          setTimeout(() => {
+            state.migrateToRelativePaths();
+          }, 1000);
+
+          // 3. Multi-color migration'ı sonra çalıştır
           setTimeout(() => {
             state.migrateToMultiColor();
-          }, 1000);
+          }, 1500);
         }
       },
       // Gelecekteki şema değişiklikleri için migration fonksiyonu
       migrate: (persistedState, version) => {
-        if (version < 6) {
-          console.warn('🔄 Migrating clothing storage from version', version, 'to version 6');
-          // v6'ya migration: registry migration flag eklendi
+        if (version < 7) {
+          console.warn('🔄 Migrating clothing storage from version', version, 'to version 7');
+          // v7'ye migration: relative path migration flag eklendi
           (persistedState as any).isRegistryMigrated = false;
         }
         return persistedState;

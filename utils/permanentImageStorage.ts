@@ -8,15 +8,16 @@ import { useClothingStore } from '@/store/clothingStore';
 // 🔧 FIX: Relative paths kullanarak UUID değişikliğinden koruma
 const PERMANENT_IMAGES_SUBDIR = 'permanent_images/';
 const PERMANENT_THUMBNAILS_SUBDIR = 'permanent_thumbnails/';
-const IMAGE_REGISTRY_KEY = 'permanent_image_registry_v1';
+const IMAGE_REGISTRY_KEY = 'permanent_image_registry_v1'; // Keep same key, smart migration
 
 // 🔧 FIX: Dynamic path builders - UUID değişse bile çalışır
 const getPermanentImagesDir = () => FileSystem.documentDirectory + PERMANENT_IMAGES_SUBDIR;
 const getPermanentThumbnailsDir = () => FileSystem.documentDirectory + PERMANENT_THUMBNAILS_SUBDIR;
 
+// ✅ FIX: Artık sadece relative path döndürüyoruz
 export interface PermanentImageResult {
-  originalImagePath: string;    // Kalıcı full-size görsel
-  thumbnailImagePath: string;   // Kalıcı thumbnail
+  originalImagePath: string;    // ✅ RELATIVE path (permanent_images/item_original.jpg)
+  thumbnailImagePath: string;   // ✅ RELATIVE path (permanent_thumbnails/item_thumb.jpg)
   metadata: {
     width: number;
     height: number;
@@ -28,12 +29,11 @@ export interface PermanentImageResult {
 
 interface ImageRegistryEntry {
   itemId: string;
-  originalPath: string;    // ⚠️ Bu da relative olacak
-  thumbnailPath: string;   // ⚠️ Bu da relative olacak
+  originalPath: string;    // ✅ Her zaman relative path
+  thumbnailPath: string;   // ✅ Her zaman relative path
   createdAt: number;
   fileSize: number;
-  // 🔧 NEW: Relative paths için flag
-  isRelativePath?: boolean;
+  isRelativePath: boolean; // ✅ Migration için flag
 }
 
 // Kalıcı dizinleri oluştur
@@ -65,7 +65,7 @@ export const checkImagePermissions = async (): Promise<boolean> => {
   }
 };
 
-// 🔧 FIX: Relative path oluşturma helper
+// ✅ FIX: Relative path oluşturma helper
 const getRelativeImagePaths = (itemId: string, extension: string = 'jpg') => {
   const originalFileName = `${itemId}_original.${extension}`;
   const thumbnailFileName = `${itemId}_thumb.jpg`;
@@ -78,7 +78,25 @@ const getRelativeImagePaths = (itemId: string, extension: string = 'jpg') => {
   };
 };
 
-// Asset'ten kalıcı dosya kopyalama
+// ✅ FIX: Relative path'i absolute'e çevir
+export const getAbsolutePathFromRelative = (relativePath: string): string => {
+  if (!relativePath) return '';
+  if (relativePath.startsWith(FileSystem.documentDirectory!)) {
+    return relativePath; // Zaten absolute
+  }
+  return FileSystem.documentDirectory + relativePath;
+};
+
+// ✅ FIX: Absolute path'i relative'e çevir
+export const getRelativePathFromAbsolute = (absolutePath: string): string => {
+  if (!absolutePath) return '';
+  if (absolutePath.startsWith(FileSystem.documentDirectory!)) {
+    return absolutePath.replace(FileSystem.documentDirectory!, '');
+  }
+  return absolutePath; // Zaten relative olabilir
+};
+
+// ✅ FIX: Asset'ten kalıcı dosya kopyalama - SADECE RELATIVE PATH DÖNDÜRÜR
 export const copyAssetToPermanentStorage = async (
   itemId: string,
   asset: MediaLibrary.Asset
@@ -112,7 +130,7 @@ export const copyAssetToPermanentStorage = async (
     const extension = asset.filename?.split('.').pop()?.toLowerCase() || 'jpg';
     const safeExtension = ['jpg', 'jpeg', 'png', 'webp'].includes(extension) ? extension : 'jpg';
 
-    // 🔧 FIX: Relative ve absolute path'leri al
+    // ✅ Relative ve absolute path'leri al
     const {
       originalRelativePath,
       thumbnailRelativePath,
@@ -184,12 +202,13 @@ export const copyAssetToPermanentStorage = async (
       });
     }
 
-    // 🔧 FIX: Registry'yi relative path'lerle güncelle
+    // ✅ Registry'yi relative path'lerle güncelle
     await updateImageRegistry(itemId, originalRelativePath, thumbnailRelativePath, originalFileSize);
 
+    // ✅ FIX: SADECE RELATIVE PATH DÖNDÜR
     const result: PermanentImageResult = {
-      originalImagePath: originalAbsolutePath,  // Client'a absolute path döndür
-      thumbnailImagePath: thumbnailAbsolutePath, // Client'a absolute path döndür
+      originalImagePath: originalRelativePath,  // ✅ Relative path döndür
+      thumbnailImagePath: thumbnailRelativePath, // ✅ Relative path döndür
       metadata: {
         width: asset.width,
         height: asset.height,
@@ -218,7 +237,7 @@ export const copyAssetToPermanentStorage = async (
   }
 };
 
-// 🔧 FIX: Image registry'yi relative path'lerle güncelle
+// ✅ Image registry'yi relative path'lerle güncelle
 const updateImageRegistry = async (
   itemId: string,
   originalRelativePath: string,   // ✅ Relative path
@@ -235,7 +254,7 @@ const updateImageRegistry = async (
       thumbnailPath: thumbnailRelativePath,  // ✅ Relative path kaydediliyor
       createdAt: Date.now(),
       fileSize,
-      isRelativePath: true  // ✅ Bu yeni bir relative path olduğunu işaretle
+      isRelativePath: true  // ✅ Bu yeni bir relative path
     };
 
     await AsyncStorage.setItem(IMAGE_REGISTRY_KEY, JSON.stringify(registry));
@@ -248,17 +267,19 @@ const updateImageRegistry = async (
 // Dosya var mı kontrol et
 export const validatePermanentImage = async (imagePath: string): Promise<boolean> => {
   try {
-    const fileInfo = await FileSystem.getInfoAsync(imagePath);
+    // Eğer relative path verilmişse absolute'e çevir
+    const absolutePath = getAbsolutePathFromRelative(imagePath);
+    const fileInfo = await FileSystem.getInfoAsync(absolutePath);
     return fileInfo.exists && (fileInfo.size || 0) > 0;
   } catch (error) {
     return false;
   }
 };
 
-// 🔧 FIX: Item'ın görsellerini al - legacy absolute path'leri migrate et
+// ✅ FIX: Item'ın görsellerini al - RELATIVE PATH DÖNDÜR
 export const getPermanentImagePaths = async (itemId: string): Promise<{
-  originalPath: string | null;
-  thumbnailPath: string | null;
+  originalPath: string | null;   // ✅ Relative path döndür
+  thumbnailPath: string | null;  // ✅ Relative path döndür
 }> => {
   try {
     const registryStr = await AsyncStorage.getItem(IMAGE_REGISTRY_KEY);
@@ -269,52 +290,33 @@ export const getPermanentImagePaths = async (itemId: string): Promise<{
 
     if (!entry) return { originalPath: null, thumbnailPath: null };
 
-    let originalAbsolutePath: string;
-    let thumbnailAbsolutePath: string;
+    let originalRelativePath: string;
+    let thumbnailRelativePath: string;
 
-    // 🔧 LEGACY MIGRATION: Eski absolute path'leri relative'e çevir
     if (entry.isRelativePath) {
-      // Yeni format: relative path
-      originalAbsolutePath = FileSystem.documentDirectory + entry.originalPath;
-      thumbnailAbsolutePath = FileSystem.documentDirectory + entry.thumbnailPath;
+      // ✅ Yeni format: zaten relative path
+      originalRelativePath = entry.originalPath;
+      thumbnailRelativePath = entry.thumbnailPath;
     } else {
-      // Eski format: absolute path - Bu durumda dosyalar kaybolmuş olabilir
-      originalAbsolutePath = entry.originalPath;
-      thumbnailAbsolutePath = entry.thumbnailPath;
+      // ❌ Eski format: absolute path - relative'e çevir
+      originalRelativePath = getRelativePathFromAbsolute(entry.originalPath);
+      thumbnailRelativePath = getRelativePathFromAbsolute(entry.thumbnailPath);
 
-      // ⚠️ Eski absolute path'ler UUID değişimi nedeniyle artık çalışmıyor olabilir
-      console.warn('⚠️ Legacy absolute path detected for item:', itemId);
-
-      // Eğer eski absolute path çalışmıyorsa, relative path'e migrate etmeye çalış
-      const originalExists = await validatePermanentImage(originalAbsolutePath);
-      const thumbnailExists = await validatePermanentImage(thumbnailAbsolutePath);
-
-      if (!originalExists && !thumbnailExists) {
-        // Dosyalar bulunamadı, belki relative path'te vardır?
-        const { originalAbsolutePath: newOriginal, thumbnailAbsolutePath: newThumbnail } = getRelativeImagePaths(itemId);
-
-        const newOriginalExists = await validatePermanentImage(newOriginal);
-        const newThumbnailExists = await validatePermanentImage(newThumbnail);
-
-        if (newOriginalExists || newThumbnailExists) {
-          // Dosyalar yeni konumda bulundu! Registry'yi güncelle
-          const { originalRelativePath, thumbnailRelativePath } = getRelativeImagePaths(itemId);
-          await updateImageRegistry(itemId, originalRelativePath, thumbnailRelativePath, entry.fileSize);
-
-          originalAbsolutePath = newOriginal;
-          thumbnailAbsolutePath = newThumbnail;
-          console.log('✅ Migrated legacy paths to relative for item:', itemId);
-        }
-      }
+      // Registry'yi güncelle
+      await updateImageRegistry(itemId, originalRelativePath, thumbnailRelativePath, entry.fileSize);
+      console.log('✅ Auto-migrated legacy paths to relative for item:', itemId);
     }
 
-    // Dosyaların varlığını kontrol et
+    // Dosyaların varlığını kontrol et (absolute path ile)
+    const originalAbsolutePath = getAbsolutePathFromRelative(originalRelativePath);
+    const thumbnailAbsolutePath = getAbsolutePathFromRelative(thumbnailRelativePath);
+
     const originalExists = await validatePermanentImage(originalAbsolutePath);
     const thumbnailExists = await validatePermanentImage(thumbnailAbsolutePath);
 
     return {
-      originalPath: originalExists ? originalAbsolutePath : null,
-      thumbnailPath: thumbnailExists ? thumbnailAbsolutePath : null
+      originalPath: originalExists ? originalRelativePath : null,
+      thumbnailPath: thumbnailExists ? thumbnailRelativePath : null
     };
   } catch (error) {
     console.error('Error getting permanent image paths:', error);
@@ -322,7 +324,7 @@ export const getPermanentImagePaths = async (itemId: string): Promise<{
   }
 };
 
-// 🔧 FIX: Registry migration - tüm absolute path'leri relative'e çevir
+// ✅ Registry migration - tüm absolute path'leri relative'e çevir
 export const migrateRegistryToRelativePaths = async (): Promise<{ migratedCount: number }> => {
   try {
     const registryStr = await AsyncStorage.getItem(IMAGE_REGISTRY_KEY);
@@ -334,12 +336,13 @@ export const migrateRegistryToRelativePaths = async (): Promise<{ migratedCount:
     for (const [itemId, entry] of Object.entries(registry)) {
       if (!entry.isRelativePath) {
         // Bu bir eski absolute path entry'si
-        const { originalRelativePath, thumbnailRelativePath } = getRelativeImagePaths(itemId);
+        const originalRelative = getRelativePathFromAbsolute(entry.originalPath);
+        const thumbnailRelative = getRelativePathFromAbsolute(entry.thumbnailPath);
 
         registry[itemId] = {
           ...entry,
-          originalPath: originalRelativePath,
-          thumbnailPath: thumbnailRelativePath,
+          originalPath: originalRelative,
+          thumbnailPath: thumbnailRelative,
           isRelativePath: true
         };
 
@@ -379,17 +382,9 @@ export const cleanupUnusedImages = async (activeItemIds: string[]): Promise<{
       if (activeItemIdSet.has(itemId)) {
         newRegistry[itemId] = entry;
       } else {
-        // 🔧 FIX: Relative/absolute path'e göre dosya yolunu belirle
-        let originalPath: string;
-        let thumbnailPath: string;
-
-        if (entry.isRelativePath) {
-          originalPath = FileSystem.documentDirectory + entry.originalPath;
-          thumbnailPath = FileSystem.documentDirectory + entry.thumbnailPath;
-        } else {
-          originalPath = entry.originalPath;
-          thumbnailPath = entry.thumbnailPath;
-        }
+        // ✅ Relative path'i absolute'e çevir
+        const originalPath = getAbsolutePathFromRelative(entry.originalPath);
+        const thumbnailPath = getAbsolutePathFromRelative(entry.thumbnailPath);
 
         // Dosyaları sil
         try {
@@ -427,7 +422,7 @@ export const migrateLegacyImages = async (): Promise<{ migratedCount: number }> 
   try {
     console.log('🔄 Starting legacy image migration...');
 
-    // 🔧 FIX: Registry migration de dahil et
+    // ✅ Registry migration de dahil et
     const registryMigration = await migrateRegistryToRelativePaths();
 
     // Legacy cache temizliği
@@ -453,14 +448,17 @@ export const migrateLegacyImages = async (): Promise<{ migratedCount: number }> 
       console.warn('Could not remove legacy cache directory:', error);
     }
 
-    // 🔧 MIGRATE: Eski clothing item görsellerini kalıcı dizine taşı
+    // ✅ MIGRATE: Eski clothing item görsellerini kalıcı dizine taşı
     const { clothing, updateClothing } = useClothingStore.getState();
     let migratedImageCount = 0;
 
     for (const item of clothing) {
       if (!item.originalImageUri) continue;
 
-      const isLegacyPath = item.originalImageUri.startsWith('file:///') &&
+      // Eğer zaten relative path ise skip et
+      if (!item.originalImageUri.startsWith(FileSystem.documentDirectory!)) continue;
+
+      const isLegacyPath = item.originalImageUri.includes(FileSystem.documentDirectory!) &&
         !item.originalImageUri.includes('permanent_images');
 
       if (!isLegacyPath) continue;
@@ -468,18 +466,20 @@ export const migrateLegacyImages = async (): Promise<{ migratedCount: number }> 
       try {
         const extension = item.originalImageUri.split('.').pop() || 'jpg';
         const newFileName = `${item.id}_original.${extension}`;
-        const newPath = `${FileSystem.documentDirectory}permanent_images/${newFileName}`;
+        const newAbsolutePath = `${FileSystem.documentDirectory}permanent_images/${newFileName}`;
+        const newRelativePath = `permanent_images/${newFileName}`;
 
         await FileSystem.copyAsync({
           from: item.originalImageUri,
-          to: newPath,
+          to: newAbsolutePath,
         });
 
+        // ✅ FIX: Relative path olarak güncelle
         updateClothing(item.id, {
-          originalImageUri: newPath,
+          originalImageUri: newRelativePath,
         });
 
-        console.log(`✅ Migrated image for item ${item.id}`);
+        console.log(`✅ Migrated image for item ${item.id} to relative path`);
         migratedImageCount++;
       } catch (e) {
         console.warn(`❌ Failed to migrate image for item ${item.id}:`, e);
@@ -513,17 +513,9 @@ export const getStorageStats = async (): Promise<{
 
     for (const entry of Object.values(registry)) {
       try {
-        // 🔧 FIX: Relative/absolute path'e göre dosya yolunu belirle
-        let originalPath: string;
-        let thumbnailPath: string;
-
-        if (entry.isRelativePath) {
-          originalPath = FileSystem.documentDirectory + entry.originalPath;
-          thumbnailPath = FileSystem.documentDirectory + entry.thumbnailPath;
-        } else {
-          originalPath = entry.originalPath;
-          thumbnailPath = entry.thumbnailPath;
-        }
+        // ✅ Relative path'i absolute'e çevir
+        const originalPath = getAbsolutePathFromRelative(entry.originalPath);
+        const thumbnailPath = getAbsolutePathFromRelative(entry.thumbnailPath);
 
         const originalInfo = await FileSystem.getInfoAsync(originalPath);
         const thumbnailInfo = await FileSystem.getInfoAsync(thumbnailPath);

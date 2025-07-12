@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx - Gender type güncellenmiş
+// app/(tabs)/wardrobe/edit/[id].tsx - Fixed image preview bug
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -25,7 +25,8 @@ import {
   copyAssetToPermanentStorage,
   checkImagePermissions,
   getPermanentImagePaths,
-  validatePermanentImage
+  validatePermanentImage,
+  getAbsolutePathFromRelative // ✅ FIX: Bu import'u ekle
 } from '@/utils/permanentImageStorage';
 import { ALL_COLORS } from '@/utils/constants';
 
@@ -49,11 +50,16 @@ export default function EditClothingScreen() {
   const itemToEdit = clothing.find(item => item.id === id);
 
   const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
+  
+  // ✅ FIX: State structure'ı güncelle
   const [processedImage, setProcessedImage] = useState<{
-    originalPath: string;
-    thumbnailPath: string;
+    originalPath: string;           // ✅ Relative path
+    thumbnailPath: string;          // ✅ Relative path
+    originalAbsolutePath: string;   // ✅ Display için absolute path
+    thumbnailAbsolutePath: string;  // ✅ Display için absolute path
     metadata: any;
   } | null>(null);
+  
   const [currentImageUri, setCurrentImageUri] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
@@ -92,23 +98,54 @@ export default function EditClothingScreen() {
     }
   }, [itemToEdit, reset, id]);
 
+  // ✅ FIX: loadCurrentImage fonksiyonunu güncelle
   const loadCurrentImage = async () => {
     if (!itemToEdit) return;
 
     try {
+      // 1. Registry'den relative path'leri al
       const { thumbnailPath, originalPath } = await getPermanentImagePaths(itemToEdit.id);
 
-      if (thumbnailPath && await validatePermanentImage(thumbnailPath)) {
-        setCurrentImageUri(thumbnailPath);
-      } else if (originalPath && await validatePermanentImage(originalPath)) {
-        setCurrentImageUri(originalPath);
-      } else if (itemToEdit.thumbnailImageUri) {
-        setCurrentImageUri(itemToEdit.thumbnailImageUri);
-      } else if (itemToEdit.originalImageUri) {
-        setCurrentImageUri(itemToEdit.originalImageUri);
+      if (thumbnailPath) {
+        const thumbnailAbsolute = getAbsolutePathFromRelative(thumbnailPath);
+        if (await validatePermanentImage(thumbnailAbsolute)) {
+          setCurrentImageUri(thumbnailAbsolute);
+          console.log('✅ Loaded thumbnail from registry:', thumbnailAbsolute);
+          return;
+        }
       }
+
+      if (originalPath) {
+        const originalAbsolute = getAbsolutePathFromRelative(originalPath);
+        if (await validatePermanentImage(originalAbsolute)) {
+          setCurrentImageUri(originalAbsolute);
+          console.log('✅ Loaded original from registry:', originalAbsolute);
+          return;
+        }
+      }
+
+      // 2. Fallback: item'da saklanan path'leri kontrol et
+      if (itemToEdit.thumbnailImageUri) {
+        const thumbnailAbsolute = getAbsolutePathFromRelative(itemToEdit.thumbnailImageUri);
+        if (await validatePermanentImage(thumbnailAbsolute)) {
+          setCurrentImageUri(thumbnailAbsolute);
+          console.log('✅ Loaded thumbnail from item:', thumbnailAbsolute);
+          return;
+        }
+      }
+
+      if (itemToEdit.originalImageUri) {
+        const originalAbsolute = getAbsolutePathFromRelative(itemToEdit.originalImageUri);
+        if (await validatePermanentImage(originalAbsolute)) {
+          setCurrentImageUri(originalAbsolute);
+          console.log('✅ Loaded original from item:', originalAbsolute);
+          return;
+        }
+      }
+
+      console.warn('⚠️ No valid image found for item:', itemToEdit.id);
     } catch (error) {
-      console.error('Error loading current image:', error);
+      console.error('❌ Error loading current image:', error);
     }
   };
 
@@ -125,20 +162,34 @@ export default function EditClothingScreen() {
     }
   };
 
+  // ✅ FIX: handleAssetSelected fonksiyonunu güncelle
   const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
     setIsLoading(true);
     try {
       const result = await copyAssetToPermanentStorage(id!, asset);
       setSelectedAsset(asset);
+      
+      // ✅ FIX: Hem relative hem absolute path'leri sakla
       setProcessedImage({
-        originalPath: result.originalImagePath,
-        thumbnailPath: result.thumbnailImagePath,
+        originalPath: result.originalImagePath,        // Relative path (store için)
+        thumbnailPath: result.thumbnailImagePath,      // Relative path (store için)
+        originalAbsolutePath: getAbsolutePathFromRelative(result.originalImagePath),   // Absolute (display için)
+        thumbnailAbsolutePath: getAbsolutePathFromRelative(result.thumbnailImagePath), // Absolute (display için)
         metadata: result.metadata
       });
-      setCurrentImageUri(result.thumbnailImagePath);
+      
+      // ✅ FIX: Display için absolute path kullan
+      setCurrentImageUri(getAbsolutePathFromRelative(result.thumbnailImagePath));
       setImageChanged(true);
+      
+      console.log('✅ Asset processed for edit:', {
+        originalRelative: result.originalImagePath,
+        thumbnailRelative: result.thumbnailImagePath,
+        displayUri: getAbsolutePathFromRelative(result.thumbnailImagePath)
+      });
+      
     } catch (error) {
-      console.error('Error processing selected asset:', error);
+      console.error('❌ Error processing selected asset:', error);
       showAlert({
         title: t('common.error'),
         message: t('wardrobe.errorProcessingImage'),
@@ -179,8 +230,9 @@ export default function EditClothingScreen() {
       };
 
       if (imageChanged && processedImage) {
-        updatedItemData.originalImageUri = processedImage.originalPath;
-        updatedItemData.thumbnailImageUri = processedImage.thumbnailPath;
+        // ✅ FIX: Relative path'leri store'a kaydet
+        updatedItemData.originalImageUri = processedImage.originalPath;      // Relative
+        updatedItemData.thumbnailImageUri = processedImage.thumbnailPath;    // Relative
         updatedItemData.imageMetadata = processedImage.metadata;
         updatedItemData.isImageMissing = false;
       } else if (imageChanged && !processedImage) {
@@ -197,10 +249,10 @@ export default function EditClothingScreen() {
         visibilityTime: 2000,
       });
 
-      router.back();
+      router.replace('/(tabs)/wardrobe');
 
     } catch (error) {
-      console.error("Error updating item: ", error);
+      console.error("❌ Error updating item: ", error);
       showAlert({
         title: t('common.error'),
         message: t('wardrobe.errorAddingItem'),
@@ -211,6 +263,7 @@ export default function EditClothingScreen() {
     }
   };
 
+  // ✅ FIX: renderImageSection'ı güncelle
   const renderImageSection = () => {
     if (imageChanged && !processedImage && !currentImageUri) {
       return (
@@ -225,9 +278,14 @@ export default function EditClothingScreen() {
     if (currentImageUri) {
       return (
         <View style={styles.imageContainer}>
+          {/* ✅ FIX: currentImageUri zaten absolute path olarak set ediliyor */}
           <Image
             source={{ uri: currentImageUri }}
             style={styles.clothingImage}
+            onError={(error) => {
+              console.error('❌ Image load error:', error.nativeEvent.error);
+              console.log('Failed URI:', currentImageUri);
+            }}
           />
           <TouchableOpacity
             style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]}
@@ -465,7 +523,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 16
   },
-  clothingImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  clothingImage: { 
+    width: '100%', 
+    height: '100%', 
+    resizeMode: 'cover' 
+  },
   removeImageButton: {
     position: 'absolute',
     top: 8,
@@ -484,11 +546,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16
   },
-  imagePlaceholderText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
-  imageButtonsContainer: { flexDirection: 'row', justifyContent: 'center' },
-  imageButton: { flex: 1, marginHorizontal: 4 },
-  formSection: { gap: 16 },
-  sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },
+  imagePlaceholderText: { 
+    fontFamily: 'Montserrat-Medium', 
+    fontSize: 16 
+  },
+  imageButtonsContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'center' 
+  },
+  imageButton: { 
+    flex: 1, 
+    marginHorizontal: 4 
+  },
+  formSection: { 
+    gap: 16 
+  },
+  sectionTitle: { 
+    fontFamily: 'Montserrat-Bold', 
+    fontSize: 16, 
+    marginBottom: 8 
+  },
   selectedColorsHeader: {
     padding: 12,
     borderRadius: 8,
@@ -509,6 +586,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
   },
-  errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },
-  saveButton: { marginTop: 16 },
+  errorText: { 
+    fontFamily: 'Montserrat-Regular', 
+    fontSize: 12, 
+    marginTop: 4 
+  },
+  saveButton: { 
+    marginTop: 16 
+  },
 });

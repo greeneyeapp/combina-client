@@ -1,4 +1,4 @@
-// kodlar/app/_layout.tsx
+// app/_layout.tsx - Gallery reference system
 
 import React, { useEffect } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
@@ -16,7 +16,6 @@ import CustomToast from '@/components/common/CustomToast';
 import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system';
 import * as Updates from 'expo-updates';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
 import { initializeApp } from '@/utils/appInitialization';
@@ -111,21 +110,19 @@ export default function RootLayout(): React.JSX.Element {
   useEffect(() => {
     const initializeAppServices = async () => {
       try {
-        // 1. UUID değiştiyse uygulamayı yeniden başlat
-        const CURRENT_UUID_KEY = 'last_document_uuid';
-        const currentUUID = FileSystem.documentDirectory!;
-        const storedUUID: string | null = await AsyncStorage.getItem(CURRENT_UUID_KEY);
-
-        if (storedUUID !== null && storedUUID !== currentUUID) {
-          console.log('🌀 UUID değişti, uygulama yeniden başlatılıyor...');
-          await AsyncStorage.setItem(CURRENT_UUID_KEY, currentUUID);
-          await Updates.reloadAsync();
-          return;
-        } else if (!storedUUID) {
-          await AsyncStorage.setItem(CURRENT_UUID_KEY, currentUUID);
+        // 1. App restart check (simplified)
+        const CURRENT_SESSION_KEY = 'current_session';
+        const currentSession = Date.now().toString();
+        const lastSession = await AsyncStorage.getItem(CURRENT_SESSION_KEY);
+        
+        if (lastSession && Math.abs(Date.now() - parseInt(lastSession)) > 7 * 24 * 60 * 60 * 1000) {
+          // If last session was more than 7 days ago, consider it a fresh start
+          console.log('🔄 Fresh start detected, reinitializing...');
         }
+        
+        await AsyncStorage.setItem(CURRENT_SESSION_KEY, currentSession);
 
-        // 2. Dil ayarları
+        // 2. Language setup
         const langPromise = (async () => {
           const savedLanguage = await AsyncStorage.getItem('app_language');
           if (savedLanguage) {
@@ -144,7 +141,7 @@ export default function RootLayout(): React.JSX.Element {
           }
         })();
 
-        // 3. RevenueCat yapılandırması
+        // 3. RevenueCat configuration
         const purchasesPromise = (async () => {
           const apiKey = Platform.select({
             ios: 'appl_DuXXAykkepzomdHesCIharljFmd',
@@ -156,10 +153,12 @@ export default function RootLayout(): React.JSX.Element {
           }
         })();
 
-        // 4. Kalıcı görsel dizini oluştur + migration
+        // 4. Gallery reference system initialization
         const appInitPromise = initializeApp();
 
         await Promise.all([langPromise, purchasesPromise, appInitPromise]);
+        
+        console.log('✅ All app services initialized successfully');
       } catch (error) {
         console.error('Failed to initialize app services:', error);
       }

@@ -1,5 +1,6 @@
-// components/common/GalleryPicker.tsx - YENİ VERSİYON (Permanent Storage)
-import React, { useState, useEffect } from 'react';
+// components/common/GalleryPicker.tsx - Fixed scroll stability
+
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -65,7 +66,6 @@ export default function GalleryPicker({
       setHasPermission(status === 'granted');
 
       if (status === 'granted') {
-        // Kısa bir gecikme ekle - permission verilir verilmez asset'lere erişim sorunlu olabilir
         setTimeout(() => {
           loadAssets(true);
         }, 100);
@@ -148,23 +148,50 @@ export default function GalleryPicker({
     }
   };
 
-  const renderAssetItem = ({ item }: { item: MediaLibrary.Asset }) => {
+  // ✅ FIX: Fixed dimensions for stable scroll
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: gridItemWidth,
+    offset: gridItemWidth * index,
+    index,
+  }), []);
+
+  // ✅ FIX: Stable image component with fixed dimensions
+  const renderAssetItem = useCallback(({ item }: { item: MediaLibrary.Asset }) => {
     const isSelected = selectedAsset?.id === item.id;
 
     return (
       <TouchableOpacity
         style={[
           styles.assetItem,
+          { 
+            width: gridItemWidth,
+            height: gridItemWidth, // ✅ Fixed height
+          },
           isSelected && { borderColor: theme.colors.primary, borderWidth: 3 }
         ]}
         onPress={() => handleAssetPress(item)}
         activeOpacity={0.8}
       >
+        {/* ✅ FIX: Placeholder with fixed dimensions */}
+        <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        </View>
+
         <Image
           source={{ uri: item.uri }}
           style={styles.assetImage}
           resizeMode="cover"
+          onLoadStart={() => {
+            // Image loading started - placeholder already showing
+          }}
+          onLoad={() => {
+            // Image loaded - no layout change needed
+          }}
+          onError={() => {
+            // Keep placeholder on error
+          }}
         />
+
         {isSelected && (
           <View style={[styles.selectedOverlay, { backgroundColor: theme.colors.primary + '40' }]}>
             <View style={[styles.checkIcon, { backgroundColor: theme.colors.primary }]}>
@@ -174,14 +201,21 @@ export default function GalleryPicker({
         )}
       </TouchableOpacity>
     );
-  };
+  }, [selectedAsset?.id, theme.colors, gridItemWidth]);
 
   const renderCameraItem = () => {
     if (!allowCamera) return null;
 
     return (
       <TouchableOpacity
-        style={[styles.cameraItem, { backgroundColor: theme.colors.card }]}
+        style={[
+          styles.cameraItem, 
+          { 
+            backgroundColor: theme.colors.card,
+            width: gridItemWidth,
+            height: gridItemWidth, // ✅ Fixed height
+          }
+        ]}
         onPress={handleCameraPress}
         activeOpacity={0.7}
       >
@@ -193,6 +227,7 @@ export default function GalleryPicker({
     );
   };
 
+  // ✅ FIX: Stable header with fixed height
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       {allowCamera && renderCameraItem()}
@@ -254,11 +289,17 @@ export default function GalleryPicker({
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
-        getItemLayout={(data, index) => ({
-          length: gridItemWidth,
-          offset: gridItemWidth * Math.floor(index / gridColumns),
-          index,
-        })}
+        // ✅ FIX: Performance and scroll stability optimizations
+        getItemLayout={getItemLayout}
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={15}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={15}
+        windowSize={10}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 100
+        }}
         onEndReached={() => {
           if (hasNextPage && !loading) {
             loadAssets(false);
@@ -354,8 +395,6 @@ const styles = StyleSheet.create({
     marginBottom: gridSpacing,
   },
   cameraItem: {
-    width: gridItemWidth,
-    height: gridItemWidth,
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -369,17 +408,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   assetItem: {
-    width: gridItemWidth,
-    height: gridItemWidth,
     marginRight: gridSpacing,
     marginBottom: gridSpacing,
     borderRadius: 8,
     overflow: 'hidden',
     position: 'relative',
   },
+  // ✅ FIX: Fixed dimensions for stable layout
+  imagePlaceholder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
   assetImage: {
-    width: '100%',
-    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
   },
   selectedOverlay: {
     position: 'absolute',
@@ -389,6 +441,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 3,
   },
   checkIcon: {
     width: 32,

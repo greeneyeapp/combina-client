@@ -1,4 +1,4 @@
-// components/suggestions/OutfitSuggestion.tsx - Modern ve tema uyumlu tasarım
+// components/suggestions/OutfitSuggestion.tsx - Gallery reference system
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Dimensions } from 'react-native';
@@ -8,7 +8,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { Heart, Shirt, Sparkles, Star, Palette, Crown } from 'lucide-react-native';
 import { OutfitSuggestionResponse } from '@/services/aiService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
 
 const { width } = Dimensions.get('window');
 
@@ -94,10 +94,10 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
 
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
         try {
-          const uri = await getDisplayImageUri(itemWithUri.item);
+          const uri = await getGalleryDisplayUri(itemWithUri.item);
           return { index, uri };
         } catch (error) {
-          console.error('Error loading URI for suggestion item:', error);
+          console.error('Error loading gallery URI for suggestion item:', error);
           return { index, uri: '' };
         }
       });
@@ -176,7 +176,7 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
                 source={{ uri: displayUri }}
                 style={[imageStyle, styles.itemImage]}
                 onError={() => {
-                  console.warn('Image load error in suggestion for item:', item.id);
+                  console.warn('Gallery image load error in suggestion for item:', item.id);
                   setItemsWithUris(prev => {
                     const updated = [...prev];
                     const itemIndex = updated.findIndex(u => u.item?.id === item.id);

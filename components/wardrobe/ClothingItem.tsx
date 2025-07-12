@@ -1,12 +1,12 @@
-// components/wardrobe/ClothingItem.tsx - Çoklu renk gösterimi ile güncellenmiş
+// components/wardrobe/ClothingItem.tsx - Lazy loading with gallery reference
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect, memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { Edit2, ImageOff } from 'lucide-react-native';
 import { ClothingItem as TClothingItem } from '@/store/clothingStore';
-import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
 import { ALL_COLORS } from '@/utils/constants';
 
 interface ClothingItemProps {
@@ -15,44 +15,53 @@ interface ClothingItemProps {
   onEdit: () => void;
 }
 
-export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProps) {
+const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const [displayUri, setDisplayUri] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+    
     const loadDisplayUri = async () => {
       setIsLoading(true);
       try {
-        const uri = await getDisplayImageUri(item);
-        setDisplayUri(uri);
+        const uri = await getGalleryDisplayUri(item);
+        if (isMounted) {
+          setDisplayUri(uri);
+        }
       } catch (error) {
         console.error('Error loading display URI for item:', item.id, error);
-        setDisplayUri('');
+        if (isMounted) {
+          setDisplayUri('');
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadDisplayUri();
-  }, [item.id, item.originalImageUri, item.thumbnailImageUri, item.isImageMissing]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [item.galleryAssetId]);
 
   const handleEditPress = (e: any) => {
     e.stopPropagation();
     onEdit();
   };
 
-  // Çoklu renk desteği - colors varsa onu kullan, yoksa color'ı kullan
   const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
   const colorNames = itemColors.map(color => t(`colors.${color}`)).join(', ');
 
   const renderColorIndicators = () => {
-    // Maksimum 3 renk göster
     const displayColors = itemColors.slice(0, 3);
     
     if (displayColors.length === 1) {
-      // Tek renk - büyük daire
       const colorData = ALL_COLORS.find(c => c.name === displayColors[0]);
       const colorHex = colorData?.hex || '#CCCCCC';
       
@@ -74,7 +83,6 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
         </View>
       );
     } else {
-      // Çoklu renk - küçük daireler
       return (
         <View style={styles.multiColorContainer}>
           <View style={styles.colorCirclesRow}>
@@ -91,8 +99,8 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
                       backgroundColor: colorHex,
                       borderColor: colorName === 'white' ? theme.colors.border : 'transparent',
                       borderWidth: colorName === 'white' ? 1 : 0,
-                      marginLeft: index > 0 ? -4 : 0, // Overlapping effect
-                      zIndex: displayColors.length - index // Stack order
+                      marginLeft: index > 0 ? -4 : 0,
+                      zIndex: displayColors.length - index
                     }
                   ]} 
                 />
@@ -120,9 +128,7 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
     if (isLoading) {
       return (
         <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
-          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-            {item.name?.charAt(0) || '?'}
-          </Text>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
         </View>
       );
     }
@@ -145,7 +151,7 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
       <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
         <ImageOff color={theme.colors.textLight} size={32}/>
         <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-          {t('wardrobe.imageNotAvailable')}
+          {item.name?.charAt(0) || '?'}
         </Text>
       </View>
     );
@@ -188,7 +194,7 @@ export default function ClothingItem({ item, onPress, onEdit }: ClothingItemProp
       </View>
     </TouchableOpacity>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -290,3 +296,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
+
+export default ClothingItem;

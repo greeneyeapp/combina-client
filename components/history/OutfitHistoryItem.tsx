@@ -1,3 +1,5 @@
+// components/outfit/OutfitHistoryItem.tsx - Gallery reference system
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -5,7 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { Outfit } from '@/store/outfitStore';
 import { router } from 'expo-router';
-import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
 
 interface OutfitHistoryItemProps {
   outfit: Outfit;
@@ -42,10 +44,10 @@ export default function OutfitHistoryItem({ outfit }: OutfitHistoryItemProps) {
 
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
         try {
-          const uri = await getDisplayImageUri(itemWithUri.item);
+          const uri = await getGalleryDisplayUri(itemWithUri.item);
           return { index, uri };
         } catch (error) {
-          console.error('Error loading URI for history item:', error);
+          console.error('Error loading gallery URI for history item:', error);
           return { index, uri: '' };
         }
       });
@@ -98,7 +100,7 @@ export default function OutfitHistoryItem({ outfit }: OutfitHistoryItemProps) {
             style={styles.clothingImage}
             resizeMode="cover"
             onError={() => {
-              console.warn('Image load error in history for item:', item.id);
+              console.warn('Gallery image load error in history for item:', item.id);
               setItemsWithUris(prev => {
                 const updated = [...prev];
                 const itemIndex = updated.findIndex(u => u.item?.id === item.id);

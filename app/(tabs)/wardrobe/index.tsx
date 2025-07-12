@@ -1,6 +1,6 @@
-// app/(tabs)/wardrobe/index.tsx - Gender type güncellenmiş
+// app/(tabs)/wardrobe/index.tsx - Lazy loading with gallery reference
 
-import React, { useState, useMemo, useCallback  } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -114,22 +114,18 @@ export default function WardrobeScreen() {
     const grouped: { [key: string]: TClothingItem[] } = {};
     const gender = storedUserPlan?.gender || 'female';
     
-    // Gender için doğru kategori hiyerarşisini seç
     let hierarchy;
     if (gender === 'male') {
       hierarchy = GENDERED_CATEGORY_HIERARCHY.male;
     } else if (gender === 'unisex') {
-      // Unisex için her iki cinsiyetin kategorilerini birleştir
       const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
       const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
       const merged: Record<string, string[]> = {};
       
-      // Önce erkek kategorilerini ekle
       Object.entries(maleCategories).forEach(([mainCat, subcats]) => {
         merged[mainCat] = [...subcats];
       });
       
-      // Sonra kadın kategorilerini ekle (duplicate olmayan)
       Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
         if (merged[mainCat]) {
           subcats.forEach(subcat => {
@@ -144,7 +140,6 @@ export default function WardrobeScreen() {
       
       hierarchy = merged;
     } else {
-      // Default female
       hierarchy = GENDERED_CATEGORY_HIERARCHY.female;
     }
 
@@ -186,18 +181,33 @@ export default function WardrobeScreen() {
     </View>
   );
 
-  const renderItem = ({ item: row }: { item: TClothingItem[] }) => (
+  // ✅ UPDATED: Lazy loading için optimized render
+  const renderItem = useCallback(({ item: row }: { item: TClothingItem[] }) => (
     <View style={styles.row}>
       {row.map((clothingItem, idx) => (
         <View style={[styles.itemWrapper, idx === gridColumns - 1 && styles.lastItemWrapper]} key={clothingItem.id}>
-          <ClothingItem item={clothingItem} onPress={() => handleItemPress(clothingItem.id)} onEdit={() => handleEditPress(clothingItem.id)} />
+          <ClothingItem 
+            item={clothingItem} 
+            onPress={() => handleItemPress(clothingItem.id)} 
+            onEdit={() => handleEditPress(clothingItem.id)} 
+          />
         </View>
       ))}
       {Array.from({ length: gridColumns - row.length }).map((_, idx) => (
         <View style={[styles.itemWrapper, styles.lastItemWrapper]} key={`empty-${idx}`} />
       ))}
     </View>
-  );
+  ), []);
+
+  // ✅ UPDATED: Section list için optimizasyonlar
+  const keyExtractor = useCallback((row: TClothingItem[], index: number) => 
+    row.map(i => i.id).join('-') + '-' + index, []);
+
+  const getItemLayout = useCallback((data: any, index: number) => ({
+    length: gridItemWidth + 20, // Item height + margin
+    offset: (gridItemWidth + 20) * index,
+    index,
+  }), []);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -227,7 +237,20 @@ export default function WardrobeScreen() {
         </TouchableOpacity>
       </View>
       {sections.length > 0 ? (
-        <SectionList sections={sections} keyExtractor={(row, idx) => row.map(i => i.id).join('-') + '-' + idx} renderSectionHeader={renderSectionHeader} renderItem={renderItem} stickySectionHeadersEnabled={false} />
+        <SectionList 
+          sections={sections} 
+          keyExtractor={keyExtractor}
+          renderSectionHeader={renderSectionHeader} 
+          renderItem={renderItem}
+          stickySectionHeadersEnabled={false}
+          // ✅ Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={6}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={9}
+          windowSize={10}
+          getItemLayout={getItemLayout}
+        />
       ) : (
         <EmptyState icon="shirt" title={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyTitle') : t('wardrobe.noResultsTitle')} message={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyMessage') : t('wardrobe.noResultsMessage')} buttonText={!searchQuery && !hasActiveFilters() ? t('wardrobe.addFirstItem') : undefined} onButtonPress={!searchQuery && !hasActiveFilters() ? handleAddItem : undefined} />
       )}

@@ -56,8 +56,8 @@ export const useOutfitStore = create<OutfitState>()(
       }
     }),
     {
-      name: 'outfit-storage-v2', // Version bump
-      storage: createJSONStorage(() => simpleStorage), // Güncellendi
+      name: 'outfit-storage',
+      storage: createJSONStorage(() => simpleStorage),
     }
   )
 );

@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx - Fixed image preview bug
+// app/(tabs)/wardrobe/edit/[id].tsx - Gallery reference system
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -21,13 +21,7 @@ import StylePicker from '@/components/wardrobe/StylePicker';
 import GalleryPicker from '@/components/common/GalleryPicker';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import {
-  copyAssetToPermanentStorage,
-  checkImagePermissions,
-  getPermanentImagePaths,
-  validatePermanentImage,
-  getAbsolutePathFromRelative // ✅ FIX: Bu import'u ekle
-} from '@/utils/permanentImageStorage';
+import { checkImagePermissions, getGalleryDisplayUri } from '@/utils/galleryImageHelper';
 import { ALL_COLORS } from '@/utils/constants';
 
 type FormData = {
@@ -50,16 +44,6 @@ export default function EditClothingScreen() {
   const itemToEdit = clothing.find(item => item.id === id);
 
   const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
-  
-  // ✅ FIX: State structure'ı güncelle
-  const [processedImage, setProcessedImage] = useState<{
-    originalPath: string;           // ✅ Relative path
-    thumbnailPath: string;          // ✅ Relative path
-    originalAbsolutePath: string;   // ✅ Display için absolute path
-    thumbnailAbsolutePath: string;  // ✅ Display için absolute path
-    metadata: any;
-  } | null>(null);
-  
   const [currentImageUri, setCurrentImageUri] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
@@ -79,7 +63,6 @@ export default function EditClothingScreen() {
 
   useEffect(() => {
     if (itemToEdit) {
-      // Çoklu renk desteği - colors varsa onu kullan, yoksa color'dan oluştur
       const itemColors = itemToEdit.colors && itemToEdit.colors.length > 0
         ? itemToEdit.colors
         : [itemToEdit.color];
@@ -98,54 +81,16 @@ export default function EditClothingScreen() {
     }
   }, [itemToEdit, reset, id]);
 
-  // ✅ FIX: loadCurrentImage fonksiyonunu güncelle
   const loadCurrentImage = async () => {
     if (!itemToEdit) return;
 
     try {
-      // 1. Registry'den relative path'leri al
-      const { thumbnailPath, originalPath } = await getPermanentImagePaths(itemToEdit.id);
-
-      if (thumbnailPath) {
-        const thumbnailAbsolute = getAbsolutePathFromRelative(thumbnailPath);
-        if (await validatePermanentImage(thumbnailAbsolute)) {
-          setCurrentImageUri(thumbnailAbsolute);
-          console.log('✅ Loaded thumbnail from registry:', thumbnailAbsolute);
-          return;
-        }
-      }
-
-      if (originalPath) {
-        const originalAbsolute = getAbsolutePathFromRelative(originalPath);
-        if (await validatePermanentImage(originalAbsolute)) {
-          setCurrentImageUri(originalAbsolute);
-          console.log('✅ Loaded original from registry:', originalAbsolute);
-          return;
-        }
-      }
-
-      // 2. Fallback: item'da saklanan path'leri kontrol et
-      if (itemToEdit.thumbnailImageUri) {
-        const thumbnailAbsolute = getAbsolutePathFromRelative(itemToEdit.thumbnailImageUri);
-        if (await validatePermanentImage(thumbnailAbsolute)) {
-          setCurrentImageUri(thumbnailAbsolute);
-          console.log('✅ Loaded thumbnail from item:', thumbnailAbsolute);
-          return;
-        }
-      }
-
-      if (itemToEdit.originalImageUri) {
-        const originalAbsolute = getAbsolutePathFromRelative(itemToEdit.originalImageUri);
-        if (await validatePermanentImage(originalAbsolute)) {
-          setCurrentImageUri(originalAbsolute);
-          console.log('✅ Loaded original from item:', originalAbsolute);
-          return;
-        }
-      }
-
-      console.warn('⚠️ No valid image found for item:', itemToEdit.id);
+      const uri = await getGalleryDisplayUri(itemToEdit);
+      setCurrentImageUri(uri);
+      console.log('✅ Loaded current image for edit:', uri ? 'found' : 'missing');
     } catch (error) {
       console.error('❌ Error loading current image:', error);
+      setCurrentImageUri('');
     }
   };
 
@@ -162,47 +107,20 @@ export default function EditClothingScreen() {
     }
   };
 
-  // ✅ FIX: handleAssetSelected fonksiyonunu güncelle
   const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
-    setIsLoading(true);
-    try {
-      const result = await copyAssetToPermanentStorage(id!, asset);
-      setSelectedAsset(asset);
-      
-      // ✅ FIX: Hem relative hem absolute path'leri sakla
-      setProcessedImage({
-        originalPath: result.originalImagePath,        // Relative path (store için)
-        thumbnailPath: result.thumbnailImagePath,      // Relative path (store için)
-        originalAbsolutePath: getAbsolutePathFromRelative(result.originalImagePath),   // Absolute (display için)
-        thumbnailAbsolutePath: getAbsolutePathFromRelative(result.thumbnailImagePath), // Absolute (display için)
-        metadata: result.metadata
-      });
-      
-      // ✅ FIX: Display için absolute path kullan
-      setCurrentImageUri(getAbsolutePathFromRelative(result.thumbnailImagePath));
-      setImageChanged(true);
-      
-      console.log('✅ Asset processed for edit:', {
-        originalRelative: result.originalImagePath,
-        thumbnailRelative: result.thumbnailImagePath,
-        displayUri: getAbsolutePathFromRelative(result.thumbnailImagePath)
-      });
-      
-    } catch (error) {
-      console.error('❌ Error processing selected asset:', error);
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.errorProcessingImage'),
-        buttons: [{ text: t('common.ok'), onPress: () => { } }]
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setSelectedAsset(asset);
+    setCurrentImageUri(asset.uri);
+    setImageChanged(true);
+    
+    console.log('✅ Asset selected for edit:', {
+      assetId: asset.id,
+      width: asset.width,
+      height: asset.height
+    });
   };
 
   const removeImage = () => {
     setSelectedAsset(null);
-    setProcessedImage(null);
     setCurrentImageUri('');
     setImageChanged(true);
   };
@@ -225,17 +143,21 @@ export default function EditClothingScreen() {
         ...itemToEdit,
         ...data,
         style: data.style.join(','),
-        color: data.colors[0] || itemToEdit.color, // Ana renk (backward compatibility)
-        colors: data.colors, // Çoklu renk desteği
+        color: data.colors[0] || itemToEdit.color,
+        colors: data.colors,
       };
 
-      if (imageChanged && processedImage) {
-        // ✅ FIX: Relative path'leri store'a kaydet
-        updatedItemData.originalImageUri = processedImage.originalPath;      // Relative
-        updatedItemData.thumbnailImageUri = processedImage.thumbnailPath;    // Relative
-        updatedItemData.imageMetadata = processedImage.metadata;
+      if (imageChanged && selectedAsset) {
+        updatedItemData.galleryAssetId = selectedAsset.id;
+        updatedItemData.imageMetadata = {
+          width: selectedAsset.width,
+          height: selectedAsset.height,
+          fileSize: selectedAsset.fileSize,
+          mimeType: selectedAsset.mimeType || 'image/jpeg',
+        };
         updatedItemData.isImageMissing = false;
-      } else if (imageChanged && !processedImage) {
+      } else if (imageChanged && !selectedAsset) {
+        updatedItemData.galleryAssetId = undefined;
         updatedItemData.isImageMissing = true;
       }
 
@@ -263,9 +185,8 @@ export default function EditClothingScreen() {
     }
   };
 
-  // ✅ FIX: renderImageSection'ı güncelle
   const renderImageSection = () => {
-    if (imageChanged && !processedImage && !currentImageUri) {
+    if (imageChanged && !selectedAsset && !currentImageUri) {
       return (
         <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
           <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
@@ -278,7 +199,6 @@ export default function EditClothingScreen() {
     if (currentImageUri) {
       return (
         <View style={styles.imageContainer}>
-          {/* ✅ FIX: currentImageUri zaten absolute path olarak set ediliyor */}
           <Image
             source={{ uri: currentImageUri }}
             style={styles.clothingImage}

@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/[id].tsx - Çoklu renk desteği ile güncellenmiş
+// app/(tabs)/wardrobe/[id].tsx - Gallery reference system
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
@@ -12,7 +12,7 @@ import HeaderBar from '@/components/common/HeaderBar';
 import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
-import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
 import { ALL_COLORS } from '@/utils/constants';
 
 export default function ClothingDetailScreen() {
@@ -36,7 +36,7 @@ export default function ClothingDetailScreen() {
             setImageLoadError(false);
 
             try {
-                const uri = await getDisplayImageUri(item);
+                const uri = await getGalleryDisplayUri(item);
                 setDisplayUri(uri);
                 if (!uri) setImageLoadError(true);
             } catch (error) {
@@ -49,13 +49,12 @@ export default function ClothingDetailScreen() {
         };
 
         loadDisplayUri();
-    }, [item?.id, item?.originalImageUri, item?.thumbnailImageUri, item?.isImageMissing]);
+    }, [item?.id, item?.galleryAssetId, item?.isImageMissing]);
 
     if (!item) {
         return null;
     }
 
-    // Çoklu renk desteği
     const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
     const stylesArray = item.style ? item.style.split(',') : [];
 

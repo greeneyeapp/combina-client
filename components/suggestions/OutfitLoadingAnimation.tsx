@@ -1,4 +1,4 @@
-// components/suggestions/OutfitLoadingAnimation.tsx - Modern ve tema uyumlu tasarım
+// components/suggestions/OutfitLoadingAnimation.tsx - Gallery reference system
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Image, Easing, Dimensions } from 'react-native';
@@ -21,7 +21,7 @@ import {
   Gem,
   Scissors
 } from 'lucide-react-native';
-import { getDisplayImageUri } from '@/utils/imageDisplayHelper';
+import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
@@ -106,10 +106,10 @@ export default function OutfitLoadingAnimation({
 
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
         try {
-          const uri = await getDisplayImageUri(itemWithUri.item);
+          const uri = await getGalleryDisplayUri(itemWithUri.item);
           return { index, uri };
         } catch (error) {
-          console.error('Error loading URI for loading animation:', error);
+          console.error('Error loading gallery URI for loading animation:', error);
           return { index, uri: '' };
         }
       });
@@ -345,7 +345,7 @@ export default function OutfitLoadingAnimation({
             style={styles.itemImage}
             resizeMode="cover"
             onError={() => {
-              console.warn('Image load error in loading animation for item:', item.id);
+              console.warn('Gallery image load error in loading animation for item:', item.id);
               setItemsWithUris(prev => {
                 const updated = [...prev];
                 const itemIndex = updated.findIndex(u => u.item?.id === item.id);

@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/add.tsx - Fixed image preview bug
+// app/(tabs)/wardrobe/add.tsx - Gallery reference system
 
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
-import { Camera, Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
+import { Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
 import * as MediaLibrary from 'expo-media-library';
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
@@ -23,11 +23,7 @@ import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import {
-  copyAssetToPermanentStorage,
-  checkImagePermissions,
-  getAbsolutePathFromRelative // ✅ FIX: Bu import'u ekle
-} from '@/utils/permanentImageStorage';
+import { checkImagePermissions } from '@/utils/galleryImageHelper';
 import { ALL_COLORS } from '@/utils/constants';
 
 type FormData = {
@@ -45,16 +41,6 @@ export default function AddClothingScreen() {
   const { addClothing } = useClothingStore();
   const { userPlan } = useUserPlanStore();
   const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
-
-  // ✅ FIX: State structure'ını güncelle
-  const [processedImage, setProcessedImage] = useState<{
-    originalPath: string;      // ✅ Relative path
-    thumbnailPath: string;     // ✅ Relative path  
-    originalAbsolutePath: string;   // ✅ Display için absolute path
-    thumbnailAbsolutePath: string;  // ✅ Display için absolute path
-    metadata: any;
-  } | null>(null);
-
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -83,7 +69,6 @@ export default function AddClothingScreen() {
     useCallback(() => {
       reset({ name: '', category: '', colors: [], season: [], style: [], notes: '' });
       setSelectedAsset(null);
-      setProcessedImage(null);
       setIsLoading(false);
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
@@ -102,50 +87,21 @@ export default function AddClothingScreen() {
     }
   };
 
-  // ✅ FIX: Asset selection handler'ı güncelle
   const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
-    setIsLoading(true);
-    try {
-      const itemId = generateUniqueId();
-      const result = await copyAssetToPermanentStorage(itemId, asset);
-
-      setSelectedAsset(asset);
-
-      // ✅ FIX: Hem relative hem absolute path'leri sakla
-      setProcessedImage({
-        originalPath: result.originalImagePath,        // Relative path (store için)
-        thumbnailPath: result.thumbnailImagePath,      // Relative path (store için)
-        originalAbsolutePath: getAbsolutePathFromRelative(result.originalImagePath),   // Absolute (display için)
-        thumbnailAbsolutePath: getAbsolutePathFromRelative(result.thumbnailImagePath), // Absolute (display için)
-        metadata: result.metadata
-      });
-
-      console.log('✅ Asset processed:', {
-        originalRelative: result.originalImagePath,
-        thumbnailRelative: result.thumbnailImagePath,
-        originalAbsolute: getAbsolutePathFromRelative(result.originalImagePath),
-        thumbnailAbsolute: getAbsolutePathFromRelative(result.thumbnailImagePath)
-      });
-
-    } catch (error) {
-      console.error('❌ Error processing selected asset:', error);
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.errorProcessingImage'),
-        buttons: [{ text: t('common.ok') }]
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    setSelectedAsset(asset);
+    console.log('✅ Asset selected for add:', {
+      assetId: asset.id,
+      width: asset.width,
+      height: asset.height
+    });
   };
 
   const removeImage = () => {
     setSelectedAsset(null);
-    setProcessedImage(null);
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!processedImage || !selectedAsset) {
+    if (!selectedAsset) {
       showAlert({
         title: t('common.error'),
         message: t('wardrobe.imageRequired'),
@@ -176,15 +132,18 @@ export default function AddClothingScreen() {
         id: generateUniqueId(),
         name: data.name,
         category: data.category,
-        color: data.colors[0], // Ana renk (backward compatibility)
-        colors: data.colors, // Çoklu renk desteği
+        color: data.colors[0],
+        colors: data.colors,
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
-        // ✅ FIX: Relative path'leri store'a kaydet
-        originalImageUri: processedImage.originalPath,     // Relative path
-        thumbnailImageUri: processedImage.thumbnailPath,   // Relative path
-        imageMetadata: processedImage.metadata,
+        galleryAssetId: selectedAsset.id,
+        imageMetadata: {
+          width: selectedAsset.width,
+          height: selectedAsset.height,
+          fileSize: selectedAsset.fileSize,
+          mimeType: selectedAsset.mimeType || 'image/jpeg',
+        },
         createdAt: new Date().toISOString(),
         isImageMissing: false
       };
@@ -213,14 +172,12 @@ export default function AddClothingScreen() {
     }
   };
 
-  // ✅ FIX: Image section render'ı güncelle
   const renderImageSection = () => {
-    if (processedImage && selectedAsset) {
+    if (selectedAsset) {
       return (
         <View style={styles.imageContainer}>
-          {/* ✅ FIX: Absolute path kullan display için */}
           <Image
-            source={{ uri: processedImage.thumbnailAbsolutePath }}
+            source={{ uri: selectedAsset.uri }}
             style={styles.clothingImage}
           />
           <TouchableOpacity
@@ -231,8 +188,8 @@ export default function AddClothingScreen() {
           </TouchableOpacity>
           <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
-              {processedImage.metadata.width} × {processedImage.metadata.height}
-              {processedImage.metadata.fileSize && ` • ${Math.round(processedImage.metadata.fileSize / 1024)} KB`}
+              {selectedAsset.width} × {selectedAsset.height}
+              {selectedAsset.fileSize && ` • ${Math.round(selectedAsset.fileSize / 1024)} KB`}
             </Text>
           </View>
         </View>

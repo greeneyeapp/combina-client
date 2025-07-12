@@ -11,7 +11,8 @@
         "withoutCredentials": true
       },
       "ios": {
-        "simulator": true
+        "simulator": true,
+        "buildConfiguration": "Debug"
       }
     },
     "preview": {
@@ -21,7 +22,8 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "buildConfiguration": "Release"
       }
     },
     "production": {
@@ -31,7 +33,8 @@
         "gradleCommand": ":app:bundleRelease"
       },
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "buildConfiguration": "Release"
       }
     }
   },

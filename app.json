@@ -46,7 +46,12 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-updates",
+      [
+        "expo-updates",
+        {
+          "username": "greeneyeapp"
+        }
+      ],
       "expo-router",
       "expo-font",
       "expo-secure-store",
@@ -61,6 +66,9 @@
             "compileSdkVersion": 35,
             "targetSdkVersion": 35,
             "buildToolsVersion": "35.0.0"
+          },
+          "ios": {
+            "newArchEnabled": false
           }
         }
       ],

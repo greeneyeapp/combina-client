@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/add.tsx - Gallery reference system
+// app/(tabs)/wardrobe/add.tsx - File system based image storage
 
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -9,7 +9,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
-import * as MediaLibrary from 'expo-media-library';
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
@@ -23,7 +22,7 @@ import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import { checkImagePermissions } from '@/utils/galleryImageHelper';
+import { ImagePaths, getImageUri } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
 
 type FormData = {
@@ -40,7 +39,7 @@ export default function AddClothingScreen() {
   const { theme } = useTheme();
   const { addClothing } = useClothingStore();
   const { userPlan } = useUserPlanStore();
-  const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
+  const [selectedImagePaths, setSelectedImagePaths] = useState<ImagePaths | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -68,40 +67,32 @@ export default function AddClothingScreen() {
   useFocusEffect(
     useCallback(() => {
       reset({ name: '', category: '', colors: [], season: [], style: [], notes: '' });
-      setSelectedAsset(null);
+      setSelectedImagePaths(null);
       setIsLoading(false);
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
   );
 
-  const handleOpenGalleryPicker = async () => {
-    const hasPermission = await checkImagePermissions();
-    if (hasPermission) {
-      setShowGalleryPicker(true);
-    } else {
-      showAlert({
-        title: t('common.error'),
-        message: t('permissions.galleryRequired'),
-        buttons: [{ text: t('common.ok') }]
-      });
-    }
+  const handleOpenGalleryPicker = () => {
+    setShowGalleryPicker(true);
   };
 
-  const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
-    setSelectedAsset(asset);
-    console.log('✅ Asset selected for add:', {
-      assetId: asset.id,
-      width: asset.width,
-      height: asset.height
+  const handleImageSelected = (imagePaths: ImagePaths) => {
+    setSelectedImagePaths(imagePaths);
+    console.log('✅ Image paths selected for add:', {
+      original: imagePaths.originalPath,
+      thumbnail: imagePaths.thumbnailPath,
+      fileName: imagePaths.fileName
     });
+    setShowGalleryPicker(false);
   };
 
   const removeImage = () => {
-    setSelectedAsset(null);
+    setSelectedImagePaths(null);
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!selectedAsset) {
+    if (!selectedImagePaths) {
       showAlert({
         title: t('common.error'),
         message: t('wardrobe.imageRequired'),
@@ -137,15 +128,9 @@ export default function AddClothingScreen() {
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
-        galleryAssetId: selectedAsset.id,
-        imageMetadata: {
-          width: selectedAsset.width,
-          height: selectedAsset.height,
-          fileSize: selectedAsset.fileSize,
-          mimeType: selectedAsset.mimeType || 'image/jpeg',
-        },
+        originalImagePath: selectedImagePaths.originalPath,
+        thumbnailImagePath: selectedImagePaths.thumbnailPath,
         createdAt: new Date().toISOString(),
-        isImageMissing: false
       };
 
       await addClothing(newItem);
@@ -173,12 +158,17 @@ export default function AddClothingScreen() {
   };
 
   const renderImageSection = () => {
-    if (selectedAsset) {
+    if (selectedImagePaths) {
+      const imageUri = getImageUri(selectedImagePaths.originalPath, false);
+      
       return (
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: selectedAsset.uri }}
+            source={{ uri: imageUri }}
             style={styles.clothingImage}
+            onError={(error) => {
+              console.error('Image load error:', error);
+            }}
           />
           <TouchableOpacity
             style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]}
@@ -188,8 +178,7 @@ export default function AddClothingScreen() {
           </TouchableOpacity>
           <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
-              {selectedAsset.width} × {selectedAsset.height}
-              {selectedAsset.fileSize && ` • ${Math.round(selectedAsset.fileSize / 1024)} KB`}
+              {t('wardrobe.storedInApp', 'Stored in app')}
             </Text>
           </View>
         </View>
@@ -388,7 +377,7 @@ export default function AddClothingScreen() {
       <GalleryPicker
         isVisible={showGalleryPicker}
         onClose={() => setShowGalleryPicker(false)}
-        onSelectImage={handleAssetSelected}
+        onSelectImage={handleImageSelected}
         allowCamera={true}
       />
     </SafeAreaView>

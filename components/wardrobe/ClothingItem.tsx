@@ -1,4 +1,4 @@
-// components/wardrobe/ClothingItem.tsx - Lazy loading with gallery reference
+// components/wardrobe/ClothingItem.tsx - File system based lazy loading
 
 import React, { useState, useEffect, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { Edit2, ImageOff } from 'lucide-react-native';
 import { ClothingItem as TClothingItem } from '@/store/clothingStore';
-import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
+import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
 
 interface ClothingItemProps {
@@ -18,23 +18,39 @@ interface ClothingItemProps {
 const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const [displayUri, setDisplayUri] = useState<string>('');
+  const [thumbnailUri, setThumbnailUri] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
     
-    const loadDisplayUri = async () => {
+    const loadThumbnail = async () => {
+      if (!item.thumbnailImagePath) {
+        setIsLoading(false);
+        setImageError(true);
+        return;
+      }
+
       setIsLoading(true);
+      setImageError(false);
+      
       try {
-        const uri = await getGalleryDisplayUri(item);
+        // Check if thumbnail exists
+        const exists = await checkImageExists(item.thumbnailImagePath, true);
+        
         if (isMounted) {
-          setDisplayUri(uri);
+          if (exists) {
+            const uri = getImageUri(item.thumbnailImagePath, true);
+            setThumbnailUri(uri);
+          } else {
+            setImageError(true);
+          }
         }
       } catch (error) {
-        console.error('Error loading display URI for item:', item.id, error);
+        console.error('Error loading thumbnail for item:', item.id, error);
         if (isMounted) {
-          setDisplayUri('');
+          setImageError(true);
         }
       } finally {
         if (isMounted) {
@@ -43,12 +59,12 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
       }
     };
 
-    loadDisplayUri();
+    loadThumbnail();
     
     return () => {
       isMounted = false;
     };
-  }, [item.galleryAssetId]);
+  }, [item.thumbnailImagePath, item.id]);
 
   const handleEditPress = (e: any) => {
     e.stopPropagation();
@@ -133,27 +149,30 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
       );
     }
 
-    if (displayUri) {
+    if (imageError || !thumbnailUri) {
       return (
-        <Image
-          source={{ uri: displayUri }}
-          style={styles.image}
-          resizeMode="cover"
-          onError={() => {
-            console.warn('Image load error for item:', item.id);
-            setDisplayUri('');
-          }}
-        />
+        <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
+          <ImageOff color={theme.colors.textLight} size={32}/>
+          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
+            {item.name?.charAt(0) || '?'}
+          </Text>
+        </View>
       );
     }
 
     return (
-      <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
-        <ImageOff color={theme.colors.textLight} size={32}/>
-        <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-          {item.name?.charAt(0) || '?'}
-        </Text>
-      </View>
+      <Image
+        source={{ uri: thumbnailUri }}
+        style={styles.image}
+        resizeMode="cover"
+        onError={(error) => {
+          console.warn('Thumbnail load error for item:', item.id, error.nativeEvent.error);
+          setImageError(true);
+        }}
+        onLoad={() => {
+          // Thumbnail loaded successfully
+        }}
+      />
     );
   };
 

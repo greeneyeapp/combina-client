@@ -1,4 +1,4 @@
-// components/suggestions/OutfitSuggestion.tsx - Gallery reference system
+// components/suggestions/OutfitSuggestion.tsx - File system based image loading
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Animated, Dimensions } from 'react-native';
@@ -8,7 +8,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import { Heart, Shirt, Sparkles, Star, Palette, Crown } from 'lucide-react-native';
 import { OutfitSuggestionResponse } from '@/services/aiService';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
+import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
 
 const { width } = Dimensions.get('window');
 
@@ -94,10 +94,21 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
 
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
         try {
-          const uri = await getGalleryDisplayUri(itemWithUri.item);
-          return { index, uri };
+          if (!itemWithUri.item.originalImagePath) {
+            return { index, uri: '' };
+          }
+
+          // Check if original image exists
+          const exists = await checkImageExists(itemWithUri.item.originalImagePath, false);
+          
+          if (exists) {
+            const uri = getImageUri(itemWithUri.item.originalImagePath, false);
+            return { index, uri };
+          } else {
+            return { index, uri: '' };
+          }
         } catch (error) {
-          console.error('Error loading gallery URI for suggestion item:', error);
+          console.error('Error loading file system image for suggestion item:', error);
           return { index, uri: '' };
         }
       });
@@ -176,7 +187,7 @@ export default function OutfitSuggestion({ outfit, onLike, liked }: OutfitSugges
                 source={{ uri: displayUri }}
                 style={[imageStyle, styles.itemImage]}
                 onError={() => {
-                  console.warn('Gallery image load error in suggestion for item:', item.id);
+                  console.warn('File system image load error in suggestion for item:', item.id);
                   setItemsWithUris(prev => {
                     const updated = [...prev];
                     const itemIndex = updated.findIndex(u => u.item?.id === item.id);

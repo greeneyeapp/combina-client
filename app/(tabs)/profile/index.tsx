@@ -1,4 +1,5 @@
-// app/(tabs)/profile/index.tsx (Güncellenmiş - Storage kısmı kaldırıldı)
+// app/(tabs)/profile/index.tsx - With Storage Management
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -26,7 +27,8 @@ import {
   Star,
   Zap,
   HelpCircle,
-  RefreshCw
+  RefreshCw,
+  HardDrive
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
@@ -159,6 +161,7 @@ export default function ProfileScreen() {
   const getLanguageName = (code: string) => languages.find(l => l.code === code)?.name || code;
   const handleLanguagePress = () => router.push('/(tabs)/profile/language');
   const handleSubscriptionPress = () => router.push('/profile/subscription' as any);
+  const handleStoragePress = () => router.push('/(tabs)/profile/storage' as any);
 
   const handleLogout = () => {
     showAlert({
@@ -289,6 +292,15 @@ export default function ProfileScreen() {
             {t('profile.account')}
           </Text>
           <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
+            <TouchableOpacity style={styles.settingRow} onPress={handleStoragePress}>
+              <View style={styles.settingLabelContainer}>
+                <HardDrive color={theme.colors.text} size={20} />
+                <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('storage.title')}</Text>
+              </View>
+              <ChevronRight color={theme.colors.textLight} size={16} />
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
             <TouchableOpacity style={styles.settingRow} onPress={handleHelpPress}>
               <View style={styles.settingLabelContainer}>
                 <HelpCircle color={theme.colors.text} size={20} />

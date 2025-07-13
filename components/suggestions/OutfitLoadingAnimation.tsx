@@ -1,4 +1,4 @@
-// components/suggestions/OutfitLoadingAnimation.tsx - Gallery reference system
+// components/suggestions/OutfitLoadingAnimation.tsx - File system based image loading
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Image, Easing, Dimensions } from 'react-native';
@@ -21,7 +21,7 @@ import {
   Gem,
   Scissors
 } from 'lucide-react-native';
-import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
+import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
@@ -85,7 +85,7 @@ export default function OutfitLoadingAnimation({
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   const randomClothingItems = React.useMemo(() => {
-    const availableItems = clothing.filter(item => !item.isImageMissing);
+    const availableItems = clothing.filter(item => item.originalImagePath);
     if (availableItems.length === 0) return [];
 
     const shuffled = [...availableItems].sort(() => 0.5 - Math.random());
@@ -106,10 +106,21 @@ export default function OutfitLoadingAnimation({
 
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
         try {
-          const uri = await getGalleryDisplayUri(itemWithUri.item);
-          return { index, uri };
+          if (!itemWithUri.item.originalImagePath) {
+            return { index, uri: '' };
+          }
+
+          // Check if original image exists
+          const exists = await checkImageExists(itemWithUri.item.originalImagePath, false);
+          
+          if (exists) {
+            const uri = getImageUri(itemWithUri.item.originalImagePath, false);
+            return { index, uri };
+          } else {
+            return { index, uri: '' };
+          }
         } catch (error) {
-          console.error('Error loading gallery URI for loading animation:', error);
+          console.error('Error loading file system image for loading animation:', error);
           return { index, uri: '' };
         }
       });
@@ -345,7 +356,7 @@ export default function OutfitLoadingAnimation({
             style={styles.itemImage}
             resizeMode="cover"
             onError={() => {
-              console.warn('Gallery image load error in loading animation for item:', item.id);
+              console.warn('File system image load error in loading animation for item:', item.id);
               setItemsWithUris(prev => {
                 const updated = [...prev];
                 const itemIndex = updated.findIndex(u => u.item?.id === item.id);

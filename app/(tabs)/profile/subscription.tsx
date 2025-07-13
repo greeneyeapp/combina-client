@@ -124,7 +124,7 @@ export default function SubscriptionScreen() {
         text1: t('subscription.purchaseSuccessTitle'),
         text2: successMessage
       });
-      router.back();
+      router.replace('/(tabs)/profile');
 
     } catch (error: any) {
       if (!error.userCancelled) {
@@ -458,7 +458,7 @@ export default function SubscriptionScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.replace('/(tabs)/profile')} style={styles.backButton}>
           <ArrowLeft color={theme.colors.text} size={24} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.text }]}>

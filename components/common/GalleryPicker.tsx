@@ -1,4 +1,4 @@
-// components/common/GalleryPicker.tsx - Fixed scroll stability
+// components/common/GalleryPicker.tsx - File system based image selection
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { X, Check, Camera } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { saveImageFromGallery, saveImageFromCamera, ImagePaths } from '@/utils/fileSystemImageManager';
 
 const { width } = Dimensions.get('window');
 const gridSpacing = 2;
@@ -27,7 +28,7 @@ const gridItemWidth = (width - gridSpacing * (gridColumns + 1)) / gridColumns;
 interface GalleryPickerProps {
   isVisible: boolean;
   onClose: () => void;
-  onSelectImage: (asset: MediaLibrary.Asset) => void;
+  onSelectImage: (imagePaths: ImagePaths) => void; // Changed from MediaLibrary.Asset to ImagePaths
   allowCamera?: boolean;
 }
 
@@ -47,6 +48,7 @@ export default function GalleryPicker({
   const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [endCursor, setEndCursor] = useState<string>();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
@@ -113,7 +115,10 @@ export default function GalleryPicker({
   };
 
   const handleCameraPress = async () => {
+    if (isProcessing) return;
+    
     try {
+      setIsProcessing(true);
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
         console.error('Camera permission denied');
@@ -128,12 +133,15 @@ export default function GalleryPicker({
       });
 
       if (!result.canceled) {
-        const asset = await MediaLibrary.createAssetAsync(result.assets[0].uri);
-        onSelectImage(asset);
+        // Save camera image to file system (NOT to gallery)
+        const imagePaths = await saveImageFromCamera(result.assets[0].uri);
+        onSelectImage(imagePaths);
         onClose();
       }
     } catch (error) {
       console.error('Error taking photo:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -141,21 +149,30 @@ export default function GalleryPicker({
     setSelectedAsset(asset);
   };
 
-  const handleConfirmSelection = () => {
-    if (selectedAsset) {
-      onSelectImage(selectedAsset);
+  const handleConfirmSelection = async () => {
+    if (!selectedAsset || isProcessing) return;
+
+    try {
+      setIsProcessing(true);
+      
+      // Save gallery image to file system
+      const imagePaths = await saveImageFromGallery(selectedAsset);
+      onSelectImage(imagePaths);
       onClose();
+    } catch (error) {
+      console.error('Error saving gallery image:', error);
+      // Show error to user
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // ✅ FIX: Fixed dimensions for stable scroll
   const getItemLayout = useCallback((data: any, index: number) => ({
     length: gridItemWidth,
     offset: gridItemWidth * index,
     index,
   }), []);
 
-  // ✅ FIX: Stable image component with fixed dimensions
   const renderAssetItem = useCallback(({ item }: { item: MediaLibrary.Asset }) => {
     const isSelected = selectedAsset?.id === item.id;
 
@@ -165,14 +182,14 @@ export default function GalleryPicker({
           styles.assetItem,
           { 
             width: gridItemWidth,
-            height: gridItemWidth, // ✅ Fixed height
+            height: gridItemWidth,
           },
           isSelected && { borderColor: theme.colors.primary, borderWidth: 3 }
         ]}
         onPress={() => handleAssetPress(item)}
         activeOpacity={0.8}
+        disabled={isProcessing}
       >
-        {/* ✅ FIX: Placeholder with fixed dimensions */}
         <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
           <ActivityIndicator size="small" color={theme.colors.primary} />
         </View>
@@ -181,15 +198,6 @@ export default function GalleryPicker({
           source={{ uri: item.uri }}
           style={styles.assetImage}
           resizeMode="cover"
-          onLoadStart={() => {
-            // Image loading started - placeholder already showing
-          }}
-          onLoad={() => {
-            // Image loaded - no layout change needed
-          }}
-          onError={() => {
-            // Keep placeholder on error
-          }}
         />
 
         {isSelected && (
@@ -201,7 +209,7 @@ export default function GalleryPicker({
         )}
       </TouchableOpacity>
     );
-  }, [selectedAsset?.id, theme.colors, gridItemWidth]);
+  }, [selectedAsset?.id, theme.colors, gridItemWidth, isProcessing]);
 
   const renderCameraItem = () => {
     if (!allowCamera) return null;
@@ -213,21 +221,27 @@ export default function GalleryPicker({
           { 
             backgroundColor: theme.colors.card,
             width: gridItemWidth,
-            height: gridItemWidth, // ✅ Fixed height
+            height: gridItemWidth,
           }
         ]}
         onPress={handleCameraPress}
         activeOpacity={0.7}
+        disabled={isProcessing}
       >
-        <Camera color={theme.colors.text} size={32} />
-        <Text style={[styles.cameraText, { color: theme.colors.text }]}>
-          {t('wardrobe.takePhoto')}
-        </Text>
+        {isProcessing ? (
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        ) : (
+          <>
+            <Camera color={theme.colors.text} size={32} />
+            <Text style={[styles.cameraText, { color: theme.colors.text }]}>
+              {t('wardrobe.takePhoto')}
+            </Text>
+          </>
+        )}
       </TouchableOpacity>
     );
   };
 
-  // ✅ FIX: Stable header with fixed height
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       {allowCamera && renderCameraItem()}
@@ -242,7 +256,7 @@ export default function GalleryPicker({
         <TouchableOpacity
           style={[styles.loadMoreButton, { backgroundColor: theme.colors.card }]}
           onPress={() => loadAssets(false)}
-          disabled={loading}
+          disabled={loading || isProcessing}
         >
           <Text style={[styles.loadMoreText, { color: theme.colors.text }]}>
             {t('common.loadMore')}
@@ -265,11 +279,12 @@ export default function GalleryPicker({
       return (
         <View style={styles.permissionContainer}>
           <Text style={[styles.permissionText, { color: theme.colors.text }]}>
-            {t('permissions.galleryRequiredMessage')}
+            {t('permissions.galleryRequired')}
           </Text>
           <TouchableOpacity
             style={[styles.permissionButton, { backgroundColor: theme.colors.primary }]}
             onPress={checkPermissionAndLoadAssets}
+            disabled={isProcessing}
           >
             <Text style={styles.permissionButtonText}>
               {t('permissions.grantPermission')}
@@ -289,7 +304,6 @@ export default function GalleryPicker({
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}
         showsVerticalScrollIndicator={false}
-        // ✅ FIX: Performance and scroll stability optimizations
         getItemLayout={getItemLayout}
         removeClippedSubviews={true}
         maxToRenderPerBatch={15}
@@ -301,7 +315,7 @@ export default function GalleryPicker({
           autoscrollToTopThreshold: 100
         }}
         onEndReached={() => {
-          if (hasNextPage && !loading) {
+          if (hasNextPage && !loading && !isProcessing) {
             loadAssets(false);
           }
         }}
@@ -314,13 +328,13 @@ export default function GalleryPicker({
     <Modal visible={isVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} disabled={isProcessing}>
             <X color={theme.colors.text} size={24} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
             {t('wardrobe.selectPhoto')}
           </Text>
-          {selectedAsset && !isLoadingPermission ? (
+          {selectedAsset && !isLoadingPermission && !isProcessing ? (
             <TouchableOpacity onPress={handleConfirmSelection} style={styles.confirmButton}>
               <Check color={theme.colors.primary} size={24} />
             </TouchableOpacity>
@@ -331,7 +345,7 @@ export default function GalleryPicker({
 
         {renderContent()}
 
-        {selectedAsset && (
+        {selectedAsset && !isProcessing && (
           <View style={[styles.selectionFooter, { backgroundColor: theme.colors.card }]}>
             <Image
               source={{ uri: selectedAsset.uri }}
@@ -353,6 +367,17 @@ export default function GalleryPicker({
             >
               <Check color={theme.colors.white} size={20} />
             </TouchableOpacity>
+          </View>
+        )}
+
+        {isProcessing && (
+          <View style={styles.processingOverlay}>
+            <View style={[styles.processingContainer, { backgroundColor: theme.colors.background }]}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={[styles.processingText, { color: theme.colors.text }]}>
+                {t('common.processing', 'Processing...')}
+              </Text>
+            </View>
           </View>
         )}
       </SafeAreaView>
@@ -414,7 +439,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  // ✅ FIX: Fixed dimensions for stable layout
   imagePlaceholder: {
     position: 'absolute',
     top: 0,
@@ -510,5 +534,31 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontFamily: 'Montserrat-Bold',
+  },
+  processingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  processingContainer: {
+    padding: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  processingText: {
+    fontSize: 16,
+    fontFamily: 'Montserrat-Medium',
+    marginTop: 16,
   },
 });

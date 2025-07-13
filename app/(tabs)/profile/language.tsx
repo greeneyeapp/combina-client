@@ -48,11 +48,11 @@ export default function LanguageScreen() {
       await AsyncStorage.setItem('app_language', selectedLanguage);
       
       console.log('Language saved:', selectedLanguage);
-      router.back();
+      router.replace('/(tabs)/profile');
     } catch (error) {
       console.error('Error saving language:', error);
       // Hata durumunda yine de geri dön
-      router.back();
+      router.replace('/(tabs)/profile');
     }
   };
 
@@ -61,7 +61,7 @@ export default function LanguageScreen() {
       <HeaderBar
         title={t('language.title')}
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-        onLeftPress={() => router.back()}
+        onLeftPress={() => router.replace('/(tabs)/profile')}
       />
 
       <View style={styles.content}>

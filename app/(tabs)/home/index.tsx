@@ -1,4 +1,5 @@
-// app/(tabs)/home/index.tsx - Kartlar Alt Alta Düzenlendi
+// app/(tabs)/home/index.tsx - With Storage Management Quick Action
+
 import React from 'react';
 import {
     View,
@@ -21,6 +22,7 @@ import {
     Crown,
     Plus,
     History,
+    HardDrive,
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
@@ -86,10 +88,10 @@ export default function HomeScreen() {
             onPress: () => router.push('/wardrobe/add' as any),
         },
         {
-            id: 'history',
-            title: t('home.historyTitle', 'Outfit History'),
-            icon: <History size={20} color={theme.colors.primary} />,
-            onPress: () => router.push('/(tabs)/history'),
+            id: 'storage',
+            title: t('home.storageTitle', 'Storage Management'),
+            icon: <HardDrive size={20} color={theme.colors.primary} />,
+            onPress: () => router.push('/(tabs)/profile/storage' as any),
         },
     ];
 
@@ -156,7 +158,7 @@ export default function HomeScreen() {
                     <View style={[styles.premiumBadge, { backgroundColor: 'rgba(255, 215, 0, 0.2)' }]}>
                         <Crown size={16} color="#FFD700" />
                         <Text style={[styles.premiumBadgeText, { color: '#FFD700' }]}>
-                            Premium Member
+                            {t('home.premiumBadgeText', 'Premium Member')}
                         </Text>
                     </View>
                 )}

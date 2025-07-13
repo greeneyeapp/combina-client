@@ -1,4 +1,4 @@
-// components/outfit/OutfitHistoryItem.tsx - Gallery reference system
+// components/outfit/OutfitHistoryItem.tsx - File system based image loading
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
@@ -7,7 +7,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { Outfit } from '@/store/outfitStore';
 import { router } from 'expo-router';
-import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
+import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
 
 interface OutfitHistoryItemProps {
   outfit: Outfit;
@@ -44,10 +44,21 @@ export default function OutfitHistoryItem({ outfit }: OutfitHistoryItemProps) {
 
       const asyncPromises = initialItems.map(async (itemWithUri, index) => {
         try {
-          const uri = await getGalleryDisplayUri(itemWithUri.item);
-          return { index, uri };
+          if (!itemWithUri.item.originalImagePath) {
+            return { index, uri: '' };
+          }
+
+          // Check if original image exists
+          const exists = await checkImageExists(itemWithUri.item.originalImagePath, false);
+          
+          if (exists) {
+            const uri = getImageUri(itemWithUri.item.originalImagePath, false);
+            return { index, uri };
+          } else {
+            return { index, uri: '' };
+          }
         } catch (error) {
-          console.error('Error loading gallery URI for history item:', error);
+          console.error('Error loading file system image for history item:', error);
           return { index, uri: '' };
         }
       });
@@ -100,7 +111,7 @@ export default function OutfitHistoryItem({ outfit }: OutfitHistoryItemProps) {
             style={styles.clothingImage}
             resizeMode="cover"
             onError={() => {
-              console.warn('Gallery image load error in history for item:', item.id);
+              console.warn('File system image load error in history for item:', item.id);
               setItemsWithUris(prev => {
                 const updated = [...prev];
                 const itemIndex = updated.findIndex(u => u.item?.id === item.id);

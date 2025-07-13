@@ -1,4 +1,4 @@
-// app/_layout.tsx - Gallery reference system + Cache Manager
+// app/_layout.tsx - File system based image storage + Cache Manager
 
 import React, { useEffect } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
@@ -18,7 +18,7 @@ import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
 import { initializeApp } from '@/utils/appInitialization';
-import { initializeCaches, validateAndCleanCaches, startCacheMonitor } from '@/utils/cacheManager';
+import { initializeCaches, validateAndCleanCaches } from '@/utils/cacheManager';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,7 +37,7 @@ function useProtectedRouter() {
         if (user) {
           const profileComplete = user.gender && user.birthDate;
           if (profileComplete) {
-            router.replace('/(tabs)/home'); // Ana sayfaya yönlendir
+            router.replace('/(tabs)/home');
           } else {
             router.replace('/(auth)/complete-profile');
           }
@@ -57,7 +57,7 @@ function useProtectedRouter() {
       if (!profileComplete && segments[1] !== 'complete-profile') {
         router.replace('/(auth)/complete-profile');
       } else if (profileComplete && inAuthGroup) {
-        router.replace('/(tabs)/home'); // Ana sayfaya yönlendir
+        router.replace('/(tabs)/home');
       }
     } else {
       if (!inAuthGroup) {
@@ -121,8 +121,9 @@ export default function RootLayout(): React.JSX.Element {
         
         if (lastSession && Math.abs(Date.now() - parseInt(lastSession)) > 7 * 24 * 60 * 60 * 1000) {
           console.log('🔄 Fresh start detected, reinitializing...');
-          // Cache'leri temizle fresh start'ta
-          validateAndCleanCaches();
+          // File system cache'ini temizle fresh start'ta
+          const cacheStats = await validateAndCleanCaches();
+          console.log('🧹 Fresh start cleanup:', cacheStats.recommendations);
         }
         
         await AsyncStorage.setItem(CURRENT_SESSION_KEY, currentSession);
@@ -158,23 +159,23 @@ export default function RootLayout(): React.JSX.Element {
           }
         })();
 
-        // 4. Gallery reference system initialization
+        // 4. File system based image storage initialization
         const appInitPromise = initializeApp();
 
-        // 5. Cache manager initialization - YENİ!
+        // 5. File system cache manager initialization
         const cacheInitPromise = (async () => {
-          console.log('🗄️ Initializing cache manager...');
+          console.log('🗄️ Initializing file system cache manager...');
           cacheMonitorCleanup = initializeCaches();
           
           // Development'ta cache durumunu log'la
           if (__DEV__) {
-            setTimeout(() => {
-              const stats = validateAndCleanCaches();
-              console.log('📊 Initial cache stats:', stats.recommendations);
+            setTimeout(async () => {
+              const stats = await validateAndCleanCaches();
+              console.log('📊 Initial file system stats:', stats.recommendations);
             }, 2000);
           }
           
-          console.log('✅ Cache manager initialized');
+          console.log('✅ File system cache manager initialized');
         })();
 
         // Tüm servisleri paralel olarak başlat
@@ -184,8 +185,8 @@ export default function RootLayout(): React.JSX.Element {
         
         // Development'ta periodic cache validation
         if (__DEV__) {
-          const validationInterval = setInterval(() => {
-            validateAndCleanCaches();
+          const validationInterval = setInterval(async () => {
+            await validateAndCleanCaches();
           }, 5 * 60 * 1000); // Her 5 dakikada bir
           
           // Cleanup function'a ekle

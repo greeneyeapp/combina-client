@@ -1,9 +1,9 @@
-// store/clothingStore.ts - Clean gallery reference system only
+// store/clothingStore.ts - File system based image storage
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { simpleStorage } from '@/store/simpleStorage';
-import * as MediaLibrary from 'expo-media-library';
+import { deleteImage, checkImageExists, cleanupOrphanedImages } from '@/utils/fileSystemImageManager';
 
 export type ClothingItem = {
   id: string;
@@ -16,15 +16,14 @@ export type ClothingItem = {
   notes: string;
   createdAt: string;
 
-  // Gallery reference system
-  galleryAssetId?: string;  // MediaLibrary.Asset.id
+  // File system based image storage
+  originalImagePath: string;    // "item_123456.jpg"
+  thumbnailImagePath: string;   // "item_123456_thumb.jpg"
   
-  isImageMissing?: boolean;
   imageMetadata?: {
     width: number;
     height: number;
     fileSize?: number;
-    mimeType?: string;
   };
 };
 
@@ -41,78 +40,50 @@ interface ClothingState {
   validateClothingImages: () => Promise<{ updatedCount: number; removedCount: number }>;
   setValidated: (validated: boolean) => void;
   setValidating: (validating: boolean) => void;
+  cleanupOrphanedFiles: () => Promise<{ removedCount: number; freedSpace: number }>;
 }
 
-// Gallery asset helper
-const getAssetById = async (assetId: string): Promise<MediaLibrary.Asset | null> => {
-  try {
-    let found: MediaLibrary.Asset | null = null;
-    let after: string | undefined = undefined;
-    
-    while (!found) {
-      const batch = await MediaLibrary.getAssetsAsync({
-        first: 100,
-        mediaType: [MediaLibrary.MediaType.photo],
-        after,
-      });
-      
-      found = batch.assets.find(a => a.id === assetId) || null;
-      
-      if (!batch.hasNextPage) break;
-      after = batch.endCursor;
-    }
-    
-    return found;
-  } catch (error) {
-    console.error('Error getting asset by ID:', error);
-    return null;
-  }
-};
-
-// Gallery validation function
-const validateGalleryAssets = async (): Promise<{ 
+// File system validation function
+const validateFileSystemAssets = async (): Promise<{ 
   validCount: number; 
   removedCount: number; 
   updatedCount: number; 
 }> => {
-  const { clothing, updateClothing, removeClothing } = useClothingStore.getState();
+  const { clothing, removeClothing } = useClothingStore.getState();
   let validCount = 0;
   let removedCount = 0;
   let updatedCount = 0;
 
-  console.log('🔍 Validating gallery assets...');
+  console.log('🔍 Validating file system assets...');
 
   for (const item of clothing) {
-    if (!item.galleryAssetId) {
-      if (!item.isImageMissing) {
-        await updateClothing(item.id, { isImageMissing: true });
-        updatedCount++;
-      }
+    if (!item.originalImagePath || !item.thumbnailImagePath) {
+      await removeClothing(item.id);
+      removedCount++;
+      console.log(`🗑️ Removed item ${item.name} - missing image paths`);
       continue;
     }
 
     try {
-      const asset = await getAssetById(item.galleryAssetId);
+      // Check if both original and thumbnail exist
+      const originalExists = await checkImageExists(item.originalImagePath, false);
+      const thumbnailExists = await checkImageExists(item.thumbnailImagePath, true);
       
-      if (asset) {
+      if (originalExists && thumbnailExists) {
         validCount++;
-        if (item.isImageMissing) {
-          await updateClothing(item.id, { isImageMissing: false });
-          updatedCount++;
-        }
       } else {
         await removeClothing(item.id);
         removedCount++;
-        console.log(`🗑️ Removed item ${item.name} - gallery asset deleted`);
+        console.log(`🗑️ Removed item ${item.name} - image files missing`);
       }
     } catch (error) {
-      console.error(`Error validating asset for item ${item.id}:`, error);
+      console.error(`Error validating files for item ${item.id}:`, error);
       await removeClothing(item.id);
       removedCount++;
     }
   }
 
-  console.log(`📊 Gallery validation completed: ${validCount} valid, ${updatedCount} updated, ${removedCount} removed`);
+  console.log(`📊 File system validation completed: ${validCount} valid, ${updatedCount} updated, ${removedCount} removed`);
   return { validCount, removedCount, updatedCount };
 };
 
@@ -129,20 +100,32 @@ export const useClothingStore = create<ClothingState>()(
         const processedItem = {
           ...item,
           colors: item.colors || [item.color],
-          isImageMissing: !item.galleryAssetId,
         };
 
         set((state) => ({
           clothing: [...state.clothing, processedItem],
         }));
 
-        console.log('✅ Added clothing item with gallery reference:', {
+        console.log('✅ Added clothing item with file system storage:', {
           id: item.id,
-          galleryAssetId: item.galleryAssetId
+          originalImage: item.originalImagePath,
+          thumbnailImage: item.thumbnailImagePath
         });
       },
 
-      removeClothing: (id) => {
+      removeClothing: async (id) => {
+        const state = get();
+        const itemToRemove = state.clothing.find((item) => item.id === id);
+        
+        if (itemToRemove && itemToRemove.originalImagePath && itemToRemove.thumbnailImagePath) {
+          try {
+            await deleteImage(itemToRemove.originalImagePath, itemToRemove.thumbnailImagePath);
+          } catch (error) {
+            console.error('Failed to delete image files:', error);
+            // Continue with removal even if file deletion fails
+          }
+        }
+
         set((state) => ({
           clothing: state.clothing.filter((item) => item.id !== id)
         }));
@@ -170,11 +153,25 @@ export const useClothingStore = create<ClothingState>()(
 
         console.log('✅ Updated clothing item:', {
           id,
-          galleryAssetId: updated.galleryAssetId
+          originalImage: updated.originalImagePath,
+          thumbnailImage: updated.thumbnailImagePath
         });
       },
 
-      clearAllClothing: () => {
+      clearAllClothing: async () => {
+        const { clothing } = get();
+        
+        // Delete all image files
+        for (const item of clothing) {
+          if (item.originalImagePath && item.thumbnailImagePath) {
+            try {
+              await deleteImage(item.originalImagePath, item.thumbnailImagePath);
+            } catch (error) {
+              console.error('Failed to delete image files for item:', item.id, error);
+            }
+          }
+        }
+
         set({
           clothing: [],
           isValidated: false
@@ -191,13 +188,31 @@ export const useClothingStore = create<ClothingState>()(
         set({ isValidating: true });
         
         try {
-          const result = await validateGalleryAssets();
+          const result = await validateFileSystemAssets();
           set({ isValidated: true, isValidating: false });
           return { updatedCount: result.updatedCount, removedCount: result.removedCount };
         } catch (error) {
           console.error('❌ Error validating images:', error);
           set({ isValidating: false });
           return { updatedCount: 0, removedCount: 0 };
+        }
+      },
+
+      cleanupOrphanedFiles: async () => {
+        const { clothing } = get();
+        
+        // Get all used file names
+        const usedFileNames = new Set<string>();
+        clothing.forEach(item => {
+          if (item.originalImagePath) usedFileNames.add(item.originalImagePath);
+          if (item.thumbnailImagePath) usedFileNames.add(item.thumbnailImagePath);
+        });
+
+        try {
+          return await cleanupOrphanedImages(Array.from(usedFileNames));
+        } catch (error) {
+          console.error('❌ Error cleaning up orphaned files:', error);
+          return { removedCount: 0, freedSpace: 0 };
         }
       }
     }),
@@ -209,7 +224,7 @@ export const useClothingStore = create<ClothingState>()(
           state.isValidated = false;
           state.isValidating = false;
 
-          // Sadece validation
+          // File system validation
           setTimeout(() => {
             state.validateClothingImages();
           }, 1000);

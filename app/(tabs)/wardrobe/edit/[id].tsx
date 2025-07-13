@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx - Gallery reference system
+// app/(tabs)/wardrobe/edit/[id].tsx - File system based image editing
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -9,7 +9,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
-import * as MediaLibrary from 'expo-media-library';
 import { useForm, Controller } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
@@ -21,7 +20,7 @@ import StylePicker from '@/components/wardrobe/StylePicker';
 import GalleryPicker from '@/components/common/GalleryPicker';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import { checkImagePermissions, getGalleryDisplayUri } from '@/utils/galleryImageHelper';
+import { ImagePaths, getImageUri, checkImageExists, deleteImage } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
 
 type FormData = {
@@ -43,7 +42,7 @@ export default function EditClothingScreen() {
 
   const itemToEdit = clothing.find(item => item.id === id);
 
-  const [selectedAsset, setSelectedAsset] = useState<MediaLibrary.Asset | null>(null);
+  const [selectedImagePaths, setSelectedImagePaths] = useState<ImagePaths | null>(null);
   const [currentImageUri, setCurrentImageUri] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
@@ -85,42 +84,48 @@ export default function EditClothingScreen() {
     if (!itemToEdit) return;
 
     try {
-      const uri = await getGalleryDisplayUri(itemToEdit);
-      setCurrentImageUri(uri);
-      console.log('✅ Loaded current image for edit:', uri ? 'found' : 'missing');
+      if (!itemToEdit.originalImagePath) {
+        setCurrentImageUri('');
+        return;
+      }
+
+      // Check if original image exists
+      const exists = await checkImageExists(itemToEdit.originalImagePath, false);
+      
+      if (exists) {
+        const uri = getImageUri(itemToEdit.originalImagePath, false);
+        setCurrentImageUri(uri);
+        console.log('✅ Loaded current image for edit');
+      } else {
+        setCurrentImageUri('');
+        console.log('⚠️ Current image file missing');
+      }
     } catch (error) {
       console.error('❌ Error loading current image:', error);
       setCurrentImageUri('');
     }
   };
 
-  const handleOpenGalleryPicker = async () => {
-    const hasPermission = await checkImagePermissions();
-    if (hasPermission) {
-      setShowGalleryPicker(true);
-    } else {
-      showAlert({
-        title: t('common.error'),
-        message: t('permissions.galleryRequired'),
-        buttons: [{ text: t('common.ok'), onPress: () => { } }]
-      });
-    }
+  const handleOpenGalleryPicker = () => {
+    setShowGalleryPicker(true);
   };
 
-  const handleAssetSelected = async (asset: MediaLibrary.Asset) => {
-    setSelectedAsset(asset);
-    setCurrentImageUri(asset.uri);
+  const handleImageSelected = async (imagePaths: ImagePaths) => {
+    // If we're replacing an existing image, we'll delete the old one after successful save
+    setSelectedImagePaths(imagePaths);
+    setCurrentImageUri(getImageUri(imagePaths.originalPath, false));
     setImageChanged(true);
+    setShowGalleryPicker(false);
     
-    console.log('✅ Asset selected for edit:', {
-      assetId: asset.id,
-      width: asset.width,
-      height: asset.height
+    console.log('✅ New image selected for edit:', {
+      original: imagePaths.originalPath,
+      thumbnail: imagePaths.thumbnailPath,
+      fileName: imagePaths.fileName
     });
   };
 
   const removeImage = () => {
-    setSelectedAsset(null);
+    setSelectedImagePaths(null);
     setCurrentImageUri('');
     setImageChanged(true);
   };
@@ -128,7 +133,7 @@ export default function EditClothingScreen() {
   const onSubmit = async (data: FormData) => {
     if (!id || !itemToEdit) return;
 
-    if (!imageChanged && !currentImageUri) {
+    if (imageChanged && !selectedImagePaths && !currentImageUri) {
       showAlert({
         title: t('common.error'),
         message: t('wardrobe.imageRequired'),
@@ -147,21 +152,39 @@ export default function EditClothingScreen() {
         colors: data.colors,
       };
 
-      if (imageChanged && selectedAsset) {
-        updatedItemData.galleryAssetId = selectedAsset.id;
-        updatedItemData.imageMetadata = {
-          width: selectedAsset.width,
-          height: selectedAsset.height,
-          fileSize: selectedAsset.fileSize,
-          mimeType: selectedAsset.mimeType || 'image/jpeg',
-        };
-        updatedItemData.isImageMissing = false;
-      } else if (imageChanged && !selectedAsset) {
-        updatedItemData.galleryAssetId = undefined;
-        updatedItemData.isImageMissing = true;
-      }
+      // Handle image changes
+      if (imageChanged && selectedImagePaths) {
+        // Store old image paths for cleanup
+        const oldOriginalPath = itemToEdit.originalImagePath;
+        const oldThumbnailPath = itemToEdit.thumbnailImagePath;
 
-      updateClothing(id, updatedItemData);
+        // Update with new image paths
+        updatedItemData.originalImagePath = selectedImagePaths.originalPath;
+        updatedItemData.thumbnailImagePath = selectedImagePaths.thumbnailPath;
+
+        // Update the item first
+        updateClothing(id, updatedItemData);
+
+        // Clean up old images after successful update
+        if (oldOriginalPath && oldThumbnailPath) {
+          try {
+            await deleteImage(oldOriginalPath, oldThumbnailPath);
+            console.log('✅ Cleaned up old image files');
+          } catch (error) {
+            console.error('⚠️ Failed to clean up old image files:', error);
+            // Don't fail the update because of cleanup issues
+          }
+        }
+      } else if (imageChanged && !selectedImagePaths) {
+        // User removed the image - this shouldn't happen as we require images
+        // But handle gracefully
+        updatedItemData.originalImagePath = '';
+        updatedItemData.thumbnailImagePath = '';
+        updateClothing(id, updatedItemData);
+      } else {
+        // No image changes, just update other fields
+        updateClothing(id, updatedItemData);
+      }
 
       Toast.show({
         type: 'success',
@@ -186,14 +209,14 @@ export default function EditClothingScreen() {
   };
 
   const renderImageSection = () => {
-    if (imageChanged && !selectedAsset && !currentImageUri) {
+    if (imageChanged && !selectedImagePaths && !currentImageUri) {
       return (
         <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
           <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
             {t('wardrobe.addPhoto')}
           </Text>
         </View>
-      )
+      );
     }
 
     if (currentImageUri) {
@@ -213,6 +236,11 @@ export default function EditClothingScreen() {
           >
             <X color={theme.colors.white} size={20} />
           </TouchableOpacity>
+          <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
+            <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
+              {imageChanged ? t('wardrobe.newImage', 'New image') : t('wardrobe.storedInApp', 'Stored in app')}
+            </Text>
+          </View>
         </View>
       );
     }
@@ -422,7 +450,7 @@ export default function EditClothingScreen() {
       <GalleryPicker
         isVisible={showGalleryPicker}
         onClose={() => setShowGalleryPicker(false)}
-        onSelectImage={handleAssetSelected}
+        onSelectImage={handleImageSelected}
         allowCamera={true}
       />
     </SafeAreaView>
@@ -457,6 +485,21 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center'
+  },
+  imageInfo: {
+    position: 'absolute',
+    bottom: 8,
+    left: 8,
+    right: 8,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.7)'
+  },
+  imageInfoText: {
+    fontSize: 12,
+    fontFamily: 'Montserrat-Regular',
+    color: '#FFFFFF',
+    textAlign: 'center'
   },
   imagePlaceholder: {
     width: '100%',

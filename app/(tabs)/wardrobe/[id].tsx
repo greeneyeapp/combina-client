@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/[id].tsx - Gallery reference system
+// app/(tabs)/wardrobe/[id].tsx - File system based image display
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
@@ -12,7 +12,7 @@ import HeaderBar from '@/components/common/HeaderBar';
 import Button from '@/components/common/Button';
 import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
-import { getGalleryDisplayUri } from '@/utils/galleryImageHelper';
+import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
 
 export default function ClothingDetailScreen() {
@@ -22,7 +22,7 @@ export default function ClothingDetailScreen() {
     const { clothing, removeClothing } = useClothingStore();
     const { show: showAlert } = useAlertStore();
 
-    const [displayUri, setDisplayUri] = useState<string>('');
+    const [originalImageUri, setOriginalImageUri] = useState<string>('');
     const [isLoadingImage, setIsLoadingImage] = useState(true);
     const [imageLoadError, setImageLoadError] = useState(false);
 
@@ -31,25 +31,38 @@ export default function ClothingDetailScreen() {
     useEffect(() => {
         if (!item) return;
 
-        const loadDisplayUri = async () => {
+        const loadOriginalImage = async () => {
             setIsLoadingImage(true);
             setImageLoadError(false);
 
             try {
-                const uri = await getGalleryDisplayUri(item);
-                setDisplayUri(uri);
-                if (!uri) setImageLoadError(true);
+                if (!item.originalImagePath) {
+                    setImageLoadError(true);
+                    setOriginalImageUri('');
+                    return;
+                }
+
+                // Check if original image exists
+                const exists = await checkImageExists(item.originalImagePath, false);
+                
+                if (exists) {
+                    const uri = getImageUri(item.originalImagePath, false);
+                    setOriginalImageUri(uri);
+                } else {
+                    setImageLoadError(true);
+                    setOriginalImageUri('');
+                }
             } catch (error) {
-                console.error('❌ Error loading display URI:', error);
+                console.error('❌ Error loading original image:', error);
                 setImageLoadError(true);
-                setDisplayUri('');
+                setOriginalImageUri('');
             } finally {
                 setIsLoadingImage(false);
             }
         };
 
-        loadDisplayUri();
-    }, [item?.id, item?.galleryAssetId, item?.isImageMissing]);
+        loadOriginalImage();
+    }, [item?.id, item?.originalImagePath]);
 
     if (!item) {
         return null;
@@ -81,38 +94,55 @@ export default function ClothingDetailScreen() {
     };
 
     const renderImageSection = () => {
-        if (item.isImageMissing) {
+        if (!item.originalImagePath) {
             return (
-              <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card, height: 300, marginBottom: 16 }]}>
-                <ImageOff color={theme.colors.textLight} size={48} />
-                <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>{t('wardrobe.imageNotAvailable')}</Text>
-                <Button label={t('wardrobe.changePhoto')} onPress={handleEdit} variant="primary" style={{ marginTop: 24 }} icon={<RefreshCcw color={theme.colors.white} size={16} />} />
-              </View>
+                <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.card, height: 300, marginBottom: 16 }]}>
+                    <ImageOff color={theme.colors.textLight} size={48} />
+                    <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>{t('wardrobe.imageNotAvailable')}</Text>
+                    <Button label={t('wardrobe.changePhoto')} onPress={handleEdit} variant="primary" style={{ marginTop: 24 }} icon={<RefreshCcw color={theme.colors.white} size={16} />} />
+                </View>
             );
         }
+        
         if (isLoadingImage) {
             return (
-              <View style={[styles.imageContainer, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.card }]}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-                <Text style={[styles.loadingText, { color: theme.colors.textLight, marginTop: 12 }]}>{t('common.loading')}</Text>
-              </View>
+                <View style={[styles.imageContainer, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.card }]}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                    <Text style={[styles.loadingText, { color: theme.colors.textLight, marginTop: 12 }]}>{t('common.loading')}</Text>
+                </View>
             );
         }
-        if (imageLoadError || !displayUri) {
+        
+        if (imageLoadError || !originalImageUri) {
             return (
-              <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
-                <ImageIcon color={theme.colors.textLight} size={48} />
-                <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>{t('wardrobe.imageNotAvailable')}</Text>
-                <Button label={t('wardrobe.changePhoto')} onPress={handleEdit} variant="primary" style={{ marginTop: 16 }} icon={<RefreshCcw color={theme.colors.white} size={16} />} />
-              </View>
+                <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
+                    <ImageIcon color={theme.colors.textLight} size={48} />
+                    <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>{t('wardrobe.imageNotAvailable')}</Text>
+                    <Button label={t('wardrobe.changePhoto')} onPress={handleEdit} variant="primary" style={{ marginTop: 16 }} icon={<RefreshCcw color={theme.colors.white} size={16} />} />
+                </View>
             );
         }
+        
         return (
             <View style={styles.imageContainer}>
-                <Image source={{ uri: displayUri }} style={styles.image} resizeMode="cover" onError={() => { setImageLoadError(true); setDisplayUri(''); }} />
+                <Image 
+                    source={{ uri: originalImageUri }} 
+                    style={styles.image} 
+                    resizeMode="cover" 
+                    onError={(error) => { 
+                        console.error('Original image load error:', error.nativeEvent.error);
+                        setImageLoadError(true); 
+                        setOriginalImageUri(''); 
+                    }} 
+                />
                 <TouchableOpacity style={[styles.editButton, { backgroundColor: theme.colors.primary }]} onPress={handleEdit}>
                     <Edit2 color={theme.colors.white} size={20} />
                 </TouchableOpacity>
+                <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
+                        {t('wardrobe.storedInApp', 'Stored in app')}
+                    </Text>
+                </View>
             </View>
         );
     };
@@ -189,6 +219,8 @@ const styles = StyleSheet.create({
     placeholderText: { fontFamily: 'Montserrat-Medium', fontSize: 16, textAlign: 'center' },
     loadingText: { fontFamily: 'Montserrat-Regular', fontSize: 14, textAlign: 'center' },
     editButton: { position: 'absolute', bottom: 16, right: 16, width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 3 },
+    imageInfo: { position: 'absolute', bottom: 8, left: 8, padding: 8, borderRadius: 8, backgroundColor: 'rgba(0,0,0,0.7)' },
+    imageInfoText: { fontSize: 12, fontFamily: 'Montserrat-Regular', color: '#FFFFFF', textAlign: 'center' },
     itemName: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 24, marginBottom: 24 },
     detailsContainer: { gap: 16 },
     detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

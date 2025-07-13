@@ -217,7 +217,6 @@ export default function CompleteProfileScreen() {
                             <Input
                                 value={formData.name}
                                 onChangeText={handleNameChange}
-                                placeholder={t('register.namePlaceholder')}
                                 error={errors.name}
                                 containerStyle={{ padding: 0, margin: 0 }}
                             />

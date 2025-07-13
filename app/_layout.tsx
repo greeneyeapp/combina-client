@@ -114,6 +114,19 @@ export default function RootLayout(): React.JSX.Element {
       try {
         console.log('🚀 Starting app initialization...');
 
+        // Simple translation fallback for layout context
+        const t = (key: string, options?: any) => {
+          // Fallback translation for cache manager in layout
+          const translations: Record<string, string> = {
+            'cacheManager.recommendations.performingWell': 'File system is performing well',
+            'cacheManager.recommendations.needsAttention': 'File system needs attention',
+            'cacheManager.recommendations.highStorageUsage': 'High storage usage - consider cleanup',
+            'cacheManager.recommendations.cacheOptimal': 'File system cache is optimal',
+            'cacheManager.analytics.failed': 'Analytics failed - check logs'
+          };
+          return translations[key] || key;
+        };
+
         // 1. App restart check (simplified)
         const CURRENT_SESSION_KEY = 'current_session';
         const currentSession = Date.now().toString();
@@ -122,7 +135,7 @@ export default function RootLayout(): React.JSX.Element {
         if (lastSession && Math.abs(Date.now() - parseInt(lastSession)) > 7 * 24 * 60 * 60 * 1000) {
           console.log('🔄 Fresh start detected, reinitializing...');
           // File system cache'ini temizle fresh start'ta
-          const cacheStats = await validateAndCleanCaches();
+          const cacheStats = await validateAndCleanCaches(t);
           console.log('🧹 Fresh start cleanup:', cacheStats.recommendations);
         }
         
@@ -170,7 +183,7 @@ export default function RootLayout(): React.JSX.Element {
           // Development'ta cache durumunu log'la
           if (__DEV__) {
             setTimeout(async () => {
-              const stats = await validateAndCleanCaches();
+              const stats = await validateAndCleanCaches(t);
               console.log('📊 Initial file system stats:', stats.recommendations);
             }, 2000);
           }
@@ -186,7 +199,7 @@ export default function RootLayout(): React.JSX.Element {
         // Development'ta periodic cache validation
         if (__DEV__) {
           const validationInterval = setInterval(async () => {
-            await validateAndCleanCaches();
+            await validateAndCleanCaches(t);
           }, 5 * 60 * 1000); // Her 5 dakikada bir
           
           // Cleanup function'a ekle

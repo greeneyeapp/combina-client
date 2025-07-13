@@ -1,4 +1,53 @@
 {
+  "appInit": {
+    "itemsMissingPaths": "{{count}} items have missing image paths - need to be re-added",
+    "systemNeedsMaintenance": "File system requires maintenance",
+    "systemHealthy": "File system is healthy!",
+    "diagnosisFailed": "File system diagnosis failed - check logs",
+    "highStorageUsage": "Consider cleaning up old images - storage usage is high",
+    "considerCompression": "Large number of files - consider implementing image compression",
+    "systemHasIssues": "File system has issues that need attention",
+    "performanceOptimal": "File system performance is optimal",
+    "performanceAnalysisFailed": "Failed to analyze file system performance",
+    "directoriesReinitialized": "Reinitialized file system directories",
+    "removedMissingItems": "Removed {{count}} items with missing files",
+    "cleanedOrphanedFiles": "Cleaned up {{count}} orphaned files",
+    "freedStorage": "Freed {{size}} KB of storage",
+    "maintenanceCompleted": "File system maintenance completed successfully",
+    "maintenanceFailed": "Maintenance failed: {{error}}",
+    "unknownError": "Unknown error"
+  },
+  "cacheManager": {
+    "initializingFileSystem": "Initializing file system cache manager...",
+    "cleanupCompleted": "Cache manager cleanup completed",
+    "monitorStarted": "Cache monitor started - will run every 24 hours",
+    "validation": "Cache validation: {{sizeMB}}MB, {{totalFiles}} files, {{recommendations}} recommendations",
+    "validationFailed": "Cache validation failed",
+    "checkLogs": "Cache validation failed - check logs",
+    "scheduledCleanupStart": "Starting scheduled cache cleanup...",
+    "scheduledCleanupResult": "Scheduled cleanup: removed {{removedCount}} orphaned files, freed {{freedSpace}} KB",
+    "scheduledCleanupFailed": "Scheduled cleanup failed",
+    "emergencyCleanupStart": "Performing emergency cache cleanup...",
+    "emergencyCleanupSuccess": "Emergency cleanup succeeded: {{sizeMB}}MB remaining",
+    "emergencyCleanupFailed": "Emergency cleanup failed: {{sizeMB}}MB remaining",
+    "emergencyCleanupError": "Emergency cleanup failed",
+    "forceCleaningStart": "Force cleaning file system cache...",
+    "analyticsError": "Failed to get cache analytics",
+    "recommendations": {
+      "storageExceedsLimit": "Storage usage ({{sizeMB}}MB) exceeds limit ({{maxMB}}MB)",
+      "storageApproachingLimit": "Storage usage ({{sizeMB}}MB) is approaching limit - consider cleanup",
+      "largeFileCount": "Large number of files - performance may be affected",
+      "fileSystemIssue": "File system issue: {{issue}}",
+      "cacheOptimal": "File system cache is optimal",
+      "needsAttention": "File system needs attention",
+      "highStorageUsage": "High storage usage - consider cleanup",
+      "structuralIssues": "File system has structural issues",
+      "performingWell": "File system is performing well"
+    },
+    "analytics": {
+      "failed": "Analytics failed - check logs"
+    }
+  },
   "storage": {
     "title": "Storage Management",
     "overview": "Overview",
@@ -121,6 +170,7 @@
     "goBack": "Go Back",
     "error": "Error",
     "tryAgain": "Please try again.",
+    "processing": "Processing...",
     "saving": "Saving...",
     "today": "Today",
     "loading": "Loading...",

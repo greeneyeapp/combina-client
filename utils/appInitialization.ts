@@ -51,7 +51,7 @@ export const initializeApp = async () => {
 };
 
 // File system health diagnostics
-export const diagnoseFileSystemHealth = async (): Promise<{
+export const diagnoseFileSystemHealth = async (t?: (key: string, options?: any) => string): Promise<{
   totalItems: number;
   withValidPaths: number;
   withMissingPaths: number;
@@ -64,6 +64,8 @@ export const diagnoseFileSystemHealth = async (): Promise<{
     issues: string[];
   };
 }> => {
+  const translate = t || ((key: string) => key);
+  
   try {
     const { clothing } = useClothingStore.getState();
     
@@ -85,7 +87,7 @@ export const diagnoseFileSystemHealth = async (): Promise<{
     const recommendations: string[] = [];
     
     if (withMissingPaths > 0) {
-      recommendations.push(`${withMissingPaths} items have missing image paths - need to be re-added`);
+      recommendations.push(translate('appInit.itemsMissingPaths', { count: withMissingPaths }));
     }
     
     if (systemHealth.issues.length > 0) {
@@ -93,11 +95,11 @@ export const diagnoseFileSystemHealth = async (): Promise<{
     }
     
     if (!systemHealth.isHealthy) {
-      recommendations.push('File system requires maintenance');
+      recommendations.push(translate('appInit.systemNeedsMaintenance'));
     }
     
     if (recommendations.length === 0) {
-      recommendations.push('File system is healthy!');
+      recommendations.push(translate('appInit.systemHealthy'));
     }
     
     return {
@@ -116,19 +118,19 @@ export const diagnoseFileSystemHealth = async (): Promise<{
       withValidPaths: 0,
       withMissingPaths: 0,
       missingFiles: 0,
-      recommendations: ['File system diagnosis failed - check logs'],
+      recommendations: [translate('appInit.diagnosisFailed')],
       systemHealth: {
         isHealthy: false,
         totalFiles: 0,
         totalSize: 0,
-        issues: ['Diagnosis failed']
+        issues: [translate('appInit.diagnosisFailed')]
       }
     };
   }
 };
 
 // Development utility for file system stats
-export const getFileSystemStats = async (): Promise<{
+export const getFileSystemStats = async (t?: (key: string, options?: any) => string): Promise<{
   storage: {
     totalSizeMB: number;
     fileCount: number;
@@ -139,6 +141,8 @@ export const getFileSystemStats = async (): Promise<{
   };
   recommendations: string[];
 }> => {
+  const translate = t || ((key: string) => key);
+  
   try {
     const health = await getFileSystemHealth();
     
@@ -147,19 +151,19 @@ export const getFileSystemStats = async (): Promise<{
     
     // Storage recommendations
     if (totalSizeMB > 100) {
-      recommendations.push('Consider cleaning up old images - storage usage is high');
+      recommendations.push(translate('appInit.highStorageUsage'));
     }
     
     if (health.totalFiles > 200) {
-      recommendations.push('Large number of files - consider implementing image compression');
+      recommendations.push(translate('appInit.considerCompression'));
     }
     
     if (health.issues.length > 0) {
-      recommendations.push('File system has issues that need attention');
+      recommendations.push(translate('appInit.systemHasIssues'));
     }
     
     if (recommendations.length === 0) {
-      recommendations.push('File system performance is optimal');
+      recommendations.push(translate('appInit.performanceOptimal'));
     }
     
     return {
@@ -183,40 +187,41 @@ export const getFileSystemStats = async (): Promise<{
         fileCount: 0
       },
       performance: {},
-      recommendations: ['Failed to analyze file system performance']
+      recommendations: [translate('appInit.performanceAnalysisFailed')]
     };
   }
 };
 
 // File system maintenance utilities
-export const performFileSystemMaintenance = async (): Promise<{
+export const performFileSystemMaintenance = async (t?: (key: string, options?: any) => string): Promise<{
   success: boolean;
   actions: string[];
   errors: string[];
 }> => {
+  const translate = t || ((key: string) => key);
   const actions: string[] = [];
   const errors: string[] = [];
   
   try {
     // Reinitialize directories
     await initializeFileSystem();
-    actions.push('Reinitialized file system directories');
+    actions.push(translate('appInit.directoriesReinitialized'));
     
     // Validate and cleanup
     const { validateClothingImages, cleanupOrphanedFiles } = useClothingStore.getState();
     
     const validationResult = await validateClothingImages();
     if (validationResult.removedCount > 0) {
-      actions.push(`Removed ${validationResult.removedCount} items with missing files`);
+      actions.push(translate('appInit.removedMissingItems', { count: validationResult.removedCount }));
     }
     
     const cleanupResult = await cleanupOrphanedFiles();
     if (cleanupResult.removedCount > 0) {
-      actions.push(`Cleaned up ${cleanupResult.removedCount} orphaned files`);
-      actions.push(`Freed ${Math.round(cleanupResult.freedSpace / 1024)} KB of storage`);
+      actions.push(translate('appInit.cleanedOrphanedFiles', { count: cleanupResult.removedCount }));
+      actions.push(translate('appInit.freedStorage', { size: Math.round(cleanupResult.freedSpace / 1024) }));
     }
     
-    actions.push('File system maintenance completed successfully');
+    actions.push(translate('appInit.maintenanceCompleted'));
     
     return {
       success: true,
@@ -225,8 +230,8 @@ export const performFileSystemMaintenance = async (): Promise<{
     };
     
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    errors.push(`Maintenance failed: ${errorMessage}`);
+    const errorMessage = error instanceof Error ? error.message : translate('appInit.unknownError');
+    errors.push(translate('appInit.maintenanceFailed', { error: errorMessage }));
     
     return {
       success: false,

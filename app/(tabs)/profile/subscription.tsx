@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   toggleText: {
-    fontFamily: 'Montserrat-SemiBold',
+    fontFamily: 'Montserrat-Bold', // SemiBold'dan Bold'a değiştirildi
     fontSize: 14,
   },
   saveBadge: {

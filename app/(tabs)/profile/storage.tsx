@@ -41,7 +41,7 @@ import {
   cleanupOrphanedImages,
   listAllImages
 } from '@/utils/fileSystemImageManager';
-import { 
+import {
   performFileSystemMaintenance,
   diagnoseFileSystemHealth,
   getFileSystemStats
@@ -76,7 +76,7 @@ export default function StorageManagementScreen() {
   const { theme } = useTheme();
   const { show: showAlert } = useAlertStore();
   const { validateClothingImages, cleanupOrphanedFiles } = useClothingStore();
-  
+
   const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -97,7 +97,7 @@ export default function StorageManagementScreen() {
     try {
       const [health, cacheAnalytics, diagnosis] = await Promise.all([
         getFileSystemHealth(),
-        getCacheAnalytics(),
+        getCacheAnalytics(t),
         diagnoseFileSystemHealth()
       ]);
 
@@ -124,7 +124,7 @@ export default function StorageManagementScreen() {
       console.error('Failed to load storage stats:', error);
       showAlert({
         title: t('common.error'),
-        message: t('storage.failedToLoad', 'Failed to load storage statistics'),
+        message: t('storage.failedToLoad'),
         buttons: [{ text: t('common.ok') }]
       });
     } finally {
@@ -138,23 +138,23 @@ export default function StorageManagementScreen() {
 
     try {
       const result = await operation();
-      
+
       // Show success message based on operation type
       let titleKey = '';
       let message = '';
       switch (operationType) {
         case 'validate':
           titleKey = 'validationComplete';
-          message = t('storage.validationResults', { 
-            updated: result.updatedCount || 0, 
-            removed: result.removedCount || 0 
+          message = t('storage.validationResults', {
+            updated: result.updatedCount || 0,
+            removed: result.removedCount || 0
           });
           break;
         case 'cleanup':
           titleKey = 'cleanupComplete';
-          message = t('storage.cleanupResults', { 
-            removed: result.removedCount || result.removedFiles || 0, 
-            freed: Math.round((result.freedSpace || result.freedSpaceKB || 0) / 1024) 
+          message = t('storage.cleanupResults', {
+            removed: result.removedCount || result.removedFiles || 0,
+            freed: Math.round((result.freedSpace || result.freedSpaceKB || 0) / 1024)
           });
           break;
         case 'maintenance':
@@ -179,7 +179,7 @@ export default function StorageManagementScreen() {
       console.error(`${operationType} operation failed:`, error);
       showAlert({
         title: t('common.error'),
-        message: t('storage.operationFailed', 'Operation failed. Please try again.'),
+        message: t('storage.operationFailed'),
         buttons: [{ text: t('common.ok') }]
       });
     } finally {
@@ -202,7 +202,7 @@ export default function StorageManagementScreen() {
   const handlePerformMaintenance = () => {
     showAlert({
       title: t('storage.performMaintenance'),
-      message: t('storage.maintenanceWarning', 'This will perform system maintenance and cleanup. Continue?'),
+      message: t('storage.maintenanceWarning'),
       buttons: [
         { text: t('common.cancel'), variant: 'outline' },
         {
@@ -222,7 +222,7 @@ export default function StorageManagementScreen() {
         { text: t('common.cancel'), variant: 'outline' },
         {
           text: t('common.continue'),
-          onPress: () => performOperation('cleanup', forceCacheCleanup),
+          onPress: () => performOperation('cleanup', () => forceCacheCleanup(t)),
           variant: 'destructive'
         }
       ]
@@ -283,8 +283,8 @@ export default function StorageManagementScreen() {
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
         onLeftPress={() => router.replace('/(tabs)/profile')}
       />
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
@@ -301,9 +301,9 @@ export default function StorageManagementScreen() {
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             {t('storage.overview')}
           </Text>
-          
+
           <LinearGradient
-            colors={theme.mode === 'dark' 
+            colors={theme.mode === 'dark'
               ? [theme.colors.card, theme.colors.background]
               : [theme.colors.background, theme.colors.card]
             }
@@ -316,7 +316,7 @@ export default function StorageManagementScreen() {
                   {t('storage.systemStatus')}
                 </Text>
                 <Text style={[
-                  styles.healthStatus, 
+                  styles.healthStatus,
                   { color: getHealthColor(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false) }
                 ]}>
                   {getHealthStatus(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false)}
@@ -380,7 +380,7 @@ export default function StorageManagementScreen() {
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             {t('storage.actions')}
           </Text>
-          
+
           <View style={styles.actionsGrid}>
             <Button
               label={activeOperations.has('validate') ? t('storage.validating') : t('storage.validateImages')}
@@ -391,7 +391,7 @@ export default function StorageManagementScreen() {
               loading={activeOperations.has('validate')}
               icon={<Shield color={theme.colors.primary} size={20} />}
             />
-            
+
             <Button
               label={activeOperations.has('cleanup') ? t('storage.cleaningUp') : t('storage.cleanupOrphaned')}
               onPress={handleCleanupOrphaned}
@@ -401,17 +401,7 @@ export default function StorageManagementScreen() {
               loading={activeOperations.has('cleanup')}
               icon={<Trash2 color={theme.colors.secondary} size={20} />}
             />
-            
-            <Button
-              label={activeOperations.has('maintenance') ? t('storage.performing') : t('storage.performMaintenance')}
-              onPress={handlePerformMaintenance}
-              variant="primary"
-              style={styles.actionButton}
-              disabled={activeOperations.has('maintenance')}
-              loading={activeOperations.has('maintenance')}
-              icon={<Settings color={theme.colors.white} size={20} />}
-            />
-            
+
             <Button
               label={t('storage.refreshStats')}
               onPress={() => loadStorageStats(true)}
@@ -421,24 +411,35 @@ export default function StorageManagementScreen() {
               loading={isRefreshing}
               icon={<RefreshCw color={theme.colors.accent} size={20} />}
             />
+
+            <Button
+              label={activeOperations.has('maintenance') ? t('storage.performing') : t('storage.performMaintenance')}
+              onPress={handlePerformMaintenance}
+              variant="primary"
+              style={styles.actionButton}
+              disabled={activeOperations.has('maintenance')}
+              loading={activeOperations.has('maintenance')}
+              icon={<Settings color={theme.colors.white} size={20} />}
+            />
+
           </View>
         </View>
 
         {/* Details Section */}
         <View style={styles.section}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.detailsToggle}
             onPress={() => setShowDetails(!showDetails)}
           >
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               {t('storage.details')}
             </Text>
-            {showDetails ? 
+            {showDetails ?
               <ChevronUp color={theme.colors.textLight} size={20} /> :
               <ChevronDown color={theme.colors.textLight} size={20} />
             }
           </TouchableOpacity>
-          
+
           {showDetails && (
             <View style={[styles.detailsCard, { backgroundColor: theme.colors.card }]}>
               <View style={styles.detailRow}>
@@ -449,7 +450,7 @@ export default function StorageManagementScreen() {
                   {Math.round((storageStats?.fileSystem.totalSizeMB || 0) * 0.7)} MB
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { color: theme.colors.textLight }]}>
                   {t('storage.thumbnails')}
@@ -458,7 +459,7 @@ export default function StorageManagementScreen() {
                   {Math.round((storageStats?.fileSystem.totalSizeMB || 0) * 0.3)} MB
                 </Text>
               </View>
-              
+
               <View style={styles.detailRow}>
                 <Text style={[styles.detailLabel, { color: theme.colors.textLight }]}>
                   {t('storage.orphanedFiles')}

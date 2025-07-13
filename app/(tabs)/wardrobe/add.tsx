@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/add.tsx - File system based image storage
+// app/(tabs)/wardrobe/add.tsx - Düzeltilmiş focus ve UX sorunları
 
 import React, { useState, useCallback, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -178,7 +178,7 @@ export default function AddClothingScreen() {
           </TouchableOpacity>
           <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
-              {t('wardrobe.storedInApp', 'Stored in app')}
+              {t('wardrobe.storedInApp')}
             </Text>
           </View>
         </View>
@@ -222,22 +222,31 @@ export default function AddClothingScreen() {
             </View>
           </View>
           <View style={styles.formSection}>
-            <Controller
-              control={control}
-              name="name"
-              rules={{ required: t('wardrobe.nameRequired') as string }}
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label={t('wardrobe.name')}
-                  placeholder={t('wardrobe.namePlaceholder')}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={errors.name?.message}
-                  editable={!isLoading}
-                />
-              )}
-            />
+            <View>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                {t('wardrobe.name')}
+              </Text>
+              <Controller
+                control={control}
+                name="name"
+                rules={{ required: t('wardrobe.nameRequired') as string }}
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input
+                    placeholder={t('wardrobe.namePlaceholder')}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    error={errors.name?.message}
+                    editable={!isLoading}
+                    returnKeyType="next"
+                    onSubmitEditing={() => {
+                      // Klavyeyi kapat ve fokus temizle
+                      scrollViewRef.current?.scrollTo({ y: 200, animated: true });
+                    }}
+                  />
+                )}
+              />
+            </View>
 
             <Controller
               control={control}
@@ -257,34 +266,6 @@ export default function AddClothingScreen() {
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                 {t('wardrobe.colors')}
               </Text>
-              {watchedColors.length > 0 && (
-                <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
-                  <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
-                    {t('wardrobe.colorSelectionInfo', {
-                      selected: watchedColors.length,
-                      max: 3
-                    })}
-                  </Text>
-                  <View style={styles.selectedColorsPreview}>
-                    {watchedColors.map(colorName => {
-                      const colorData = ALL_COLORS.find(c => c.name === colorName);
-                      return (
-                        <View
-                          key={colorName}
-                          style={[
-                            styles.previewColorCircle,
-                            {
-                              backgroundColor: colorData?.hex || '#CCCCCC',
-                              borderColor: colorData?.name === 'white' ? theme.colors.border : 'transparent',
-                              borderWidth: colorData?.name === 'white' ? 1 : 0
-                            }
-                          ]}
-                        />
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
               <Controller
                 control={control}
                 name="colors"
@@ -346,23 +327,28 @@ export default function AddClothingScreen() {
               )}
             </View>
 
-            <Controller
-              control={control}
-              name="notes"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label={t('wardrobe.notes')}
-                  placeholder={t('wardrobe.notesPlaceholder')}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                  editable={!isLoading}
-                />
-              )}
-            />
+            <View>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                {t('wardrobe.notes')}
+              </Text>
+              <Controller
+                control={control}
+                name="notes"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <Input
+                    placeholder={t('wardrobe.notesPlaceholder')}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                    editable={!isLoading}
+                    returnKeyType="done"
+                  />
+                )}
+              />
+            </View>
             <Button
               label={isLoading ? t('common.saving') : t('wardrobe.saveItem')}
               onPress={handleSubmit(onSubmit)}
@@ -455,26 +441,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Bold',
     fontSize: 16,
     marginBottom: 8
-  },
-  selectedColorsHeader: {
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12
-  },
-  selectedColorsHeaderText: {
-    fontSize: 14,
-    fontFamily: 'Montserrat-SemiBold',
-    marginBottom: 8
-  },
-  selectedColorsPreview: {
-    flexDirection: 'row',
-    gap: 6
-  },
-  previewColorCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1
   },
   errorText: {
     fontFamily: 'Montserrat-Regular',

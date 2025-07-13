@@ -1,4 +1,4 @@
-// utils/cacheManager.ts - File system cache management
+// utils/cacheManager.ts - Translation düzeltmesi
 
 import * as FileSystem from 'expo-file-system';
 import { getFileSystemHealth, cleanupOrphanedImages } from '@/utils/fileSystemImageManager';
@@ -31,7 +31,7 @@ let isCleanupRunning = false;
 /**
  * Initialize file system cache monitoring
  */
-export const initializeCaches = (): (() => void) => {
+export const initializeCaches = (t?: (key: string, options?: any) => string): (() => void) => {
   console.log('🗄️ Initializing file system cache manager...');
   
   // Start periodic cleanup if enabled
@@ -69,7 +69,7 @@ export const startCacheMonitor = (): void => {
 /**
  * Validate and clean file system cache
  */
-export const validateAndCleanCaches = async (): Promise<{
+export const validateAndCleanCaches = async (t: (key: string, options?: any) => string): Promise<{
   fileSystemStats: CacheStats;
   recommendationCount: number;
   recommendations: string[];
@@ -91,25 +91,30 @@ export const validateAndCleanCaches = async (): Promise<{
     
     // Size-based recommendations
     if (sizeMB > DEFAULT_CONFIG.maxStorageSizeMB) {
-      recommendations.push(`Storage usage (${sizeMB}MB) exceeds limit (${DEFAULT_CONFIG.maxStorageSizeMB}MB)`);
-      cleanupPerformed = await performEmergencyCleanup();
+      recommendations.push(t('cacheManager.recommendations.storageExceedsLimit', { 
+        sizeMB, 
+        maxMB: DEFAULT_CONFIG.maxStorageSizeMB 
+      }));
+      cleanupPerformed = await performEmergencyCleanup(t);
     } else if (sizeMB > DEFAULT_CONFIG.maxStorageSizeMB * 0.8) {
-      recommendations.push(`Storage usage (${sizeMB}MB) is approaching limit - consider cleanup`);
+      recommendations.push(t('cacheManager.recommendations.storageApproachingLimit', { sizeMB }));
     }
     
     // File count recommendations
     if (health.totalFiles > 1000) {
-      recommendations.push('Large number of files - performance may be affected');
+      recommendations.push(t('cacheManager.recommendations.largeFileCount'));
     }
     
     // Health issues
     if (health.issues.length > 0) {
-      recommendations.push(...health.issues.map(issue => `File system issue: ${issue}`));
+      recommendations.push(...health.issues.map(issue => 
+        t('cacheManager.recommendations.fileSystemIssue', { issue })
+      ));
     }
     
     // Performance recommendations
     if (sizeMB < 10 && health.totalFiles < 50) {
-      recommendations.push('File system cache is optimal');
+      recommendations.push(t('cacheManager.recommendations.cacheOptimal'));
     }
     
     console.log(`📊 Cache validation: ${sizeMB}MB, ${health.totalFiles} files, ${recommendations.length} recommendations`);
@@ -128,10 +133,10 @@ export const validateAndCleanCaches = async (): Promise<{
         fileSystemSize: 0,
         fileCount: 0,
         lastCleanup: null,
-        issues: ['Validation failed']
+        issues: [t('cacheManager.validationFailed')]
       },
       recommendationCount: 1,
-      recommendations: ['Cache validation failed - check logs'],
+      recommendations: [t('cacheManager.checkLogs')],
       cleanupPerformed: false
     };
   }
@@ -172,7 +177,7 @@ const performScheduledCleanup = async (): Promise<void> => {
 /**
  * Perform emergency cleanup when storage is full
  */
-const performEmergencyCleanup = async (): Promise<boolean> => {
+const performEmergencyCleanup = async (t: (key: string, options?: any) => string): Promise<boolean> => {
   console.log('🚨 Performing emergency cache cleanup...');
   
   try {
@@ -200,7 +205,7 @@ const performEmergencyCleanup = async (): Promise<boolean> => {
 /**
  * Get detailed cache analytics
  */
-export const getCacheAnalytics = async (): Promise<{
+export const getCacheAnalytics = async (t: (key: string, options?: any) => string): Promise<{
   storage: {
     totalMB: number;
     averageFileSizeKB: number;
@@ -246,16 +251,16 @@ export const getCacheAnalytics = async (): Promise<{
     const recommendations: string[] = [];
     
     if (healthScore < 70) {
-      recommendations.push('File system needs attention');
+      recommendations.push(t('cacheManager.recommendations.needsAttention'));
     }
     if (storageUsagePercent > 80) {
-      recommendations.push('High storage usage - consider cleanup');
+      recommendations.push(t('cacheManager.recommendations.highStorageUsage'));
     }
     if (health.issues.length > 0) {
-      recommendations.push('File system has structural issues');
+      recommendations.push(t('cacheManager.recommendations.structuralIssues'));
     }
     if (recommendations.length === 0) {
-      recommendations.push('File system is performing well');
+      recommendations.push(t('cacheManager.recommendations.performingWell'));
     }
     
     return {
@@ -290,7 +295,7 @@ export const getCacheAnalytics = async (): Promise<{
       },
       performance: {
         healthScore: 0,
-        recommendations: ['Analytics failed - check logs']
+        recommendations: [t('cacheManager.analytics.failed')]
       }
     };
   }
@@ -299,7 +304,7 @@ export const getCacheAnalytics = async (): Promise<{
 /**
  * Force immediate cache cleanup
  */
-export const forceCacheCleanup = async (): Promise<{
+export const forceCacheCleanup = async (t: (key: string, options?: any) => string): Promise<{
   success: boolean;
   removedFiles: number;
   freedSpaceKB: number;

@@ -146,38 +146,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               </TouchableOpacity>
             </View>
 
-            {multiSelect && currentSelectedColors.length > 0 && (
-              <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
-                <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
-                  {t('wardrobe.colorSelectionInfo', { 
-                    selected: currentSelectedColors.length, 
-                    max: maxColors 
-                  })}
-                </Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.selectedColorsPreview}>
-                    {currentSelectedColors.map(colorName => {
-                      const colorData = ALL_COLORS.find(c => c.name === colorName);
-                      if (!colorData) return null;
-                      return (
-                        <View 
-                          key={colorName} 
-                          style={[
-                            styles.previewColorCircle, 
-                            { 
-                              backgroundColor: colorData.hex, 
-                              borderColor: colorData.name === 'white' ? theme.colors.border : 'transparent',
-                              borderWidth: colorData.name === 'white' ? 1 : 0
-                            }
-                          ]} 
-                        />
-                      );
-                    })}
-                  </View>
-                </ScrollView>
-              </View>
-            )}
-
             <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
               <Search size={18} color={theme.colors.textLight} />
               <TextInput
@@ -188,6 +156,40 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                 onChangeText={setSearchQuery}
               />
             </View>
+
+            {multiSelect && (
+              <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight, marginBottom: 16 }]}>
+                <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
+                  {t('wardrobe.colorSelectionInfo', { 
+                    selected: currentSelectedColors.length, 
+                    max: maxColors 
+                  })}
+                </Text>
+                {currentSelectedColors.length > 0 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.selectedColorsPreview}>
+                      {currentSelectedColors.map(colorName => {
+                        const colorData = ALL_COLORS.find(c => c.name === colorName);
+                        if (!colorData) return null;
+                        return (
+                          <View 
+                            key={colorName} 
+                            style={[
+                              styles.previewColorCircle, 
+                              { 
+                                backgroundColor: colorData.hex, 
+                                borderColor: colorData.name === 'white' ? theme.colors.border : 'transparent',
+                                borderWidth: colorData.name === 'white' ? 1 : 0
+                              }
+                            ]} 
+                          />
+                        );
+                      })}
+                    </View>
+                  </ScrollView>
+                )}
+              </View>
+            )}
 
             <SectionList
               sections={filteredSections}
@@ -254,6 +256,20 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                 );
               }}
             />
+
+            {/* SADECE BU EKLEME - Kaydet butonu */}
+            {multiSelect && (
+              <View style={[styles.modalFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
+                <TouchableOpacity 
+                  style={[styles.doneButton, { backgroundColor: theme.colors.primary }]}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={[styles.doneButtonText, { color: theme.colors.white }]}>
+                    {t('common.save')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </TouchableOpacity>
       </Modal>
@@ -316,7 +332,7 @@ const styles = StyleSheet.create({
   selectedColorsHeader: {
     padding: 12,
     borderRadius: 8,
-    marginBottom: 16,
+    /* marginBottom: 16 EKLEME - scroll düzeltmesi */
   },
   selectedColorsHeaderText: {
     fontSize: 14,
@@ -381,6 +397,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 8,
     textAlign: 'center',
+  },
+  /* SADECE BU EKLEME - Footer stilleri */
+  modalFooter: {
+    borderTopWidth: 1,
+    paddingTop: 16,
+    paddingBottom: 16,
+    paddingHorizontal: 0,
+  },
+  doneButton: {
+    paddingVertical: 14,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneButtonText: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
   },
 });
 

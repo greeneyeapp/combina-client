@@ -1,4 +1,53 @@
 {
+  "appInit": {
+    "itemsMissingPaths": "{{count}} öğenin resim yolları eksik - tekrar eklenmeli",
+    "systemNeedsMaintenance": "Dosya sistemi bakım gerektiriyor",
+    "systemHealthy": "Dosya sistemi sağlıklı!",
+    "diagnosisFailed": "Dosya sistemi teşhisi başarısız - logları kontrol edin",
+    "highStorageUsage": "Eski resimleri temizlemeyi düşünün - depolama kullanımı yüksek",
+    "considerCompression": "Çok sayıda dosya - resim sıkıştırma uygulamayı düşünün",
+    "systemHasIssues": "Dosya sisteminde dikkat gerektiren sorunlar var",
+    "performanceOptimal": "Dosya sistemi performansı optimal",
+    "performanceAnalysisFailed": "Dosya sistemi performans analizi başarısız",
+    "directoriesReinitialized": "Dosya sistemi dizinleri yeniden başlatıldı",
+    "removedMissingItems": "{{count}} eksik dosyalı öğe kaldırıldı",
+    "cleanedOrphanedFiles": "{{count}} yetim dosya temizlendi",
+    "freedStorage": "{{size}} KB depolama boşaltıldı",
+    "maintenanceCompleted": "Dosya sistemi bakımı başarıyla tamamlandı",
+    "maintenanceFailed": "Bakım başarısız: {{error}}",
+    "unknownError": "Bilinmeyen hata"
+  },
+  "cacheManager": {
+    "initializingFileSystem": "Dosya sistemi önbellek yöneticisi başlatılıyor...",
+    "cleanupCompleted": "Önbellek yöneticisi temizliği tamamlandı",
+    "monitorStarted": "Önbellek monitörü başlatıldı - her 24 saatte bir çalışacak",
+    "validation": "Önbellek doğrulaması: {{sizeMB}}MB, {{totalFiles}} dosya, {{recommendations}} öneri",
+    "validationFailed": "Önbellek doğrulaması başarısız",
+    "checkLogs": "Önbellek doğrulaması başarısız - logları kontrol edin",
+    "scheduledCleanupStart": "Zamanlanmış önbellek temizliği başlatılıyor...",
+    "scheduledCleanupResult": "Zamanlanmış temizlik: {{removedCount}} yetim dosya kaldırıldı, {{freedSpace}} KB boşaltıldı",
+    "scheduledCleanupFailed": "Zamanlanmış temizlik başarısız",
+    "emergencyCleanupStart": "Acil önbellek temizliği gerçekleştiriliyor...",
+    "emergencyCleanupSuccess": "Acil temizlik başarılı: {{sizeMB}}MB kaldı",
+    "emergencyCleanupFailed": "Acil temizlik başarısız: {{sizeMB}}MB kaldı",
+    "emergencyCleanupError": "Acil temizlik başarısız",
+    "forceCleaningStart": "Dosya sistemi önbelleği zorla temizleniyor...",
+    "analyticsError": "Önbellek analitiği alınamadı",
+    "recommendations": {
+      "storageExceedsLimit": "Depolama kullanımı ({{sizeMB}}MB) limiti ({{maxMB}}MB) aşıyor",
+      "storageApproachingLimit": "Depolama kullanımı ({{sizeMB}}MB) limite yaklaşıyor - temizlik düşünün",
+      "largeFileCount": "Çok sayıda dosya - performans etkilenebilir",
+      "fileSystemIssue": "Dosya sistemi sorunu: {{issue}}",
+      "cacheOptimal": "Dosya sistemi önbelleği optimal",
+      "needsAttention": "Dosya sistemi dikkat gerektiriyor",
+      "highStorageUsage": "Yüksek depolama kullanımı - temizlik düşünün",
+      "structuralIssues": "Dosya sisteminde yapısal sorunlar var",
+      "performingWell": "Dosya sistemi iyi performans gösteriyor"
+    },
+    "analytics": {
+      "failed": "Analitik başarısız - logları kontrol edin"
+    }
+  },
   "storage": {
     "title": "Depolama Yönetimi",
     "overview": "Genel Bakış",
@@ -116,6 +165,7 @@
     "save": "Kaydet",
     "select": "Seçin...",
     "continue": "Devam Et",
+    "processing": "İşleniyor...",
     "searchPlaceholder": "Ara...",
     "apply": "Uygula",
     "goBack": "Geri Git",

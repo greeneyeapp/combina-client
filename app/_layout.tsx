@@ -1,4 +1,4 @@
-// app/_layout.tsx - Gallery reference system
+// app/_layout.tsx - Gallery reference system + Cache Manager
 
 import React, { useEffect } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
@@ -16,9 +16,9 @@ import CustomToast from '@/components/common/CustomToast';
 import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Updates from 'expo-updates';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
 import { initializeApp } from '@/utils/appInitialization';
+import { initializeCaches, validateAndCleanCaches, startCacheMonitor } from '@/utils/cacheManager';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -37,7 +37,7 @@ function useProtectedRouter() {
         if (user) {
           const profileComplete = user.gender && user.birthDate;
           if (profileComplete) {
-            router.replace('/(tabs)/wardrobe');
+            router.replace('/(tabs)/home'); // Ana sayfaya yönlendir
           } else {
             router.replace('/(auth)/complete-profile');
           }
@@ -57,7 +57,7 @@ function useProtectedRouter() {
       if (!profileComplete && segments[1] !== 'complete-profile') {
         router.replace('/(auth)/complete-profile');
       } else if (profileComplete && inAuthGroup) {
-        router.replace('/(tabs)/wardrobe');
+        router.replace('/(tabs)/home'); // Ana sayfaya yönlendir
       }
     } else {
       if (!inAuthGroup) {
@@ -108,16 +108,21 @@ export default function RootLayout(): React.JSX.Element {
   };
 
   useEffect(() => {
+    let cacheMonitorCleanup: (() => void) | undefined;
+
     const initializeAppServices = async () => {
       try {
+        console.log('🚀 Starting app initialization...');
+
         // 1. App restart check (simplified)
         const CURRENT_SESSION_KEY = 'current_session';
         const currentSession = Date.now().toString();
         const lastSession = await AsyncStorage.getItem(CURRENT_SESSION_KEY);
         
         if (lastSession && Math.abs(Date.now() - parseInt(lastSession)) > 7 * 24 * 60 * 60 * 1000) {
-          // If last session was more than 7 days ago, consider it a fresh start
           console.log('🔄 Fresh start detected, reinitializing...');
+          // Cache'leri temizle fresh start'ta
+          validateAndCleanCaches();
         }
         
         await AsyncStorage.setItem(CURRENT_SESSION_KEY, currentSession);
@@ -149,22 +154,60 @@ export default function RootLayout(): React.JSX.Element {
           });
           if (apiKey) {
             await Purchases.configure({ apiKey });
-            console.log(`RevenueCat initialized successfully for ${Platform.OS}`);
+            console.log(`✅ RevenueCat initialized successfully for ${Platform.OS}`);
           }
         })();
 
         // 4. Gallery reference system initialization
         const appInitPromise = initializeApp();
 
-        await Promise.all([langPromise, purchasesPromise, appInitPromise]);
+        // 5. Cache manager initialization - YENİ!
+        const cacheInitPromise = (async () => {
+          console.log('🗄️ Initializing cache manager...');
+          cacheMonitorCleanup = initializeCaches();
+          
+          // Development'ta cache durumunu log'la
+          if (__DEV__) {
+            setTimeout(() => {
+              const stats = validateAndCleanCaches();
+              console.log('📊 Initial cache stats:', stats.recommendations);
+            }, 2000);
+          }
+          
+          console.log('✅ Cache manager initialized');
+        })();
+
+        // Tüm servisleri paralel olarak başlat
+        await Promise.all([langPromise, purchasesPromise, appInitPromise, cacheInitPromise]);
         
         console.log('✅ All app services initialized successfully');
+        
+        // Development'ta periodic cache validation
+        if (__DEV__) {
+          const validationInterval = setInterval(() => {
+            validateAndCleanCaches();
+          }, 5 * 60 * 1000); // Her 5 dakikada bir
+          
+          // Cleanup function'a ekle
+          const originalCleanup = cacheMonitorCleanup;
+          cacheMonitorCleanup = () => {
+            originalCleanup?.();
+            clearInterval(validationInterval);
+          };
+        }
+        
       } catch (error) {
-        console.error('Failed to initialize app services:', error);
+        console.error('❌ Failed to initialize app services:', error);
       }
     };
 
     initializeAppServices();
+
+    // Cleanup function
+    return () => {
+      console.log('🧹 Cleaning up app services...');
+      cacheMonitorCleanup?.();
+    };
   }, []);
 
   return (

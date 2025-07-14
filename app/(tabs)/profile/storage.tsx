@@ -382,25 +382,7 @@ export default function StorageManagementScreen() {
           </Text>
 
           <View style={styles.actionsGrid}>
-            <Button
-              label={activeOperations.has('validate') ? t('storage.validating') : t('storage.validateImages')}
-              onPress={handleValidateImages}
-              variant="outline"
-              style={styles.actionButton}
-              disabled={activeOperations.has('validate')}
-              loading={activeOperations.has('validate')}
-              icon={<Shield color={theme.colors.primary} size={20} />}
-            />
 
-            <Button
-              label={activeOperations.has('cleanup') ? t('storage.cleaningUp') : t('storage.cleanupOrphaned')}
-              onPress={handleCleanupOrphaned}
-              variant="outline"
-              style={styles.actionButton}
-              disabled={activeOperations.has('cleanup')}
-              loading={activeOperations.has('cleanup')}
-              icon={<Trash2 color={theme.colors.secondary} size={20} />}
-            />
 
             <Button
               label={t('storage.refreshStats')}
@@ -423,81 +405,6 @@ export default function StorageManagementScreen() {
             />
 
           </View>
-        </View>
-
-        {/* Details Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.detailsToggle}
-            onPress={() => setShowDetails(!showDetails)}
-          >
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              {t('storage.details')}
-            </Text>
-            {showDetails ?
-              <ChevronUp color={theme.colors.textLight} size={20} /> :
-              <ChevronDown color={theme.colors.textLight} size={20} />
-            }
-          </TouchableOpacity>
-
-          {showDetails && (
-            <View style={[styles.detailsCard, { backgroundColor: theme.colors.card }]}>
-              <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, { color: theme.colors.textLight }]}>
-                  {t('storage.originalImages')}
-                </Text>
-                <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-                  {Math.round((storageStats?.fileSystem.totalSizeMB || 0) * 0.7)} MB
-                </Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, { color: theme.colors.textLight }]}>
-                  {t('storage.thumbnails')}
-                </Text>
-                <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-                  {Math.round((storageStats?.fileSystem.totalSizeMB || 0) * 0.3)} MB
-                </Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={[styles.detailLabel, { color: theme.colors.textLight }]}>
-                  {t('storage.orphanedFiles')}
-                </Text>
-                <Text style={[styles.detailValue, { color: theme.colors.text }]}>
-                  {storageStats?.usage.orphanedFiles || 0}
-                </Text>
-              </View>
-
-              {storageStats?.fileSystem.issues && storageStats.fileSystem.issues.length > 0 && (
-                <>
-                  <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-                  <Text style={[styles.issuesTitle, { color: theme.colors.error }]}>
-                    {t('storage.issuesFound')}
-                  </Text>
-                  {storageStats.fileSystem.issues.map((issue, index) => (
-                    <Text key={index} style={[styles.issueText, { color: theme.colors.textLight }]}>
-                      • {issue}
-                    </Text>
-                  ))}
-                </>
-              )}
-            </View>
-          )}
-        </View>
-
-        {/* Emergency Actions */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.error }]}>
-            {t('storage.emergencyCleanup')}
-          </Text>
-          <Button
-            label={t('storage.emergencyCleanup')}
-            onPress={handleEmergencyCleanup}
-            variant="destructive"
-            style={styles.emergencyButton}
-            icon={<Zap color={theme.colors.white} size={20} />}
-          />
         </View>
       </ScrollView>
     </SafeAreaView>

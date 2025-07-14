@@ -196,29 +196,31 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            {/* Header gradient */}
-            <LinearGradient
-                colors={[
-                    theme.colors.primary,
-                    theme.colors.secondary,
-                    theme.colors.primaryLight
-                ]}
-                style={styles.headerGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-            >
-                <HeaderBar
-                    title={t('home.title', 'Discover Style')}
-                    style={{ backgroundColor: 'transparent' }}
-                />
-                {renderWelcomeSection()}
-            </LinearGradient>
+            {/* Sadece HeaderBar sabit kalır */}
+            <HeaderBar
+                title={t('home.title', 'Discover Style')}
+                style={{ backgroundColor: theme.colors.background }}
+            />
 
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
+                {/* Welcome section artık scroll edilebilir */}
+                <LinearGradient
+                    colors={[
+                        theme.colors.primary,
+                        theme.colors.secondary,
+                        theme.colors.primaryLight
+                    ]}
+                    style={styles.headerGradientScrollable}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                >
+                    {renderWelcomeSection()}
+                </LinearGradient>
+
                 {/* Feature Cards - Alt alta düzenlendi */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
@@ -271,6 +273,21 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+    },
+    headerGradientScrollable: {
+        paddingBottom: 24,
+        marginBottom: 16,
+        borderRadius: 20,
+        marginHorizontal: 16,
+        marginTop: 16,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 8,
     },
     loadingContainer: {
         flex: 1,

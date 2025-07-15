@@ -40,7 +40,7 @@ interface UserPlanState {
 
 // Sadeleştirilmiş plan limitleri - sadece Free ve Premium
 const PLAN_LIMITS = {
-  free: { wardrobe: 30, daily_suggestions: 2 },
+  free: { wardrobe: 75, daily_suggestions: 2 },
   premium: { wardrobe: Infinity, daily_suggestions: Infinity }, // Unlimited!
 };
 

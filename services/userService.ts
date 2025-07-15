@@ -218,7 +218,7 @@ export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?
 export const getPlanFeatures = (planType: 'free' | 'premium') => {
   const features = {
     free: {
-      wardrobe_limit: 30,
+      wardrobe_limit: 75,
       daily_suggestions: 2,
       features: [
         'Basic outfit suggestions', 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { useClothingStore } from '@/store/clothingStore';
-import { useRevenueCat, getRevenueCatCacheStatus } from './useRevenueCat';
+import { useRevenueCat } from '@/context/RevenueCatContext';
 import { useAuth } from '@/context/AuthContext';
 
 interface WardrobeLimitInfo {

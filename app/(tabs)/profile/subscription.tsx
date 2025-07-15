@@ -14,7 +14,7 @@ import Button from '@/components/common/Button';
 import Purchases, { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useRevenueCat } from '@/context/RevenueCatContext';
 
 // Çeviri dosyasındaki ikon isimlerini gerçek bileşenlerle eşleştirir
 const IconMap: { [key: string]: React.ElementType } = {

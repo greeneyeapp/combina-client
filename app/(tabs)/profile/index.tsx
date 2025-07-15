@@ -36,7 +36,7 @@ import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
 import { getUserProfile } from '@/services/userService';
 import { restorePurchases } from '@/services/purchaseService';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useRevenueCat } from '@/context/RevenueCatContext';
 
 interface UsageInfo {
   daily_limit: number;

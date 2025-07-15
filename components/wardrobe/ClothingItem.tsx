@@ -1,12 +1,12 @@
-// components/wardrobe/ClothingItem.tsx - File system based lazy loading
+// kodlar/components/wardrobe/ClothingItem.tsx - Tüm özellikleri içeren ve performansı optimize edilmiş son hali
 
 import React, { useState, useEffect, memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { Edit2, ImageOff } from 'lucide-react-native';
 import { ClothingItem as TClothingItem } from '@/store/clothingStore';
-import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
+import { getImageUri } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
 
 interface ClothingItemProps {
@@ -15,65 +15,31 @@ interface ClothingItemProps {
   onEdit: () => void;
 }
 
+// React.memo, bu component'in sadece 'item' prop'u değiştiğinde yeniden render edilmesini sağlar.
 const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  const [thumbnailUri, setThumbnailUri] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Sadece resim yükleme hatasını takip eden state.
   const [imageError, setImageError] = useState(false);
 
+  // Component'e yeni bir item geldiğinde (liste filtrelendiğinde vb.)
+  // hata durumunu sıfırlayarak resmin yeniden yüklenmesini sağlıyoruz.
   useEffect(() => {
-    let isMounted = true;
-    
-    const loadThumbnail = async () => {
-      if (!item.thumbnailImagePath) {
-        setIsLoading(false);
-        setImageError(true);
-        return;
-      }
+    setImageError(false);
+  }, [item.thumbnailImagePath]);
 
-      setIsLoading(true);
-      setImageError(false);
-      
-      try {
-        // Check if thumbnail exists
-        const exists = await checkImageExists(item.thumbnailImagePath, true);
-        
-        if (isMounted) {
-          if (exists) {
-            const uri = getImageUri(item.thumbnailImagePath, true);
-            setThumbnailUri(uri);
-          } else {
-            setImageError(true);
-          }
-        }
-      } catch (error) {
-        console.error('Error loading thumbnail for item:', item.id, error);
-        if (isMounted) {
-          setImageError(true);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
-    loadThumbnail();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [item.thumbnailImagePath, item.id]);
+  // Resim URI'sini doğrudan oluşturuyoruz. Bu, render hızını artırır.
+  const thumbnailUri = item.thumbnailImagePath ? getImageUri(item.thumbnailImagePath, true) : '';
 
   const handleEditPress = (e: any) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Arkadaki karta tıklanmasını engeller.
     onEdit();
   };
 
   const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
-  const colorNames = itemColors.map(color => t(`colors.${color}`)).join(', ');
-
+  
+  // Renk göstergelerini render eden fonksiyon (orijinal kodunuzdan alındı ve korundu)
   const renderColorIndicators = () => {
     const displayColors = itemColors.slice(0, 3);
     
@@ -93,7 +59,7 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
               }
             ]} 
           />
-          <Text style={[styles.colorText, { color: theme.colors.textLight }]}>
+          <Text style={[styles.colorText, { color: theme.colors.textLight }]} numberOfLines={1}>
             {t(`colors.${displayColors[0]}`)}
           </Text>
         </View>
@@ -128,34 +94,16 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
               </View>
             )}
           </View>
-          <Text 
-            style={[styles.colorText, { color: theme.colors.textLight }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {colorNames}
-          </Text>
         </View>
       );
     }
   };
 
   const renderImage = () => {
-    if (isLoading) {
-      return (
-        <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
-          <ActivityIndicator size="small" color={theme.colors.primary} />
-        </View>
-      );
-    }
-
     if (imageError || !thumbnailUri) {
       return (
         <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
           <ImageOff color={theme.colors.textLight} size={32}/>
-          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-            {item.name?.charAt(0) || '?'}
-          </Text>
         </View>
       );
     }
@@ -165,13 +113,7 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
         source={{ uri: thumbnailUri }}
         style={styles.image}
         resizeMode="cover"
-        onError={(error) => {
-          console.warn('Thumbnail load error for item:', item.id, error.nativeEvent.error);
-          setImageError(true);
-        }}
-        onLoad={() => {
-          // Thumbnail loaded successfully
-        }}
+        onError={() => setImageError(true)}
       />
     );
   };
@@ -184,7 +126,6 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
     >
       <View style={styles.imageContainer}>
         {renderImage()}
-        
         <TouchableOpacity 
           style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleEditPress}
@@ -202,13 +143,9 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
         >
           {item.name}
         </Text>
-        
-        <View style={styles.categoryContainer}>
-          <Text style={[styles.categoryText, { color: theme.colors.textLight }]}>
-            {t(`categories.${item.category}`)}
-          </Text>
-        </View>
-        
+        <Text style={[styles.categoryText, { color: theme.colors.textLight }]}>
+          {t(`categories.${item.category}`)}
+        </Text>
         {renderColorIndicators()}
       </View>
     </TouchableOpacity>
@@ -219,10 +156,10 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2, },
+    shadowOffset: { width: 0, height: 1, },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 2,
+    elevation: 3,
     overflow: 'hidden',
   },
   imageContainer: {
@@ -239,18 +176,11 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8
-  },
-  placeholderText: {
-    fontSize: 12,
-    fontFamily: 'Montserrat-Regular',
-    textAlign: 'center',
-    paddingHorizontal: 4,
   },
   editButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 6,
+    right: 6,
     width: 28,
     height: 28,
     borderRadius: 14,
@@ -259,19 +189,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   infoContainer: { 
-    padding: 12, 
+    padding: 10,
+    gap: 6, // Elemanlar arasına boşluk ekledik
   },
   itemName: { 
-    fontSize: 14, 
+    fontSize: 13, 
     fontFamily: 'Montserrat-SemiBold', 
-    marginBottom: 6, 
-    lineHeight: 18, 
-  },
-  categoryContainer: { 
-    marginBottom: 8, 
+    lineHeight: 16, 
   },
   categoryText: { 
-    fontSize: 12, 
+    fontSize: 11, 
     fontFamily: 'Montserrat-Regular', 
   },
   singleColorContainer: { 
@@ -290,27 +217,28 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   multiColorContainer: {
-    gap: 4,
+    // Bu container artık sadece circle'ları içerecek, text'i değil.
   },
   colorCirclesRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   multiColorCircle: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
   },
   moreColorsIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: -4,
   },
   moreColorsText: {
-    fontSize: 6,
+    fontSize: 8,
     fontFamily: 'Montserrat-Bold',
     color: '#FFFFFF',
   },

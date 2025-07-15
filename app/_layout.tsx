@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
 import { initializeApp } from '@/utils/appInitialization';
 import { initializeCaches, validateAndCleanCaches } from '@/utils/cacheManager';
+import { RevenueCatProvider } from '@/context/RevenueCatContext'; // YENİ IMPORT
 
 SplashScreen.preventAutoHideAsync();
 
@@ -131,14 +132,14 @@ export default function RootLayout(): React.JSX.Element {
         const CURRENT_SESSION_KEY = 'current_session';
         const currentSession = Date.now().toString();
         const lastSession = await AsyncStorage.getItem(CURRENT_SESSION_KEY);
-        
+
         if (lastSession && Math.abs(Date.now() - parseInt(lastSession)) > 7 * 24 * 60 * 60 * 1000) {
           console.log('🔄 Fresh start detected, reinitializing...');
           // File system cache'ini temizle fresh start'ta
           const cacheStats = await validateAndCleanCaches(t);
           console.log('🧹 Fresh start cleanup:', cacheStats.recommendations);
         }
-        
+
         await AsyncStorage.setItem(CURRENT_SESSION_KEY, currentSession);
 
         // 2. Language setup
@@ -179,7 +180,7 @@ export default function RootLayout(): React.JSX.Element {
         const cacheInitPromise = (async () => {
           console.log('🗄️ Initializing file system cache manager...');
           cacheMonitorCleanup = initializeCaches();
-          
+
           // Development'ta cache durumunu log'la
           if (__DEV__) {
             setTimeout(async () => {
@@ -187,21 +188,21 @@ export default function RootLayout(): React.JSX.Element {
               console.log('📊 Initial file system stats:', stats.recommendations);
             }, 2000);
           }
-          
+
           console.log('✅ File system cache manager initialized');
         })();
 
         // Tüm servisleri paralel olarak başlat
         await Promise.all([langPromise, purchasesPromise, appInitPromise, cacheInitPromise]);
-        
+
         console.log('✅ All app services initialized successfully');
-        
+
         // Development'ta periodic cache validation
         if (__DEV__) {
           const validationInterval = setInterval(async () => {
             await validateAndCleanCaches(t);
           }, 5 * 60 * 1000); // Her 5 dakikada bir
-          
+
           // Cleanup function'a ekle
           const originalCleanup = cacheMonitorCleanup;
           cacheMonitorCleanup = () => {
@@ -209,7 +210,7 @@ export default function RootLayout(): React.JSX.Element {
             clearInterval(validationInterval);
           };
         }
-        
+
       } catch (error) {
         console.error('❌ Failed to initialize app services:', error);
       }
@@ -229,9 +230,11 @@ export default function RootLayout(): React.JSX.Element {
       <I18nextProvider i18n={i18n}>
         <ThemeProvider>
           <AuthProvider>
-            <RootLayoutNav />
-            <CustomAlert />
-            <Toast config={toastConfig} />
+            <RevenueCatProvider>
+              <RootLayoutNav />
+              <CustomAlert />
+              <Toast config={toastConfig} />
+            </RevenueCatProvider>
           </AuthProvider>
         </ThemeProvider>
       </I18nextProvider>

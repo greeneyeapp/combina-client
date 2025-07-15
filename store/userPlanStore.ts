@@ -1,13 +1,14 @@
-// store/userPlanStore.ts - Sadeleştirilmiş plan limitleri
+// kodlar/store/userPlanStore.ts - rewarded_count alanı eklenmiş doğru hali
 
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { simpleStorage } from '@/store/simpleStorage';
 
 export interface UserPlan {
-  plan: 'free' | 'premium'; // Standard kaldırıldı
+  plan: 'free' | 'premium';
   usage: {
     daily_limit: number;
+    rewarded_count?: number; // HATA BURADAYDI - Bu alan eklendi
     current_usage: number;
     remaining: number;
     percentage_used: number;
@@ -27,7 +28,7 @@ interface UserPlanState {
   // Actions
   setUserPlan: (plan: UserPlan) => void;
   updateUsage: (usage: UserPlan['usage']) => void;
-  setPlan: (plan: 'free' | 'premium') => void; // Standard kaldırıldı
+  setPlan: (plan: 'free' | 'premium') => void;
   clearUserPlan: () => void;
   setLoading: (loading: boolean) => void;
 
@@ -38,10 +39,9 @@ interface UserPlanState {
   getPlanLimits: () => { wardrobe: number; daily_suggestions: number };
 }
 
-// Sadeleştirilmiş plan limitleri - sadece Free ve Premium
 const PLAN_LIMITS = {
   free: { wardrobe: 75, daily_suggestions: 2 },
-  premium: { wardrobe: Infinity, daily_suggestions: Infinity }, // Unlimited!
+  premium: { wardrobe: Infinity, daily_suggestions: Infinity },
 };
 
 export const useUserPlanStore = create<UserPlanState>()(
@@ -83,7 +83,7 @@ export const useUserPlanStore = create<UserPlanState>()(
 
       canAddItem: () => {
         const state = get();
-        if (!state.userPlan) return true; // Assume can add if no plan data
+        if (!state.userPlan) return true;
 
         const limits = PLAN_LIMITS[state.userPlan.plan];
         return limits.wardrobe === Infinity ||
@@ -107,10 +107,8 @@ export const useUserPlanStore = create<UserPlanState>()(
       },
     }),
     {
-      name: 'user-plan-storage-v2', // Version bump for simplified plans
-      storage: createJSONStorage(() => AsyncStorage),
-
-      // Only persist essential data, not loading states
+      name: 'user-plan-storage-v2',
+      storage: createJSONStorage(() => simpleStorage),
       partialize: (state) => ({
         userPlan: state.userPlan,
         lastFetched: state.lastFetched,

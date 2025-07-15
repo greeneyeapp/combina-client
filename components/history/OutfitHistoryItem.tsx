@@ -1,198 +1,108 @@
-// components/outfit/OutfitHistoryItem.tsx - File system based image loading
+// kodlar/components/history/OutfitHistoryItem.tsx - Performans için tamamen yeniden yazıldı
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { Outfit } from '@/store/outfitStore';
 import { router } from 'expo-router';
-import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
+import { getImageUri } from '@/utils/fileSystemImageManager';
 
 interface OutfitHistoryItemProps {
   outfit: Outfit;
 }
 
-interface ItemWithUri {
-  item: any;
-  displayUri: string;
-  isLoading: boolean;
-}
-
-export default function OutfitHistoryItem({ outfit }: OutfitHistoryItemProps) {
+// Her bir küçük resmi (thumbnail) render etmek için oluşturulmuş,
+// kendi kendini yöneten ve performansı optimize edilmiş component.
+const ClothingThumbnail = memo(({ itemId }: { itemId: string }) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { clothing } = useClothingStore();
-  
-  const [itemsWithUris, setItemsWithUris] = useState<ItemWithUri[]>([]);
+  const [imageError, setImageError] = useState(false);
 
-  const clothingItems = outfit.items
-    .map(itemId => clothing.find(item => item.id === itemId))
-    .filter(Boolean);
+  // useMemo, bu component'in gereksiz yere item aramasını engeller.
+  const item = useMemo(() => clothing.find(c => c.id === itemId), [clothing, itemId]);
 
-  useEffect(() => {
-    const loadDisplayUris = async () => {
-      if (clothingItems.length === 0) return;
+  // Resim URI'si senkron olarak oluşturulur, async işlem yok.
+  const imageUri = useMemo(() => item?.thumbnailImagePath ? getImageUri(item.thumbnailImagePath, true) : '', [item]);
 
-      const initialItems: ItemWithUri[] = clothingItems.map(item => ({
-        item,
-        displayUri: '',
-        isLoading: true
-      }));
+  const handlePress = () => item && router.push(`/wardrobe/${item.id}`);
 
-      setItemsWithUris(initialItems);
-
-      const asyncPromises = initialItems.map(async (itemWithUri, index) => {
-        try {
-          if (!itemWithUri.item.originalImagePath) {
-            return { index, uri: '' };
-          }
-
-          // Check if original image exists
-          const exists = await checkImageExists(itemWithUri.item.originalImagePath, false);
-          
-          if (exists) {
-            const uri = getImageUri(itemWithUri.item.originalImagePath, false);
-            return { index, uri };
-          } else {
-            return { index, uri: '' };
-          }
-        } catch (error) {
-          console.error('Error loading file system image for history item:', error);
-          return { index, uri: '' };
-        }
-      });
-
-      const results = await Promise.all(asyncPromises);
-      
-      setItemsWithUris(prev => {
-        const updated = [...prev];
-        results.forEach(result => {
-          if (result) {
-            updated[result.index] = {
-              ...updated[result.index],
-              displayUri: result.uri,
-              isLoading: false
-            };
-          }
-        });
-        return updated;
-      });
-    };
-
-    loadDisplayUris();
-  }, [clothingItems.length, outfit.id]);
-
-  const handleItemPress = (itemId: string) => {
-    router.push(`/wardrobe/${itemId}`);
-  };
-
-  const renderClothingItem = (itemWithUri: ItemWithUri, index: number) => {
-    const { item, displayUri, isLoading } = itemWithUri;
-    
-    if (!item) return null;
-
+  // Eğer kıyafet silinmişse veya bulunamıyorsa, bir placeholder göster.
+  if (!item) {
     return (
-      <TouchableOpacity
-        key={item.id}
-        style={[styles.clothingItem, { backgroundColor: theme.colors.card }]}
-        onPress={() => handleItemPress(item.id)}
-        activeOpacity={0.7}
-      >
-        {isLoading ? (
-          <View style={[styles.placeholderImage, { backgroundColor: theme.colors.background }]}>
-            <Text style={[styles.loadingText, { color: theme.colors.textLight }]}>
-              ⏳
-            </Text>
-          </View>
-        ) : displayUri ? (
-          <Image
-            source={{ uri: displayUri }}
-            style={styles.clothingImage}
-            resizeMode="cover"
-            onError={() => {
-              console.warn('File system image load error in history for item:', item.id);
-              setItemsWithUris(prev => {
-                const updated = [...prev];
-                const itemIndex = updated.findIndex(u => u.item?.id === item.id);
-                if (itemIndex >= 0) {
-                  updated[itemIndex] = { ...updated[itemIndex], displayUri: '', isLoading: false };
-                }
-                return updated;
-              });
-            }}
-          />
-        ) : (
-          <View style={[styles.placeholderImage, { backgroundColor: theme.colors.background }]}>
-            <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-              {item.name?.charAt(0) || '?'}
-            </Text>
-          </View>
-        )}
-        
-        <View style={styles.itemInfo}>
-          <Text 
-            style={[styles.itemName, { color: theme.colors.text }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {item.name}
-          </Text>
-          <Text style={[styles.itemCategory, { color: theme.colors.textLight }]}>
-            {t(`categories.${item.category}`)}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderMissingItem = (itemId: string, index: number) => {
-    return (
-      <View
-        key={`missing-${itemId}-${index}`}
-        style={[styles.clothingItem, styles.missingItem, { 
-          backgroundColor: theme.colors.card,
-          borderColor: theme.colors.border 
-        }]}
-      >
+      <View style={[styles.clothingItem, styles.missingItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={[styles.placeholderImage, { backgroundColor: theme.colors.background }]}>
-          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
-            ?
-          </Text>
+          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>?</Text>
         </View>
-        
         <View style={styles.itemInfo}>
-          <Text style={[styles.itemName, { color: theme.colors.textLight }]}>
+          <Text style={[styles.itemName, { color: theme.colors.textLight }]} numberOfLines={2}>
             {t('wardrobe.itemNotFound')}
-          </Text>
-          <Text style={[styles.itemCategory, { color: theme.colors.textLight }]}>
-            {t('wardrobe.removedItem')}
           </Text>
         </View>
       </View>
     );
-  };
+  }
+
+  const hasImage = imageUri && !imageError;
+
+  return (
+    <TouchableOpacity
+      style={[styles.clothingItem, { backgroundColor: theme.colors.card }]}
+      onPress={handlePress}
+      activeOpacity={0.7}
+    >
+      {hasImage ? (
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.clothingImage}
+          resizeMode="cover"
+          // Resim yüklenemezse (dosya silinmiş vb.), hata state'ini set et.
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <View style={[styles.placeholderImage, { backgroundColor: theme.colors.background }]}>
+          <Text style={[styles.placeholderText, { color: theme.colors.textLight }]}>
+            {item.name?.charAt(0) || '?'}
+          </Text>
+        </View>
+      )}
+      <View style={styles.itemInfo}>
+        <Text style={[styles.itemName, { color: theme.colors.text }]} numberOfLines={2}>
+          {item.name}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+});
+
+// Ana component artık çok daha basit ve performanslı.
+const OutfitHistoryItem = ({ outfit }: OutfitHistoryItemProps) => {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const { clothing } = useClothingStore();
+
+  // Bu hesaplama hala burada yapılabilir çünkü sadece bir kez çalışır.
+  const availableItemsCount = useMemo(() => {
+    const validIds = new Set(clothing.map(c => c.id));
+    return outfit.items.filter(id => validIds.has(id)).length;
+  }, [outfit.items, clothing]);
 
   return (
     <View style={styles.container}>
       <View style={styles.outfitGrid}>
-        {outfit.items.map((itemId, index) => {
-          const itemWithUri = itemsWithUris.find(i => i.item?.id === itemId);
-          
-          if (itemWithUri) {
-            return renderClothingItem(itemWithUri, index);
-          } else {
-            return renderMissingItem(itemId, index);
-          }
-        })}
+        {outfit.items.map(itemId => (
+          <ClothingThumbnail key={itemId} itemId={itemId} />
+        ))}
       </View>
       
       <View style={styles.metadataContainer}>
         <Text style={[styles.metadataText, { color: theme.colors.textLight }]}>
-          {clothingItems.length} / {outfit.items.length} {t('wardrobe.itemsAvailable')}
+          {availableItemsCount} / {outfit.items.length} {t('wardrobe.itemsAvailable')}
         </Text>
         
-        {clothingItems.length !== outfit.items.length && (
+        {availableItemsCount !== outfit.items.length && (
           <Text style={[styles.warningText, { color: theme.colors.warning }]}>
             {t('history.someItemsRemoved')}
           </Text>
@@ -200,7 +110,7 @@ export default function OutfitHistoryItem({ outfit }: OutfitHistoryItemProps) {
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: { marginVertical: 8 },
@@ -224,11 +134,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   placeholderText: { fontSize: 20, fontFamily: 'Montserrat-Bold' },
-  loadingText: { fontSize: 14, fontFamily: 'Montserrat-Regular' },
-  itemInfo: { padding: 6 },
-  itemName: { fontSize: 10, fontFamily: 'Montserrat-SemiBold', marginBottom: 2 },
-  itemCategory: { fontSize: 8, fontFamily: 'Montserrat-Regular' },
-  metadataContainer: { marginTop: 8, alignItems: 'center' },
+  itemInfo: { 
+    paddingVertical: 6, 
+    paddingHorizontal: 4,
+    minHeight: 38, // Sabit yükseklik
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  itemName: { 
+    fontSize: 10, 
+    fontFamily: 'Montserrat-SemiBold', 
+    textAlign: 'center' 
+  },
+  metadataContainer: { marginTop: 12, alignItems: 'center' },
   metadataText: { fontSize: 11, fontFamily: 'Montserrat-Regular' },
   warningText: { fontSize: 10, fontFamily: 'Montserrat-Medium', marginTop: 2 },
 });
+
+export default memo(OutfitHistoryItem);

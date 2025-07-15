@@ -1,4 +1,4 @@
-// app/(tabs)/history/index.tsx - Modern ve tema uyumlu tasarım
+// app/(tabs)/history/index.tsx - Her 2 item arasına banner reklam entegrasyonu
 
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, SectionList, TouchableOpacity, Dimensions, Animated } from 'react-native';
@@ -22,12 +22,18 @@ import {
   Heart,
   Star
 } from 'lucide-react-native';
+// 1. DEĞİŞİKLİK: BannerAd ve Boyutları import edildi
+import { CustomBannerAd } from '@/components/ads/BannerAd';
+import { BannerAdSize } from 'react-native-google-mobile-ads';
 
 const { width } = Dimensions.get('window');
 
+// 2. DEĞİŞİKLİK: Liste elemanları için yeni bir tip tanımı
+type ListItem = ExtendedOutfit | { type: 'AD'; id: string };
+
 interface Section {
   title: string;
-  data: Outfit[];
+  data: ListItem[]; // Veri tipi güncellendi
 }
 
 interface ExtendedOutfit extends Outfit {
@@ -45,7 +51,6 @@ export default function HistoryScreen() {
 
   const [deleteAnimations] = useState(new Map<string, Animated.Value>());
 
-  // Outfit'lerin geçerliliğini kontrol et
   const outfitsWithValidation = useMemo(() => {
     return outfits.map(outfit => {
       const availableItems = outfit.items.filter(itemId => 
@@ -61,10 +66,27 @@ export default function HistoryScreen() {
     });
   }, [outfits, clothing]);
 
-  const sections: Section[] = useMemo(
-    () => groupOutfitsByDate(outfitsWithValidation, i18n.language, t),
-    [outfitsWithValidation, i18n.language, t]
-  );
+  // 3. DEĞİŞİKLİK: Veri listesine reklamları enjekte etme mantığı
+  const sections: Section[] = useMemo(() => {
+    const groupedOutfits = groupOutfitsByDate(outfitsWithValidation, i18n.language, t);
+    const sectionsWithAds: Section[] = [];
+    let outfitCounter = 0;
+
+    groupedOutfits.forEach(group => {
+      const newSectionData: ListItem[] = [];
+      group.data.forEach(outfit => {
+        newSectionData.push(outfit as ExtendedOutfit);
+        outfitCounter++;
+        // Her 2 item'dan sonra reklam ekle
+        if (outfitCounter % 2 === 0) {
+          newSectionData.push({ type: 'AD', id: `ad-${outfitCounter}` });
+        }
+      });
+      sectionsWithAds.push({ title: group.title, data: newSectionData });
+    });
+
+    return sectionsWithAds;
+  }, [outfitsWithValidation, i18n.language, t]);
 
   const getDeleteAnimation = (id: string) => {
     if (!deleteAnimations.has(id)) {
@@ -108,7 +130,6 @@ export default function HistoryScreen() {
       { backgroundColor: theme.colors.card }
     ];
 
-    // Bazı item'lar eksikse farklı stil
     if (!outfit.hasAllItems) {
       return [
         ...baseStyle,
@@ -146,8 +167,20 @@ export default function HistoryScreen() {
     </LinearGradient>
   );
 
-  const renderItem = ({ item }: { item: ExtendedOutfit }) => {
-    const anim = getDeleteAnimation(item.id);
+  // 4. DEĞİŞİKLİK: renderItem'ı reklamları da gösterecek şekilde güncelle
+  const renderItem = ({ item }: { item: ListItem }) => {
+    // Öğe bir reklam ise, CustomBannerAd component'ini render et
+    if ('type' in item && item.type === 'AD') {
+      return (
+        <View style={styles.adContainer}>
+          <CustomBannerAd size={BannerAdSize.MEDIUM_RECTANGLE} />
+        </View>
+      );
+    }
+    
+    // Değilse, normal kombin kartını render et
+    const outfit = item as ExtendedOutfit;
+    const anim = getDeleteAnimation(outfit.id);
     const tipColor = theme.colors.accent;
 
     return (
@@ -161,14 +194,15 @@ export default function HistoryScreen() {
             ? [theme.colors.card, theme.colors.background]
             : [theme.colors.background, theme.colors.card]
           }
-          style={[getCardStyle(item), {
+          style={[getCardStyle(outfit), {
             shadowColor: theme.mode === 'dark' ? '#000' : theme.colors.text,
           }]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          {/* Card Header - geliştirilmiş */}
-          <View style={styles.cardHeader}>
+          {/* ... Mevcut kombin kartı render kodunuz ... */}
+           {/* Card Header - geliştirilmiş */}
+           <View style={styles.cardHeader}>
             <View style={styles.headerLeft}>
               <View style={styles.occasionContainer}>
                 <View style={[styles.occasionDot, { backgroundColor: theme.colors.primary }]} />
@@ -178,11 +212,11 @@ export default function HistoryScreen() {
                   textShadowOffset: { width: 0, height: 1 },
                   textShadowRadius: 1,
                 }]}>
-                  {t(`occasions.${item.occasion}`)} • {t(`weather.${item.weather}`)}
+                  {t(`occasions.${outfit.occasion}`)} • {t(`weather.${outfit.weather}`)}
                 </Text>
               </View>
               
-              {!item.hasAllItems && (
+              {!outfit.hasAllItems && (
                 <View style={[styles.warningContainer, { 
                   backgroundColor: theme.mode === 'dark' 
                     ? 'rgba(237, 137, 54, 0.2)' 
@@ -191,8 +225,8 @@ export default function HistoryScreen() {
                   <AlertTriangle color={theme.colors.warning} size={14} />
                   <Text style={[styles.warningText, { color: theme.colors.warning }]}>
                     {t('history.missingItems', { 
-                      missing: item.totalItemsCount - item.availableItemsCount,
-                      total: item.totalItemsCount 
+                      missing: outfit.totalItemsCount - outfit.availableItemsCount,
+                      total: outfit.totalItemsCount 
                     })}
                   </Text>
                 </View>
@@ -200,7 +234,7 @@ export default function HistoryScreen() {
             </View>
             
             <TouchableOpacity 
-              onPress={() => handleDelete(item.id)}
+              onPress={() => handleDelete(outfit.id)}
               style={[styles.deleteButton, { backgroundColor: theme.colors.errorLight }]}
               activeOpacity={0.7}
             >
@@ -210,7 +244,7 @@ export default function HistoryScreen() {
           
           {/* Outfit Content */}
           <View style={styles.outfitContent}>
-            <OutfitHistoryItem outfit={item} />
+            <OutfitHistoryItem outfit={outfit} />
           </View>
           
           {/* Description */}
@@ -220,11 +254,11 @@ export default function HistoryScreen() {
             textShadowOffset: { width: 0, height: 1 },
             textShadowRadius: 1,
           }]}>
-            {item.description}
+            {outfit.description}
           </Text>
           
           {/* Styling Tip */}
-          {item.suggestion_tip && (
+          {outfit.suggestion_tip && (
             <LinearGradient
               colors={theme.mode === 'dark'
                 ? ['rgba(241, 201, 59, 0.15)', 'rgba(241, 201, 59, 0.05)']
@@ -246,7 +280,7 @@ export default function HistoryScreen() {
                 textShadowOffset: { width: 0, height: 1 },
                 textShadowRadius: 1,
               }]}>
-                {item.suggestion_tip}
+                {outfit.suggestion_tip}
               </Text>
             </LinearGradient>
           )}
@@ -256,7 +290,7 @@ export default function HistoryScreen() {
             <Heart size={12} color={theme.colors.primary} fill={theme.colors.primary} />
           </View>
           
-          {!item.hasAllItems && (
+          {!outfit.hasAllItems && (
             <View style={[styles.decorativeElement, styles.bottomLeft]}>
               <AlertTriangle size={10} color={theme.colors.warning} />
             </View>
@@ -465,5 +499,11 @@ const styles = StyleSheet.create({
   bottomLeft: {
     bottom: 12,
     left: 12,
+  },
+  // 5. DEĞİŞİKLİK: Reklam konteyneri için stil
+  adContainer: {
+    marginVertical: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

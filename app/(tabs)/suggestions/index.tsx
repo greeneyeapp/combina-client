@@ -1,3 +1,5 @@
+// app/(tabs)/suggestions/index.tsx - Akıllı İkon Mantığı ile Güncellenmiş Kod
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
@@ -17,22 +19,24 @@ import { useOutfitStore, Outfit } from '@/store/outfitStore';
 import { useWeatherStore } from '@/store/weatherStore';
 import { useAuth } from '@/context/AuthContext';
 import { useUserPlanStore } from '@/store/userPlanStore';
-import { Cloud, Sun, RefreshCw, ExternalLink, Sparkles, Lightbulb, Heart } from 'lucide-react-native';
+import { Cloud, Sun, RefreshCw, ExternalLink, Sparkles, Lightbulb, Heart, Film, Wand2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import HeaderBar from '@/components/common/HeaderBar';
 import Button from '@/components/common/Button';
 import OccasionPicker from '@/components/suggestions/OccasionPicker';
 import OutfitSuggestion from '@/components/suggestions/OutfitSuggestion';
 import OutfitLoadingAnimation from '@/components/suggestions/OutfitLoadingAnimation';
-import WardrobeChecklist from '@/components/common/WardrobeChecklist'; // YENİ BİLEŞEN
+import WardrobeChecklist from '@/components/common/WardrobeChecklist';
 import { getWeatherCondition } from '@/utils/weatherUtils';
 import { router } from 'expo-router';
 import { getOutfitSuggestion, OutfitSuggestionResponse } from '@/services/aiService';
-import { canGetSuggestion, getUserProfile } from '@/services/userService';
+import { canGetSuggestion, getUserProfile, grantExtraSuggestion } from '@/services/userService';
 import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
 import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
+import { CustomBannerAd } from '@/components/ads/BannerAd';
+import { useRewardedAd } from '@/hooks/useRewardedAd';
 
 interface PinterestLink {
   title: string;
@@ -60,6 +64,9 @@ export default function SuggestionsScreen() {
   const [isLiked, setIsLiked] = useState(false);
   const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
 
+  const rewardedAd = useRewardedAd();
+  const [isRetryingAfterAd, setIsRetryingAfterAd] = useState(false);
+
   const availableClothing = useMemo(() => {
     return clothing.filter(item => !item.isImageMissing);
   }, [clothing]);
@@ -74,6 +81,20 @@ export default function SuggestionsScreen() {
       ),
     [suggestion, outfits]
   );
+
+  // --- 1. DEĞİŞİKLİK: Reklam ikonunun gösterilip gösterilmeyeceğini belirleyen useMemo ---
+  const showAdIcon = useMemo(() => {
+    // Premium kullanıcılar asla reklam ikonu görmez
+    if (userPlan?.plan === 'premium') {
+      return false;
+    }
+    // Free kullanıcının kalan hakkı yoksa ikonu göster
+    if (userPlan && userPlan.usage.remaining <= 0) {
+      return true;
+    }
+    // Diğer tüm durumlarda (hak varsa, veri yükleniyorsa vb.) ikonu gösterme
+    return false;
+  }, [userPlan]);
 
   useEffect(() => {
     if (!weather && !weatherLoading) fetchWeather();
@@ -93,6 +114,25 @@ export default function SuggestionsScreen() {
     }
   }, [suggestionLayoutY, suggestion]);
 
+  useEffect(() => {
+    const handleReward = async () => {
+      if (rewardedAd.isEarned && !isRetryingAfterAd) {
+        Toast.show({
+          type: 'success',
+          text1: t('suggestions.rewardedAd.rewardGranted'),
+          text2: t('suggestions.rewardedAd.extraSuggestionInfo'),
+          position: 'top'
+        });
+
+        setIsRetryingAfterAd(true);
+        await grantExtraSuggestion();
+        await handleGenerateSuggestion(true);
+        setIsRetryingAfterAd(false);
+      }
+    }
+    handleReward();
+  }, [rewardedAd.isEarned, isRetryingAfterAd]);
+
   const wardrobeStatus = useMemo(() => {
     const required: Record<string, number> = { top: 2, bottom: 2, outerwear: 2, shoes: 2 };
     const gender = userPlan?.gender || 'female';
@@ -105,7 +145,7 @@ export default function SuggestionsScreen() {
       for (const [mainCat, subcats] of Object.entries(hierarchy)) {
         if ((subcats as string[]).includes(item.category)) {
           if (counts[mainCat] !== undefined) {
-             counts[mainCat]++;
+            counts[mainCat]++;
           }
           break;
         }
@@ -146,11 +186,9 @@ export default function SuggestionsScreen() {
     Toast.show({ type: 'success', text1: t('suggestions.likeSuccess'), text2: t('suggestions.likeInfo'), position: 'top', visibilityTime: 2500, topOffset: 50 });
   };
 
-  const handleGenerateSuggestion = async () => {
+  const handleGenerateSuggestion = async (bypassLimitCheck = false) => {
     if (isLimitLoading || !limitInfo) return;
-
     if (!wardrobeStatus.hasEnough || !weather) return;
-
     if (limitInfo.isLimitReached) {
       showAlert({
         title: t('suggestions.wardrobeLimitReachedTitle'),
@@ -170,23 +208,37 @@ export default function SuggestionsScreen() {
       return;
     }
 
-    setSuggestionLayoutY(0);
-
-    try {
+    if (!bypassLimitCheck) {
       const usageCheck = await canGetSuggestion();
       if (!usageCheck.canSuggest) {
         showAlert({
-          title: t('suggestions.limitExceededTitle'),
-          message: usageCheck.reason || t('suggestions.limitExceededMessage'),
+          title: t('suggestions.rewardedAd.title'),
+          message: t('suggestions.rewardedAd.message'),
           buttons: [
             { text: t('common.cancel'), onPress: () => { }, variant: 'outline' },
-            { text: t('profile.upgrade'), onPress: () => router.push('/profile/subscription' as any), variant: 'primary' }
+            {
+              text: t('suggestions.rewardedAd.watchAdButton'),
+              onPress: () => {
+                if (rewardedAd.isLoaded) {
+                  rewardedAd.show();
+                } else {
+                  Toast.show({
+                    type: 'info',
+                    text1: t('suggestions.rewardedAd.adLoading'),
+                    text2: t('suggestions.rewardedAd.adNotReady'),
+                    position: 'top',
+                  });
+                }
+              },
+              variant: 'primary'
+            }
           ]
         });
         return;
       }
-    } catch (error) { console.error('Usage check failed:', error); }
+    }
 
+    setSuggestionLayoutY(0);
     setGenerating(true);
     setShowLoadingAnimation(true);
     setError(null);
@@ -208,7 +260,9 @@ export default function SuggestionsScreen() {
 
       if (result) {
         setSuggestion(result);
-        await getUserProfile(true);
+        if (!isRetryingAfterAd) {
+          await getUserProfile(true);
+        }
       } else {
         setError(t('suggestions.genericError'));
       }
@@ -254,8 +308,11 @@ export default function SuggestionsScreen() {
       );
     }
 
-    const usage = userPlan.usage;
+    const { daily_limit, current_usage, rewarded_count = 0, percentage_used } = userPlan.usage;
     const isUnlimited = userPlan.plan === 'premium';
+
+    // Toplam efektif limiti hesapla
+    const effective_limit = daily_limit + rewarded_count;
 
     return (
       <LinearGradient
@@ -285,12 +342,15 @@ export default function SuggestionsScreen() {
         ) : (
           <>
             <Text style={[styles.usageText, { color: theme.colors.text }]}>
-              {t('suggestions.usageLimitInfo', { used: usage.current_usage, total: usage.daily_limit })}
+              {t('suggestions.usageLimitInfo', {
+                used: current_usage,
+                total: effective_limit
+              })}
             </Text>
             <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
               <View style={[styles.progressFill, {
-                backgroundColor: usage.percentage_used > 80 ? theme.colors.warning : theme.colors.primary,
-                width: `${Math.min(100, usage.percentage_used)}%`
+                backgroundColor: percentage_used > 80 ? theme.colors.warning : theme.colors.primary,
+                width: `${Math.min(100, percentage_used)}%`
               }]} />
             </View>
           </>
@@ -408,11 +468,13 @@ export default function SuggestionsScreen() {
 
         <Button
           label={generating ? t('suggestions.generating') : t('suggestions.generateOutfit')}
-          onPress={handleGenerateSuggestion}
+          onPress={() => handleGenerateSuggestion()}
           variant="primary"
           loading={generating}
           style={styles.generateButton}
           disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading}
+          // --- 2. DEĞİŞİKLİK: İkonu koşullu olarak render et ---
+          icon={showAdIcon ? <Film color={theme.colors.white} size={18} /> : <Wand2 color={theme.colors.white} size={18} />}
         />
 
         {!!error && (
@@ -456,6 +518,11 @@ export default function SuggestionsScreen() {
             </View>
           )}
         </View>
+
+        <View style={styles.adContainer}>
+          <CustomBannerAd />
+        </View>
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -531,6 +598,10 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   generateButton: { marginTop: 16, marginBottom: 16 },
+  adContainer: {
+    alignItems: 'center',
+    marginVertical: 8,
+  },
   errorContainer: { padding: 16, borderRadius: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
   emptyStateContainer: {

@@ -221,8 +221,8 @@ export const getPlanFeatures = (planType: 'free' | 'premium') => {
       wardrobe_limit: 75,
       daily_suggestions: 2,
       features: [
-        'Basic outfit suggestions', 
-        'Weather integration', 
+        'Basic outfit suggestions',
+        'Weather integration',
         'Basic wardrobe management'
       ]
     },
@@ -231,7 +231,7 @@ export const getPlanFeatures = (planType: 'free' | 'premium') => {
       daily_suggestions: 50,
       features: [
         'Unlimited wardrobe items',
-        'Advanced AI styling', 
+        'Advanced AI styling',
         'Pinterest inspiration',
         'Ad-free experience',
         'Priority support'
@@ -240,4 +240,30 @@ export const getPlanFeatures = (planType: 'free' | 'premium') => {
   };
 
   return features[planType];
+};
+
+export const grantExtraSuggestion = async (): Promise<{ success: boolean }> => {
+  try {
+    const token = await getAuthToken();
+    const response = await fetch(`${API_URL}/api/users/grant-extra-suggestion`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Failed to grant extra suggestion: ${errorData}`);
+    }
+
+    console.log('✅ Extra suggestion granted by backend.');
+    // Kullanıcı planını ve limitlerini yenile
+    await getUserProfile(true);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error granting extra suggestion:', error);
+    return { success: false };
+  }
 };

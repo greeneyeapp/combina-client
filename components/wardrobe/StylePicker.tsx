@@ -16,8 +16,7 @@ const styles = [
   'formal',
   'business',
   'sportswear',
-  'party',
-  'beachwear',
+  'party'
 ];
 
 const StylePicker: React.FC<StylePickerProps> = ({

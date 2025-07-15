@@ -72,7 +72,14 @@
           }
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-5658124024438456~7792041676",
+          "iosAppId": "ca-app-pub-5658124024438456~3735029556"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

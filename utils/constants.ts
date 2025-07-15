@@ -1,57 +1,65 @@
-// Dosya: kodlar/utils/constants.ts (GÜNCELLENMİŞ)
+// kodlar/utils/constants.ts - Son, manuel olarak sıralanmış ve mantıksal renk paleti
 
 export interface ColorInfo {
-  name: string;
+  name: string; // Benzersiz İngilizce anahtar
   hex: string;
 }
 
-// YENİ: Uygulama genelinde kullanılacak merkezi renk paleti
 export const ALL_COLORS: ColorInfo[] = [
-  { name: 'black', hex: '#000000' }, { name: 'white', hex: '#FFFFFF' }, { name: 'ivory', hex: '#FFFFF0' },
-  { name: 'beige', hex: '#F5F5DC' }, { name: 'cream', hex: '#FFFDD0' }, { name: 'charcoal', hex: '#36454F' },
-  { name: 'gray', hex: '#808080' }, { name: 'terracotta', hex: '#E2725B' }, { name: 'lightgray', hex: '#D3D3D3' },
-  { name: 'taupe', hex: '#483C32' }, { name: 'brown', hex: '#8B4513' }, { name: 'camel', hex: '#C19A6B' },
-  { name: 'chocolate', hex: '#D2691E' }, { name: 'tan', hex: '#D2B48C' }, { name: 'navy', hex: '#000080' },
-  { name: 'blue', hex: '#0000FF' }, { name: 'royalblue', hex: '#4169E1' }, { name: 'lightblue', hex: '#ADD8E6' },
-  { name: 'skyblue', hex: '#87CEEB' }, { name: 'turquoise', hex: '#40E0D0' }, { name: 'teal', hex: '#008080' },
-  { name: 'green', hex: '#008000' }, { name: 'olive', hex: '#808000' }, { name: 'khaki', hex: '#F0E68C' },
-  { name: 'forestgreen', hex: '#228B22' }, { name: 'mint', hex: '#98FF98' }, { name: 'sage', hex: '#BCB88A' },
-  { name: 'red', hex: '#FF0000' }, { name: 'burgundy', hex: '#800020' }, { name: 'maroon', hex: '#800000' },
-  { name: 'scarlet', hex: '#FF2400' }, { name: 'purple', hex: '#800080' }, { name: 'lavender', hex: '#E6E6FA' },
-  { name: 'lilac', hex: '#C8A2C8' }, { name: 'mauve', hex: '#E0B0FF' }, { name: 'pink', hex: '#FFC0CB' },
-  { name: 'hotpink', hex: '#FF69B4' }, { name: 'fuchsia', hex: '#FF00FF' }, { name: 'rose', hex: '#FF007F' },
-  { name: 'orange', hex: '#FFA500' }, { name: 'apricot', hex: '#FBCEB1' }, { name: 'peach', hex: '#FFE5B4' },
-  { name: 'coral', hex: '#FF7F50' }, { name: 'yellow', hex: '#FFFF00' }, { name: 'gold', hex: '#FFD700' },
-  { name: 'mustard', hex: '#FFDB58' }, { name: 'silver', hex: '#C0C0C0' }, { name: 'bronze', hex: '#CD7F32' }
-];
+  // --- YENİ GRUP: Desenler ---
 
-// ColorPicker bileşeni için renk grupları
-export const COLOR_SECTIONS = [
-  {
-    titleKey: 'neutrals',
-    data: ['white', 'ivory', 'beige', 'cream', 'lightgray', 'gray', 'charcoal', 'black']
-  },
-  {
-    titleKey: 'earthTones',
-    data: ['brown', 'chocolate', 'tan', 'camel', 'taupe', 'khaki', 'olive', 'sage', 'terracotta']
-  },
-  {
-    titleKey: 'coolTones',
-    data: ['blue', 'navy', 'royalblue', 'lightblue', 'skyblue', 'turquoise', 'teal', 'green', 'forestgreen', 'mint', 'purple', 'lavender', 'lilac', 'mauve']
-  },
-  {
-    titleKey: 'warmTones',
-    data: ['red', 'burgundy', 'maroon', 'scarlet', 'pink', 'hotpink', 'fuchsia', 'rose', 'orange', 'apricot', 'peach', 'coral', 'yellow', 'mustard']
-  },
-  {
-    titleKey: 'metallics',
-    data: ['gold', 'silver', 'bronze']
-  }
-].map(section => ({
-  ...section,
-  // Her bölümdeki renk isimlerini tam ColorInfo nesneleriyle eşleştir
-  data: section.data.map(colorName => ALL_COLORS.find(c => c.name === colorName)).filter(Boolean) as ColorInfo[]
-}));
+
+  // --- Mevcut Renk Listeniz (Sırası Korunarak) ---
+  { name: 'black', hex: '#000000' },
+  { name: 'white', hex: '#FFFFFF' },
+  { name: 'cream', hex: '#FFFDD0' },
+  { name: 'beige', hex: '#C4A484' },
+  { name: 'silver', hex: '#C0C0C0' },
+  { name: 'gray', hex: '#A2AAAD' },
+  { name: 'fume', hex: '#5B6770' },
+  { name: 'earth', hex: '#7D5A3A' },
+  { name: 'bronze', hex: '#cc8031' },
+  { name: 'cinnamon', hex: '#7f4031' },
+  { name: 'chestnut', hex: '#582D1D' },
+  { name: 'tan', hex: '#8B4513' },
+  { name: 'mustard', hex: '#C5A900' },
+  { name: 'gold', hex: '#FFD700' },
+  { name: 'yellow', hex: '#FEDD00' },
+  { name: 'lemon', hex: '#F6EB61' },
+  { name: 'orange', hex: '#C1441E' },
+  { name: 'coral', hex: '#FF7F50' },
+  { name: 'salmon', hex: '#fa8071' },
+  { name: 'apricot', hex: '#ffa483' },
+  { name: 'peach', hex: '#ffbe98' },
+  { name: 'dusty-pink', hex: '#F4A6A3' },
+  { name: 'lilac', hex: '#c8a2c8' },
+  { name: 'lavender', hex: '#b57edc' },
+  { name: 'violet', hex: '#93328E' },
+  { name: 'pink', hex: '#E93CAC' },
+  { name: 'fuchsia', hex: '#ff00ff' },
+  { name: 'pomegranate-red', hex: '#e91639' },
+  { name: 'red', hex: '#e30a17' },
+  { name: 'dark-red', hex: '#8B0000' },
+  { name: 'cherry-red', hex: '#74050b' },
+  { name: 'plum', hex: '#582D4B' },
+  { name: 'purple', hex: '#440099' },
+  { name: 'navy', hex: '#001489' },
+  { name: 'saxony-blue', hex: '#0000c8' },
+  { name: 'blue', hex: '#0072CE' },
+  { name: 'turquoise', hex: '#30d5c8' },
+  { name: 'ice-blue', hex: '#74D1EA' },
+  { name: 'water-green', hex: '#7bdcb5' },
+  { name: 'mint', hex: '#98ff98' },
+  { name: 'grass-green', hex: '#00B140' },
+  { name: 'green', hex: '#007A33' },
+  { name: 'olive', hex: '#556B2F' },
+  { name: 'khaki', hex: '#736542' },
+  { name: 'emerald', hex: '#013220' },
+
+  { name: 'leopard', hex: 'pattern_leopard' },
+  { name: 'zebra', hex: 'pattern_zebra' },
+  { name: 'snakeskin', hex: 'pattern_snakeskin' }, // YENİ EKLENDİ
+];
 
 export const OCCASION_HIERARCHY = {
   casual: ['daily-errands', 'friends-gathering', 'weekend-brunch', 'coffee-date', 'shopping', 'walk'],
@@ -62,20 +70,17 @@ export const OCCASION_HIERARCHY = {
   special: ['travel', 'weekend-getaway', 'holiday', 'festival', 'sightseeing']
 };
 
-
 export const GENDERED_CATEGORY_HIERARCHY = {
-  // --- KADIN KATEGORİLERİ --- (Değişiklik yok)
   female: {
     'top': ['t-shirt', 'blouse', 'shirt', 'bodysuit', 'crop-top', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck'],
-    'bottom': ['jeans', 'trousers', 'leggings', 'joggers', 'skirt', 'shorts', 'culottes'],
+    'bottom': ['jeans', 'trousers', 'leggings', 'joggers', 'skirt', 'shorts', 'culottes', 'wide-leg-trousers'],
     'sets': ['dress', 'jumpsuit', 'romper', 'co-ord-set', 'tracksuit'],
     'outerwear': ['coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'leather-jacket', 'blazer', 'vest'],
-    'modest-wear': ['tunic', 'long-cardigan', 'abaya', 'hijab-shawl', 'long-skirt', 'wide-leg-trousers'],
+    'modest-wear': ['tunic', 'long-cardigan', 'abaya', 'hijab-shawl', 'long-skirt'],
     'shoes': ['sneakers', 'heels', 'boots', 'sandals', 'flats', 'loafers', 'wedges'],
     'bags': ['handbag', 'crossbody-bag', 'backpack', 'clutch', 'tote-bag', 'fanny-pack'],
     'accessories': ['jewelry', 'scarf', 'sunglasses', 'belt', 'hat', 'beanie', 'watch']
   },
-  // --- ERKEK KATEGORİLERİ --- (Değişiklik yok)
   male: {
     'top': ['t-shirt', 'shirt', 'polo-shirt', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck', 'henley-shirt'],
     'bottom': ['jeans', 'trousers', 'chino-trousers', 'joggers', 'cargo-pants', 'shorts'],
@@ -87,21 +92,5 @@ export const GENDERED_CATEGORY_HIERARCHY = {
   }
 };
 
-// Hangi ürünlerin UNISEX olarak kabul edileceğini belirten anahtar listesi.
-export const UNISEX_ITEMS: string[] = [
-  // Üst Giyim
-  't-shirt', 'shirt', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck',
-  // Alt Giyim
-  'jeans', 'trousers', 'joggers', 'shorts',
-  // Dış Giyim
-  'coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'vest', 'gilet',
-  // Ayakkabılar
-  'sneakers', 'boots', 'sandals',
-  // Çantalar
-  'backpack', 'fanny-pack', 'tote-bag',
-  // Aksesuarlar
-  'sunglasses', 'belt', 'hat', 'beanie', 'watch', 'scarf'
-];
-
 export const ALL_SEASONS = ['spring', 'summer', 'fall', 'winter'];
-export const ALL_STYLES = ['casual', 'formal', 'business', 'sportswear', 'party', 'beachwear'];
+export const ALL_STYLES = ['casual', 'formal', 'business', 'sportswear', 'party'];

@@ -25,7 +25,7 @@ import {
     HardDrive,
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useRevenueCat } from '@/context/RevenueCatContext';
 
 const { width } = Dimensions.get('window');
 

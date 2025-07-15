@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/index.tsx - Lazy loading with gallery reference
+// app/(tabs)/wardrobe/index.tsx - Sanallaştırma ve Performans Optimizasyonları
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
@@ -18,10 +18,11 @@ import { GENDERED_CATEGORY_HIERARCHY } from '@/utils/constants';
 import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-toast-message';
+import { CustomBannerAd } from '@/components/ads/BannerAd';
 
 interface SectionData {
   title: string;
-  data: TClothingItem[][];
+  data: TClothingItem[][]; // data, satırları (her satırda 3 item) içeren bir dizi
   id: string;
 }
 
@@ -31,8 +32,14 @@ const gridColumns = 3;
 const sidePadding = 16;
 const gridItemWidth = (width - sidePadding * 2 - gridSpacing * (gridColumns - 1)) / gridColumns;
 
+// --- PERFORMANS OPTİMİZASYONU İÇİN SABİTLER ---
+// Her bir satırın yaklaşık yüksekliği (kare resim + alt boşluk)
+const ROW_HEIGHT = gridItemWidth + 65; // item height + info container height
+const SECTION_HEADER_HEIGHT = 46; // Başlık yüksekliği
+const AD_BANNER_HEIGHT = 60; // Standart banner yüksekliği
+
 export default function WardrobeScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const router = useRouter();
   const { userPlan: storedUserPlan } = useUserPlanStore();
@@ -122,22 +129,14 @@ export default function WardrobeScreen() {
       const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
       const merged: Record<string, string[]> = {};
       
-      Object.entries(maleCategories).forEach(([mainCat, subcats]) => {
-        merged[mainCat] = [...subcats];
-      });
-      
+      Object.entries(maleCategories).forEach(([mainCat, subcats]) => { merged[mainCat] = [...subcats]; });
       Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
         if (merged[mainCat]) {
-          subcats.forEach(subcat => {
-            if (!merged[mainCat].includes(subcat)) {
-              merged[mainCat].push(subcat);
-            }
-          });
+          subcats.forEach(subcat => { if (!merged[mainCat].includes(subcat)) { merged[mainCat].push(subcat); } });
         } else {
           merged[mainCat] = [...subcats];
         }
       });
-      
       hierarchy = merged;
     } else {
       hierarchy = GENDERED_CATEGORY_HIERARCHY.female;
@@ -159,10 +158,10 @@ export default function WardrobeScreen() {
 
     return Object.keys(grouped).map(mainCat => ({
       title: t(`categories.${mainCat}`),
-      data: chunkArray(grouped[mainCat], 3),
+      data: chunkArray(grouped[mainCat], gridColumns),
       id: mainCat,
-    }));
-  }, [filteredClothing, t, storedUserPlan?.gender]);
+    })).sort((a, b) => a.title.localeCompare(b.title, i18n.language));
+  }, [filteredClothing, t, storedUserPlan?.gender, i18n.language]);
 
   const handleAddItem = () => router.push('/wardrobe/add');
   const handleItemPress = (id: string) => router.push(`/wardrobe/${id}`);
@@ -175,17 +174,16 @@ export default function WardrobeScreen() {
   const hasActiveFilters = () => activeFilters.categories.length > 0 || activeFilters.colors.length > 0 || activeFilters.seasons.length > 0 || activeFilters.styles.length > 0;
   const totalActiveFilters = activeFilters.categories.length + activeFilters.colors.length + activeFilters.seasons.length + activeFilters.styles.length;
 
-  const renderSectionHeader = ({ section: { title } }: { section: { title: string } }) => (
+  const renderSectionHeader = ({ section: { title } }: { section: SectionData }) => (
     <View style={[styles.categoryHeaderContainer, { borderBottomColor: theme.colors.border }]}>
       <Text style={[styles.categoryHeaderText, { color: theme.colors.text }]}>{title}</Text>
     </View>
   );
 
-  // ✅ UPDATED: Lazy loading için optimized render
   const renderItem = useCallback(({ item: row }: { item: TClothingItem[] }) => (
     <View style={styles.row}>
-      {row.map((clothingItem, idx) => (
-        <View style={[styles.itemWrapper, idx === gridColumns - 1 && styles.lastItemWrapper]} key={clothingItem.id}>
+      {row.map((clothingItem) => (
+        <View style={styles.itemWrapper} key={clothingItem.id}>
           <ClothingItem 
             item={clothingItem} 
             onPress={() => handleItemPress(clothingItem.id)} 
@@ -194,20 +192,24 @@ export default function WardrobeScreen() {
         </View>
       ))}
       {Array.from({ length: gridColumns - row.length }).map((_, idx) => (
-        <View style={[styles.itemWrapper, styles.lastItemWrapper]} key={`empty-${idx}`} />
+        <View style={styles.itemWrapper} key={`empty-${idx}`} />
       ))}
     </View>
   ), []);
 
-  // ✅ UPDATED: Section list için optimizasyonlar
-  const keyExtractor = useCallback((row: TClothingItem[], index: number) => 
-    row.map(i => i.id).join('-') + '-' + index, []);
+  const keyExtractor = useCallback((row: TClothingItem[], index: number) => `row-${index}-${row[0]?.id || ''}`, []);
 
-  const getItemLayout = useCallback((data: any, index: number) => ({
-    length: gridItemWidth + 20, // Item height + margin
-    offset: (gridItemWidth + 20) * index,
-    index,
-  }), []);
+  const renderSectionFooter = ({ section }: { section: SectionData }) => {
+    const sectionIndex = sections.findIndex(s => s.id === section.id);
+    if ((sectionIndex + 1) % 3 === 0 && sectionIndex < sections.length - 1) {
+      return (
+        <View style={styles.adContainer}>
+          <CustomBannerAd />
+        </View>
+      );
+    }
+    return null;
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -242,14 +244,13 @@ export default function WardrobeScreen() {
           keyExtractor={keyExtractor}
           renderSectionHeader={renderSectionHeader} 
           renderItem={renderItem}
+          renderSectionFooter={renderSectionFooter}
+          // --- PERFORMANS OPTİMİZASYONLARI ---
+          removeClippedSubviews={true} // Ekran dışındaki elemanları bellekten kaldırır
+          maxToRenderPerBatch={9}      // Her render döngüsünde en fazla 9 eleman çizer
+          windowSize={21}             // Render edilecek alanın boyutunu belirler (görünür alanın katları)
+          initialNumToRender={12}     // İlk açılışta render edilecek eleman sayısı
           stickySectionHeadersEnabled={false}
-          // ✅ Performance optimizations
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={6}
-          updateCellsBatchingPeriod={50}
-          initialNumToRender={9}
-          windowSize={10}
-          getItemLayout={getItemLayout}
         />
       ) : (
         <EmptyState icon="shirt" title={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyTitle') : t('wardrobe.noResultsTitle')} message={!searchQuery && !hasActiveFilters() ? t('wardrobe.emptyMessage') : t('wardrobe.noResultsMessage')} buttonText={!searchQuery && !hasActiveFilters() ? t('wardrobe.addFirstItem') : undefined} onButtonPress={!searchQuery && !hasActiveFilters() ? handleAddItem : undefined} />
@@ -273,10 +274,14 @@ const styles = StyleSheet.create({
   filterButton: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
   filterBadge: { position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5 },
   filterBadgeText: { fontFamily: 'Montserrat-Bold', fontSize: 10, color: 'white' },
-  row: { flexDirection: 'row', marginBottom: gridSpacing, marginHorizontal: gridSpacing },
-  itemWrapper: { width: gridItemWidth, marginRight: gridSpacing },
-  lastItemWrapper: { marginRight: 0 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, marginHorizontal: gridSpacing },
+  itemWrapper: { width: gridItemWidth },
   addButton: { position: 'absolute', bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5 },
   categoryHeaderContainer: { paddingVertical: 10, paddingHorizontal: 16, marginTop: 15, marginBottom: 5 },
   categoryHeaderText: { fontFamily: 'Montserrat-Bold', fontSize: 16 },
+  adContainer: {
+    marginTop: 16,
+    marginBottom: 8,
+    alignItems: 'center',
+  },
 });

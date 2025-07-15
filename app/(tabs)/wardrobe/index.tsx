@@ -34,7 +34,7 @@ const gridItemWidth = (width - sidePadding * 2 - gridSpacing * (gridColumns - 1)
 
 // --- PERFORMANS OPTİMİZASYONU İÇİN SABİTLER ---
 // Her bir satırın yaklaşık yüksekliği (kare resim + alt boşluk)
-const ROW_HEIGHT = gridItemWidth + 65; // item height + info container height
+const ROW_HEIGHT = gridItemWidth + 75; // 65'ten 75'e çıkardık (daha fazla alan)
 const SECTION_HEADER_HEIGHT = 46; // Başlık yüksekliği
 const AD_BANNER_HEIGHT = 60; // Standart banner yüksekliği
 
@@ -107,7 +107,7 @@ export default function WardrobeScreen() {
 
         const matchesSearch = !q || name.includes(q) || cat.includes(q) || colorTexts.includes(q) || seasons.includes(q) || style.includes(q) || notes.includes(q);
         const matchesCategory = activeFilters.categories.length === 0 || activeFilters.categories.includes(item.category);
-        const matchesColor = activeFilters.colors.length === 0 || 
+        const matchesColor = activeFilters.colors.length === 0 ||
           activeFilters.colors.some(filterColor => itemColors.includes(filterColor));
         const matchesSeason = activeFilters.seasons.length === 0 || item.season.some(s => activeFilters.seasons.includes(s));
         const matchesStyle = activeFilters.styles.length === 0 || item.style.split(',').some(s => activeFilters.styles.includes(s));
@@ -120,7 +120,7 @@ export default function WardrobeScreen() {
   const sections = useMemo<SectionData[]>(() => {
     const grouped: { [key: string]: TClothingItem[] } = {};
     const gender = storedUserPlan?.gender || 'female';
-    
+
     let hierarchy;
     if (gender === 'male') {
       hierarchy = GENDERED_CATEGORY_HIERARCHY.male;
@@ -128,7 +128,7 @@ export default function WardrobeScreen() {
       const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
       const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
       const merged: Record<string, string[]> = {};
-      
+
       Object.entries(maleCategories).forEach(([mainCat, subcats]) => { merged[mainCat] = [...subcats]; });
       Object.entries(femaleCategories).forEach(([mainCat, subcats]) => {
         if (merged[mainCat]) {
@@ -184,10 +184,10 @@ export default function WardrobeScreen() {
     <View style={styles.row}>
       {row.map((clothingItem) => (
         <View style={styles.itemWrapper} key={clothingItem.id}>
-          <ClothingItem 
-            item={clothingItem} 
-            onPress={() => handleItemPress(clothingItem.id)} 
-            onEdit={() => handleEditPress(clothingItem.id)} 
+          <ClothingItem
+            item={clothingItem}
+            onPress={() => handleItemPress(clothingItem.id)}
+            onEdit={() => handleEditPress(clothingItem.id)}
           />
         </View>
       ))}
@@ -239,17 +239,21 @@ export default function WardrobeScreen() {
         </TouchableOpacity>
       </View>
       {sections.length > 0 ? (
-        <SectionList 
-          sections={sections} 
+        <SectionList
+          sections={sections}
           keyExtractor={keyExtractor}
-          renderSectionHeader={renderSectionHeader} 
+          renderSectionHeader={renderSectionHeader}
           renderItem={renderItem}
           renderSectionFooter={renderSectionFooter}
-          // --- PERFORMANS OPTİMİZASYONLARI ---
-          removeClippedSubviews={true} // Ekran dışındaki elemanları bellekten kaldırır
-          maxToRenderPerBatch={9}      // Her render döngüsünde en fazla 9 eleman çizer
-          windowSize={21}             // Render edilecek alanın boyutunu belirler (görünür alanın katları)
-          initialNumToRender={12}     // İlk açılışta render edilecek eleman sayısı
+
+          // ⭐ BU SATIRI EKLEYİN:
+          extraData={i18n.language}
+
+          // Performans optimizasyonları:
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={9}
+          windowSize={21}
+          initialNumToRender={12}
           stickySectionHeadersEnabled={false}
         />
       ) : (

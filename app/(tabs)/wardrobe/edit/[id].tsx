@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/edit/[id].tsx - File system based image editing
+// app/(tabs)/wardrobe/edit/[id].tsx - Updated with pattern support
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
@@ -30,6 +30,41 @@ type FormData = {
   season: string[];
   style: string[];
   notes: string;
+};
+
+// Pattern/Color display component for preview
+const ColorPatternDisplay = ({ color, size = 20, theme }: { 
+  color: { name: string; hex: string }, 
+  size?: number, 
+  theme: any 
+}) => {
+  const circleStyle = {
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+    borderWidth: color.name === 'white' ? 1 : 0,
+    borderColor: theme.colors.border,
+    overflow: 'hidden' as const,
+  };
+
+  const renderContent = () => {
+    switch (color.hex) {
+      case 'pattern_leopard':
+        return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} />;
+      case 'pattern_zebra':
+        return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
+      case 'pattern_snakeskin':
+        return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
+      default:
+        return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
+    }
+  };
+
+  return (
+    <View style={circleStyle}>
+      {renderContent()}
+    </View>
+  );
 };
 
 export default function EditClothingScreen() {
@@ -89,7 +124,6 @@ export default function EditClothingScreen() {
         return;
       }
 
-      // Check if original image exists
       const exists = await checkImageExists(itemToEdit.originalImagePath, false);
       
       if (exists) {
@@ -111,7 +145,6 @@ export default function EditClothingScreen() {
   };
 
   const handleImageSelected = async (imagePaths: ImagePaths) => {
-    // If we're replacing an existing image, we'll delete the old one after successful save
     setSelectedImagePaths(imagePaths);
     setCurrentImageUri(getImageUri(imagePaths.originalPath, false));
     setImageChanged(true);
@@ -152,37 +185,28 @@ export default function EditClothingScreen() {
         colors: data.colors,
       };
 
-      // Handle image changes
       if (imageChanged && selectedImagePaths) {
-        // Store old image paths for cleanup
         const oldOriginalPath = itemToEdit.originalImagePath;
         const oldThumbnailPath = itemToEdit.thumbnailImagePath;
 
-        // Update with new image paths
         updatedItemData.originalImagePath = selectedImagePaths.originalPath;
         updatedItemData.thumbnailImagePath = selectedImagePaths.thumbnailPath;
 
-        // Update the item first
         updateClothing(id, updatedItemData);
 
-        // Clean up old images after successful update
         if (oldOriginalPath && oldThumbnailPath) {
           try {
             await deleteImage(oldOriginalPath, oldThumbnailPath);
             console.log('✅ Cleaned up old image files');
           } catch (error) {
             console.error('⚠️ Failed to clean up old image files:', error);
-            // Don't fail the update because of cleanup issues
           }
         }
       } else if (imageChanged && !selectedImagePaths) {
-        // User removed the image - this shouldn't happen as we require images
-        // But handle gracefully
         updatedItemData.originalImagePath = '';
         updatedItemData.thumbnailImagePath = '';
         updateClothing(id, updatedItemData);
       } else {
-        // No image changes, just update other fields
         updateClothing(id, updatedItemData);
       }
 
@@ -336,17 +360,13 @@ export default function EditClothingScreen() {
                   <View style={styles.selectedColorsPreview}>
                     {watchedColors.map(colorName => {
                       const colorData = ALL_COLORS.find(c => c.name === colorName);
+                      if (!colorData) return null;
                       return (
-                        <View
+                        <ColorPatternDisplay 
                           key={colorName}
-                          style={[
-                            styles.previewColorCircle,
-                            {
-                              backgroundColor: colorData?.hex || '#CCCCCC',
-                              borderColor: colorData?.name === 'white' ? theme.colors.border : 'transparent',
-                              borderWidth: colorData?.name === 'white' ? 1 : 0
-                            }
-                          ]}
+                          color={colorData} 
+                          size={20} 
+                          theme={theme} 
                         />
                       );
                     })}
@@ -543,12 +563,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
-  previewColorCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
   errorText: { 
     fontFamily: 'Montserrat-Regular', 
     fontSize: 12, 
@@ -556,5 +570,10 @@ const styles = StyleSheet.create({
   },
   saveButton: { 
     marginTop: 16 
+  },
+  patternImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 });

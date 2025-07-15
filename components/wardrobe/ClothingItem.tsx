@@ -1,4 +1,4 @@
-// kodlar/components/wardrobe/ClothingItem.tsx - Tüm özellikleri içeren ve performansı optimize edilmiş son hali
+// components/wardrobe/ClothingItem.tsx - Pattern desteği ile güncellenmiş
 
 import React, { useState, useEffect, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
@@ -8,6 +8,7 @@ import { Edit2, ImageOff } from 'lucide-react-native';
 import { ClothingItem as TClothingItem } from '@/store/clothingStore';
 import { getImageUri } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
+import ColorPatternDisplay from '@/components/common/ColorPatternDisplay';
 
 interface ClothingItemProps {
   item: TClothingItem;
@@ -15,51 +16,45 @@ interface ClothingItemProps {
   onEdit: () => void;
 }
 
-// React.memo, bu component'in sadece 'item' prop'u değiştiğinde yeniden render edilmesini sağlar.
 const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   const { t } = useTranslation();
   const { theme } = useTheme();
-  
-  // Sadece resim yükleme hatasını takip eden state.
+
   const [imageError, setImageError] = useState(false);
 
-  // Component'e yeni bir item geldiğinde (liste filtrelendiğinde vb.)
-  // hata durumunu sıfırlayarak resmin yeniden yüklenmesini sağlıyoruz.
   useEffect(() => {
     setImageError(false);
   }, [item.thumbnailImagePath]);
 
-  // Resim URI'sini doğrudan oluşturuyoruz. Bu, render hızını artırır.
   const thumbnailUri = item.thumbnailImagePath ? getImageUri(item.thumbnailImagePath, true) : '';
 
   const handleEditPress = (e: any) => {
-    e.stopPropagation(); // Arkadaki karta tıklanmasını engeller.
+    e.stopPropagation();
     onEdit();
   };
 
   const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
-  
-  // Renk göstergelerini render eden fonksiyon (orijinal kodunuzdan alındı ve korundu)
+
+  // ClothingItem.tsx - Pattern gösterimi için layout düzenlemesi
+
+  // renderColorIndicators fonksiyonunu şu şekilde değiştirin:
+
   const renderColorIndicators = () => {
     const displayColors = itemColors.slice(0, 3);
-    
+
     if (displayColors.length === 1) {
       const colorData = ALL_COLORS.find(c => c.name === displayColors[0]);
-      const colorHex = colorData?.hex || '#CCCCCC';
-      
+      if (!colorData) return null;
+
       return (
         <View style={styles.singleColorContainer}>
-          <View 
-            style={[
-              styles.colorCircle, 
-              { 
-                backgroundColor: colorHex,
-                borderColor: displayColors[0] === 'white' ? theme.colors.border : 'transparent',
-                borderWidth: displayColors[0] === 'white' ? 1 : 0 
-              }
-            ]} 
+          <ColorPatternDisplay
+            color={colorData}
+            size={14} // 12'den 14'e çıkardık
+            theme={theme}
+            style={{ marginRight: 8 }} // 6'dan 8'e çıkardık
           />
-          <Text style={[styles.colorText, { color: theme.colors.textLight }]} numberOfLines={1}>
+          <Text style={[styles.colorText, { color: theme.colors.textLight }]} numberOfLines={2}>
             {t(`colors.${displayColors[0]}`)}
           </Text>
         </View>
@@ -70,21 +65,18 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
           <View style={styles.colorCirclesRow}>
             {displayColors.map((colorName, index) => {
               const colorData = ALL_COLORS.find(c => c.name === colorName);
-              const colorHex = colorData?.hex || '#CCCCCC';
-              
+              if (!colorData) return null;
+
               return (
-                <View 
+                <ColorPatternDisplay
                   key={colorName}
-                  style={[
-                    styles.multiColorCircle, 
-                    { 
-                      backgroundColor: colorHex,
-                      borderColor: colorName === 'white' ? theme.colors.border : 'transparent',
-                      borderWidth: colorName === 'white' ? 1 : 0,
-                      marginLeft: index > 0 ? -4 : 0,
-                      zIndex: displayColors.length - index
-                    }
-                  ]} 
+                  color={colorData}
+                  size={14} // 12'den 14'e çıkardık
+                  theme={theme}
+                  style={{
+                    marginLeft: index > 0 ? -2 : 0, // -4'ten -2'ye değiştirdik (daha az overlap)
+                    zIndex: displayColors.length - index
+                  }}
                 />
               );
             })}
@@ -94,6 +86,10 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
               </View>
             )}
           </View>
+          {/* Çok renkli itemlerde toplam renk sayısını göster */}
+          <Text style={[styles.multiColorText, { color: theme.colors.textLight }]} numberOfLines={1}>
+            {itemColors.length} {t('wardrobe.color')}
+          </Text>
         </View>
       );
     }
@@ -103,7 +99,7 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
     if (imageError || !thumbnailUri) {
       return (
         <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
-          <ImageOff color={theme.colors.textLight} size={32}/>
+          <ImageOff color={theme.colors.textLight} size={32} />
         </View>
       );
     }
@@ -119,14 +115,14 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   };
 
   return (
-    <TouchableOpacity 
-      style={[styles.container, { backgroundColor: theme.colors.card }]} 
+    <TouchableOpacity
+      style={[styles.container, { backgroundColor: theme.colors.card }]}
       onPress={onPress}
       activeOpacity={0.7}
     >
       <View style={styles.imageContainer}>
         {renderImage()}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleEditPress}
           activeOpacity={0.8}
@@ -134,9 +130,9 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
           <Edit2 color={theme.colors.white} size={14} />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.infoContainer}>
-        <Text 
+        <Text
           style={[styles.itemName, { color: theme.colors.text }]}
           numberOfLines={2}
           ellipsizeMode="tail"
@@ -188,57 +184,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 3,
   },
-  infoContainer: { 
-    padding: 10,
-    gap: 6, // Elemanlar arasına boşluk ekledik
+  itemName: {
+    fontSize: 13,
+    fontFamily: 'Montserrat-SemiBold',
+    lineHeight: 16,
   },
-  itemName: { 
-    fontSize: 13, 
-    fontFamily: 'Montserrat-SemiBold', 
-    lineHeight: 16, 
+  categoryText: {
+    fontSize: 11,
+    fontFamily: 'Montserrat-Regular',
   },
-  categoryText: { 
-    fontSize: 11, 
-    fontFamily: 'Montserrat-Regular', 
+
+  infoContainer: {
+    padding: 12, // 10'dan 12'ye çıkardık
+    gap: 6,
+    minHeight: 70, // Minimum yükseklik ekledik
   },
-  singleColorContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
+
+  singleColorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1, // Esneklik ekledik
+    minHeight: 20, // Minimum yükseklik
   },
-  colorCircle: { 
-    width: 12, 
-    height: 12, 
-    borderRadius: 6, 
-    marginRight: 6, 
-  },
-  colorText: { 
-    fontSize: 11, 
+
+  colorText: {
+    fontSize: 11,
     fontFamily: 'Montserrat-Regular',
     flex: 1,
+    lineHeight: 13, // Satır yüksekliği ekledik
   },
+
   multiColorContainer: {
-    // Bu container artık sadece circle'ları içerecek, text'i değil.
+    minHeight: 20, // Minimum yükseklik
   },
+
   colorCirclesRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 2, // Alt boşluk ekledik
   },
-  multiColorCircle: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
+
   moreColorsIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14, // 12'den 14'e çıkardık
+    height: 14,
+    borderRadius: 7,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: -4,
+    marginLeft: -2, // -4'ten -2'ye değiştirdik
   },
+
+  // YENİ STIL - çok renkli itemler için
+  multiColorText: {
+    fontSize: 10,
+    fontFamily: 'Montserrat-Regular',
+    textAlign: 'center',
+  },
+
   moreColorsText: {
-    fontSize: 8,
+    fontSize: 9, // 8'den 9'a çıkardık
     fontFamily: 'Montserrat-Bold',
     color: '#FFFFFF',
   },

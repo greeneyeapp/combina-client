@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/[id].tsx - File system based image display
+// app/(tabs)/wardrobe/[id].tsx - Updated with pattern support
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
@@ -14,6 +14,41 @@ import { formatDate } from '@/utils/dateUtils';
 import useAlertStore from '@/store/alertStore';
 import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
+
+// Pattern/Color display component
+const ColorPatternDisplay = ({ color, size = 16, theme }: { 
+  color: { name: string; hex: string }, 
+  size?: number, 
+  theme: any 
+}) => {
+  const circleStyle = {
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+    borderWidth: color.name === 'white' ? 1 : 0,
+    borderColor: theme.colors.border,
+    overflow: 'hidden' as const,
+  };
+
+  const renderContent = () => {
+    switch (color.hex) {
+      case 'pattern_leopard':
+        return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} />;
+      case 'pattern_zebra':
+        return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
+      case 'pattern_snakeskin':
+        return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
+      default:
+        return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
+    }
+  };
+
+  return (
+    <View style={circleStyle}>
+      {renderContent()}
+    </View>
+  );
+};
 
 export default function ClothingDetailScreen() {
     const { t, i18n } = useTranslation();
@@ -42,7 +77,6 @@ export default function ClothingDetailScreen() {
                     return;
                 }
 
-                // Check if original image exists
                 const exists = await checkImageExists(item.originalImagePath, false);
                 
                 if (exists) {
@@ -163,10 +197,11 @@ export default function ClothingDetailScreen() {
                         <View style={styles.tagContainer}>
                             {itemColors.map((colorName) => {
                                 const colorData = ALL_COLORS.find(c => c.name === colorName);
-                                const hex = colorData?.hex || '#CCCCCC';
+                                if (!colorData) return null;
+                                
                                 return (
                                     <View key={colorName} style={[styles.colorTag, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                                        <View style={[styles.colorCircle, { backgroundColor: hex, borderColor: colorName === 'white' ? theme.colors.border : 'transparent', borderWidth: 1 }]} />
+                                        <ColorPatternDisplay color={colorData} size={16} theme={theme} />
                                         <Text style={[styles.detailValue, { color: theme.colors.text, fontSize: 12 }]}>{t(`colors.${colorName}`)}</Text>
                                     </View>
                                 );
@@ -226,11 +261,15 @@ const styles = StyleSheet.create({
     detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     detailLabel: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
     detailValue: { fontFamily: 'Montserrat-SemiBold', fontSize: 14 },
-    colorCircle: { width: 16, height: 16, borderRadius: 8, marginRight: 8 },
     tagContainer: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-end', maxWidth: '65%', gap: 8 },
     tag: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 16 },
     tagText: { fontFamily: 'Montserrat-Medium', fontSize: 12 },
     colorTag: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 16, borderWidth: 1 },
     notesContainer: { marginTop: 8 },
     notes: { fontFamily: 'Montserrat-Regular', fontSize: 14, marginTop: 8, lineHeight: 20 },
+    patternImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+    },
 });

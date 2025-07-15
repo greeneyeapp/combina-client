@@ -32,7 +32,7 @@ export const useWardrobeLimit = () => {
   const [limitInfo, setLimitInfo] = useState<WardrobeLimitInfo | null>(null);
 
   const WARDROBE_LIMITS = {
-    free: 30,
+    free: 75,
     premium: Infinity,
   };
 

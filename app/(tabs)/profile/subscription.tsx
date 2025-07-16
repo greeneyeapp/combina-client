@@ -1,4 +1,4 @@
-// app/(tabs)/profile/subscription.tsx - TAM VE DÜZELTİLMİŞ KOD
+// app/(tabs)/profile/subscription.tsx - Restore purchases düzeltilmiş kod
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Linking } from 'react-native';
@@ -16,6 +16,9 @@ import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
 import { useRevenueCat } from '@/context/RevenueCatContext';
 
+// Restore Purchases için ek import
+import { restorePurchases } from '@/services/purchaseService';
+
 // Çeviri dosyasındaki ikon isimlerini gerçek bileşenlerle eşleştirir
 const IconMap: { [key: string]: React.ElementType } = {
   Shirt,
@@ -23,12 +26,6 @@ const IconMap: { [key: string]: React.ElementType } = {
   Sparkles,
   Heart,
   ShieldX,
-};
-
-// Plan hiyerarşisi (kullanılmıyor ama referans olarak kalabilir)
-const planHierarchy = {
-  premium_monthly: 1,
-  premium_annual: 2,
 };
 
 const getPackageIdentifier = (pkg: PurchasesPackage): 'premium_monthly' | 'premium_annual' | null => {
@@ -70,7 +67,6 @@ const mapEntitlementsToDetailedPlan = (entitlements: any): {
     };
   }
 
-  // Fallback
   return {
     plan: 'premium',
     type: 'monthly',
@@ -78,19 +74,22 @@ const mapEntitlementsToDetailedPlan = (entitlements: any): {
   };
 };
 
-
 export default function SubscriptionScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { show: showAlert } = useAlertStore();
 
-  const { customerInfo, isLoading: isRevenueCatLoading, currentPlan } = useRevenueCat();
+  // RevenueCat context'inden refresh fonksiyonunu da al
+  const { customerInfo, isLoading: isRevenueCatLoading, currentPlan, refreshCustomerInfo } = useRevenueCat();
   const currentPlanInfo = customerInfo ? mapEntitlementsToDetailedPlan(customerInfo.entitlements.active) : { plan: 'free' as const, type: null, productIdentifier: null };
 
   const [isYearly, setIsYearly] = useState(true);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
+  
+  // Restore işlemi için loading state
+  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     const loadOfferings = async () => {
@@ -110,10 +109,76 @@ export default function SubscriptionScreen() {
     loadOfferings();
   }, []);
 
+  // YENİ: Restore Purchases fonksiyonu
+  const handleRestorePurchases = async () => {
+    setIsRestoring(true);
+    
+    try {
+      console.log('🔄 Starting restore purchases...');
+      
+      // purchaseService'teki restore fonksiyonunu kullan
+      const result = await restorePurchases();
+      
+      if (result.success) {
+        // RevenueCat context'ini manuel olarak yenile
+        console.log('🔄 Refreshing RevenueCat context...');
+        await refreshCustomerInfo();
+        
+        // Kısa bir delay ekle ki context güncellensin
+        setTimeout(async () => {
+          await refreshCustomerInfo();
+          
+          // Güncellenmiş bilgileri kontrol et
+          const updatedInfo = await Purchases.getCustomerInfo();
+          const updatedPlan = mapEntitlementsToDetailedPlan(updatedInfo.entitlements.active);
+          
+          if (updatedPlan.plan === 'premium') {
+            Toast.show({
+              type: 'success',
+              text1: t('subscription.restoreSuccessTitle'),
+              text2: t('subscription.restoreSuccessMessage', { type: t(`subscription.${updatedPlan.type}`) })
+            });
+          } else {
+            showAlert({
+              title: t('subscription.restoreNoSubscriptionTitle'),
+              message: t('subscription.restoreNoSubscriptionMessage'),
+              buttons: [{ text: t('common.ok') }]
+            });
+          }
+        }, 1000);
+        
+      } else {
+        throw new Error(result.error || 'Restore failed');
+      }
+      
+    } catch (error: any) {
+      console.error('❌ Restore purchases failed:', error);
+      
+      if (error.message?.includes('no purchases to restore')) {
+        showAlert({
+          title: t('subscription.restoreNoSubscriptionTitle'),
+          message: t('subscription.restoreNoSubscriptionMessage'),
+          buttons: [{ text: t('common.ok') }]
+        });
+      } else {
+        showAlert({
+          title: t('subscription.restoreFailTitle'),
+          message: error.message || t('subscription.restoreFailMessage'),
+          buttons: [{ text: t('common.ok') }]
+        });
+      }
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   const proceedWithPurchase = async (packageToPurchase: PurchasesPackage, isUpgrade: boolean) => {
     setPurchasingId(packageToPurchase.identifier);
     try {
       await Purchases.purchasePackage(packageToPurchase);
+
+      // Satın alma sonrası context'i yenile
+      await refreshCustomerInfo();
 
       const successMessage = isUpgrade
         ? t('subscription.upgradeSuccessMessage')
@@ -184,7 +249,7 @@ export default function SubscriptionScreen() {
           { text: t('common.cancel'), variant: 'outline' },
           {
             text: t('subscription.confirmUpgrade'),
-            onPress: () => proceedWithPurchase(packageToPurchase, true) // isUpgrade = true
+            onPress: () => proceedWithPurchase(packageToPurchase, true)
           }
         ]
       });
@@ -192,7 +257,7 @@ export default function SubscriptionScreen() {
     }
 
     // 4. Standart yeni satın alma
-    proceedWithPurchase(packageToPurchase, false); // isUpgrade = false
+    proceedWithPurchase(packageToPurchase, false);
   };
 
   const renderCurrentSubscriptionStatus = () => {
@@ -237,6 +302,18 @@ export default function SubscriptionScreen() {
               • {feature}
             </Text>
           ))}
+        </View>
+        
+        {/* YENİ: Restore Purchases butonu sadece free plan'dayken göster */}
+        <View style={styles.restoreButtonContainer}>
+          <Button
+            label={isRestoring ? t('subscription.restoring') : t('subscription.restorePurchases')}
+            onPress={handleRestorePurchases}
+            variant="outline"
+            style={styles.restoreButton}
+            disabled={isRestoring}
+            loading={isRestoring}
+          />
         </View>
       </View>
     );
@@ -324,7 +401,7 @@ export default function SubscriptionScreen() {
       return {
         label: t('subscription.manageInAppStore'),
         variant: 'outline' as const,
-        disabled: false, // This button will trigger the alert, so it shouldn't be disabled
+        disabled: false,
         icon: <ExternalLink size={16} color={theme.colors.primary} />
       };
     }
@@ -415,7 +492,6 @@ export default function SubscriptionScreen() {
     );
   };
 
-
   const renderContent = () => {
     if (loading || isRevenueCatLoading) {
       return (
@@ -471,7 +547,7 @@ export default function SubscriptionScreen() {
   );
 }
 
-// Stillerin tamamı burada
+// Stillerin tamamı burada (YENİ: restoreButton stilleri eklendi)
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
@@ -535,11 +611,22 @@ const styles = StyleSheet.create({
   },
   freePlanFeatures: {
     gap: 6,
+    marginBottom: 16, // YENİ: restore button için space
   },
   freePlanFeatureText: {
     fontFamily: 'Montserrat-Regular',
     fontSize: 13,
     lineHeight: 18,
+  },
+  
+  // YENİ: Restore button container ve button stilleri
+  restoreButtonContainer: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(128, 128, 128, 0.2)',
+    paddingTop: 16,
+  },
+  restoreButton: {
+    marginTop: 0,
   },
 
   heroSection: {
@@ -580,7 +667,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   toggleText: {
-    fontFamily: 'Montserrat-Bold', // SemiBold'dan Bold'a değiştirildi
+    fontFamily: 'Montserrat-Bold',
     fontSize: 14,
   },
   saveBadge: {

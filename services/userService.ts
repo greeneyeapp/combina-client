@@ -1,9 +1,10 @@
-// services/userService.ts - Sadeleştirilmiş plan yapısı
+// services/userService.ts - Optimize edilmiş versiyon
 
 import API_URL from '@/config';
 import { auth } from '@/firebaseConfig';
 import { useUserPlanStore, UserPlan } from '@/store/userPlanStore';
 import { useApiAuthStore } from '@/store/apiAuthStore';
+import { apiDeduplicator } from '@/utils/apiDeduplication';
 import i18n from '@/locales/i18n';
 
 interface UserProfileResponse {
@@ -11,7 +12,7 @@ interface UserProfileResponse {
   fullname: string;
   gender: string;
   age?: number;
-  plan: 'free' | 'premium'; // Standard kaldırıldı
+  plan: 'free' | 'premium';
   usage: {
     daily_limit: number;
     current_usage: number;
@@ -22,11 +23,11 @@ interface UserProfileResponse {
   created_at: any;
 }
 
-interface ProfileInitData {
-  fullname: string;
-  gender: string;
-  birthDate?: string;
-}
+// Global state tracking
+let lastProfileFetch = 0;
+let isInitializing = false;
+const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 dakika
+const MIN_FETCH_INTERVAL = 30 * 1000; // 30 saniye minimum aralık
 
 // Get authenticated token helper
 const getAuthToken = async (): Promise<string> => {
@@ -50,77 +51,75 @@ const getAuthToken = async (): Promise<string> => {
   return access_token;
 };
 
-// Initialize user profile on first registration
-export const initializeProfile = async (profileData: ProfileInitData): Promise<void> => {
-  const token = await getAuthToken();
-
-  const response = await fetch(`${API_URL}/api/users/init-profile`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(profileData)
-  });
-
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`Failed to initialize profile: ${response.status} ${errorData}`);
-  }
-
-  await getUserProfile(true);
-};
-
-// Fetch user profile from API
+// Optimized fetch user profile
 export const fetchUserProfile = async (): Promise<UserProfileResponse> => {
-  const token = await getAuthToken();
+  const cacheKey = 'user_profile';
+  
+  return apiDeduplicator.deduplicate(
+    cacheKey,
+    async () => {
+      console.log('🔄 Fetching user profile from API...');
+      const token = await getAuthToken();
 
-  const response = await fetch(`${API_URL}/api/users/profile`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
-  });
+      const response = await fetch(`${API_URL}/api/users/profile`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-  if (!response.ok) {
-    const errorData = await response.text();
-    throw new Error(`Failed to fetch user profile: ${response.status} ${errorData}`);
-  }
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Failed to fetch user profile: ${response.status} ${errorData}`);
+      }
 
-  const data = await response.json();
-
-  return data;
+      lastProfileFetch = Date.now();
+      return response.json();
+    },
+    PROFILE_CACHE_TTL
+  );
 };
 
-// Get user profile with store management
+// Optimized get user profile with intelligent caching
 export const getUserProfile = async (forceRefresh: boolean = false): Promise<UserPlan> => {
   const { userPlan, lastFetched, setUserPlan, setLoading } = useUserPlanStore.getState();
 
-  const shouldFetch = forceRefresh ||
-    !userPlan ||
-    !lastFetched ||
-    (Date.now() - new Date(lastFetched).getTime()) > 5 * 60 * 1000;
+  // Aggressive caching - önce store'dan kontrol et
+  if (!forceRefresh && userPlan && lastFetched) {
+    const timeSinceLastFetch = Date.now() - new Date(lastFetched).getTime();
+    
+    // Eğer son 30 saniye içinde fetch edildiyse, store'daki veriyi kullan
+    if (timeSinceLastFetch < MIN_FETCH_INTERVAL) {
+      console.log('📋 Using very recent cached profile (< 30s)');
+      return userPlan;
+    }
+    
+    // Eğer son 5 dakika içinde fetch edildiyse ve force refresh değilse, store'u kullan
+    if (timeSinceLastFetch < PROFILE_CACHE_TTL) {
+      console.log('📋 Using cached profile (< 5min)');
+      return userPlan;
+    }
+  }
 
-  if (!shouldFetch && userPlan) {
-    return userPlan;
+  // Rate limiting - çok sık çağrılmasını önle
+  const timeSinceLastApiFetch = Date.now() - lastProfileFetch;
+  if (!forceRefresh && timeSinceLastApiFetch < MIN_FETCH_INTERVAL) {
+    console.log('🚫 Rate limited - too frequent API calls, using cached data');
+    if (userPlan) return userPlan;
   }
 
   try {
     setLoading(true);
     const profileData = await fetchUserProfile();
 
-    // 🔍 DEBUG: Profile data'yı UserPlan'e çevirmeden önce kontrol et
-
     const planData: UserPlan = {
       plan: profileData.plan,
       usage: profileData.usage,
       fullname: profileData.fullname,
-      gender: profileData.gender, // 🔍 Bu satır kritik!
+      gender: profileData.gender,
       age: profileData.age,
       created_at: profileData.created_at,
     };
-
-    // 🔍 DEBUG: Converted planData'yı kontrol et
 
     setUserPlan(planData);
     return planData;
@@ -128,8 +127,9 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   } catch (error) {
     console.error('❌ USER SERVICE - Failed to fetch user profile:', error);
 
+    // Fallback to cached data
     if (userPlan) {
-      console.warn('⚠️ USER SERVICE - Using cached profile due to error, gender:', userPlan.gender);
+      console.warn('⚠️ USER SERVICE - Using cached profile due to error');
       return userPlan;
     }
 
@@ -139,7 +139,44 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   }
 };
 
-// Update user plan (for subscription changes) - Sadeleştirilmiş
+// Initialize user profile - sadece gerektiğinde çağrılır
+export const initializeUserProfile = async (): Promise<void> => {
+  try {
+    // Prevent multiple simultaneous initializations
+    if (isInitializing) {
+      console.log('📋 Profile initialization already in progress, skipping...');
+      return;
+    }
+
+    const user = auth.currentUser;
+    if (!user || user.isAnonymous) {
+      useUserPlanStore.getState().clearUserPlan();
+      return;
+    }
+
+    isInitializing = true;
+    
+    // Sadece cache yoksa veya çok eskiyse fetch et
+    const { userPlan, lastFetched } = useUserPlanStore.getState();
+    const shouldFetch = !userPlan || 
+                       !lastFetched || 
+                       (Date.now() - new Date(lastFetched).getTime()) > PROFILE_CACHE_TTL;
+
+    if (shouldFetch) {
+      console.log('🔄 Initializing user profile...');
+      await getUserProfile();
+    } else {
+      console.log('📋 Profile already initialized and cached');
+    }
+
+  } catch (error) {
+    console.error('Failed to initialize user profile:', error);
+  } finally {
+    isInitializing = false;
+  }
+};
+
+// Update user plan - cache'i temizle
 export const updateUserPlan = async (plan: 'free' | 'premium'): Promise<void> => {
   const token = await getAuthToken();
 
@@ -157,28 +194,18 @@ export const updateUserPlan = async (plan: 'free' | 'premium'): Promise<void> =>
     throw new Error(`Failed to update plan: ${response.status} ${errorData}`);
   }
 
+  // Cache'i temizle ve yeni veriyi getir
+  apiDeduplicator.clearCache('user_profile');
   const { setPlan } = useUserPlanStore.getState();
   setPlan(plan);
 
-  await getUserProfile(true);
+  // Force refresh ile yeni plan bilgisini getir
+  setTimeout(() => {
+    getUserProfile(true);
+  }, 1000);
 };
 
-// Initialize user profile (call this on app start/login)
-export const initializeUserProfile = async (): Promise<void> => {
-  try {
-    const user = auth.currentUser;
-    if (!user || user.isAnonymous) {
-      useUserPlanStore.getState().clearUserPlan();
-      return;
-    }
-
-    await getUserProfile();
-  } catch (error) {
-    console.error('Failed to initialize user profile:', error);
-  }
-};
-
-// Check if user can add wardrobe item
+// Utility functions remain the same...
 export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: string }> => {
   try {
     const profile = await getUserProfile();
@@ -200,7 +227,6 @@ export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: 
   }
 };
 
-// Check usage for suggestions
 export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?: string }> => {
   try {
     const profile = await getUserProfile();
@@ -220,34 +246,6 @@ export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?
   }
 };
 
-// Get plan features for display - Sadeleştirilmiş
-export const getPlanFeatures = (planType: 'free' | 'premium') => {
-  const features = {
-    free: {
-      wardrobe_limit: 75,
-      daily_suggestions: 2,
-      features: [
-        'Basic outfit suggestions',
-        'Weather integration',
-        'Basic wardrobe management'
-      ]
-    },
-    premium: {
-      wardrobe_limit: 'Unlimited',
-      daily_suggestions: 50,
-      features: [
-        'Unlimited wardrobe items',
-        'Advanced AI styling',
-        'Pinterest inspiration',
-        'Ad-free experience',
-        'Priority support'
-      ]
-    }
-  };
-
-  return features[planType];
-};
-
 export const grantExtraSuggestion = async (): Promise<{ success: boolean }> => {
   try {
     const token = await getAuthToken();
@@ -264,7 +262,8 @@ export const grantExtraSuggestion = async (): Promise<{ success: boolean }> => {
       throw new Error(`Failed to grant extra suggestion: ${errorData}`);
     }
 
-    // Kullanıcı planını ve limitlerini yenile
+    // Cache'i temizle ve yeni veriyi getir
+    apiDeduplicator.clearCache('user_profile');
     await getUserProfile(true);
     return { success: true };
   } catch (error) {
@@ -272,3 +271,19 @@ export const grantExtraSuggestion = async (): Promise<{ success: boolean }> => {
     return { success: false };
   }
 };
+
+// Development utilities
+if (__DEV__) {
+  (global as any).clearProfileCache = () => {
+    apiDeduplicator.clearCache('user_profile');
+    console.log('🔄 Profile cache cleared');
+  };
+  
+  (global as any).getProfileCacheInfo = () => {
+    console.log('📊 Profile cache info:', {
+      lastProfileFetch: new Date(lastProfileFetch).toISOString(),
+      isInitializing,
+      timeSinceLastFetch: Date.now() - lastProfileFetch
+    });
+  };
+}

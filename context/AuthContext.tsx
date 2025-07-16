@@ -1,4 +1,5 @@
-// context/AuthContext.tsx - Ana sayfa yönlendirmesi ile güncellenmiş
+// context/AuthContext.tsx - Optimize edilmiş versiyon
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
@@ -33,6 +34,11 @@ export function useAuth() {
   return context;
 }
 
+// Global initialization tracking
+let authInitialized = false;
+let lastProfileRefresh = 0;
+const PROFILE_REFRESH_THROTTLE = 60 * 1000; // 1 dakika minimum aralık
+
 function useProtectedRouter() {
   const { user, loading: authLoading, isAuthFlowActive } = useAuth();
   const segments = useSegments();
@@ -48,7 +54,6 @@ function useProtectedRouter() {
         if (user) {
           const profileComplete = user.gender && user.birthDate;
           if (profileComplete) {
-            // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
             router.replace('/(tabs)/home');
           } else {
             router.replace('/(auth)/complete-profile');
@@ -71,7 +76,6 @@ function useProtectedRouter() {
       if (!profileComplete && segments[1] !== 'complete-profile') {
         router.replace('/(auth)/complete-profile');
       } else if (profileComplete && inAuthGroup) {
-        // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
         router.replace('/(tabs)/home');
       }
     } else {
@@ -86,7 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isAuthFlowActive, setAuthFlowActive] = useState(false);
-  const [skipInitialize, setSkipInitialize] = useState(false);
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
   const segments = useSegments();
@@ -96,13 +99,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [loadJwt]);
 
   useEffect(() => {
-    if (!isReady || skipInitialize) return;
+    // Prevent multiple initializations
+    if (!isReady || authInitialized) return;
     
     const initializeAuth = async () => {
+      console.log('🔐 Initializing auth...');
+      authInitialized = true;
+      
       if (jwt) {
         try {
           const userInfo = await getUserFromToken(jwt);
           
+          // Cached user data'yı kontrol et
           let finalUser = userInfo;
           try {
             const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
@@ -116,7 +124,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
           setUser(finalUser);
           if (finalUser?.uid) await Purchases.logIn(finalUser.uid);
-          await initializeUserProfile();
+          
+          // Initialize profile sadece user veri tamamsa
+          if (finalUser && finalUser.uid) {
+            await initializeUserProfile();
+          }
         } catch (error) {
           console.error('Auth initialization failed:', error);
           await clearJwt(); 
@@ -133,11 +145,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     
     initializeAuth();
-  }, [isReady, jwt, skipInitialize]);
+  }, [isReady, jwt]);
 
   const signInWithGoogle = async (accessToken: string) => {
     setLoading(true);
-    setSkipInitialize(true);
 
     try {
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
@@ -160,13 +171,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      await initializeUserProfile();
+      
+      // Profile initialization'ı throttle et
+      const now = Date.now();
+      if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
+        lastProfileRefresh = now;
+        await initializeUserProfile();
+      }
+      
       setLoading(false);
-      setSkipInitialize(false);
       return completeUserInfo;
     } catch (error) {
       setLoading(false);
-      setSkipInitialize(false);
       console.error('❌ GOOGLE SIGN-IN ERROR:', error);
       throw error;
     }
@@ -174,7 +190,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithApple = async (credential: any) => {
     setLoading(true);
-    setSkipInitialize(true);
     
     try {
       const givenName = credential.fullName?.givenName || '';
@@ -220,15 +235,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (user_info.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      await initializeUserProfile();
+      
+      // Profile initialization'ı throttle et
+      const now = Date.now();
+      if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
+        lastProfileRefresh = now;
+        await initializeUserProfile();
+      }
 
       setLoading(false);
-      setSkipInitialize(false);
       return completeUserInfo;
 
     } catch (error) {
       setLoading(false);
-      setSkipInitialize(false);
       console.error('❌ APPLE SIGN-IN ERROR:', error);
       throw error;
     }
@@ -241,9 +260,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updatedUser = { ...user, name: info.name, fullname: info.name, displayName: info.name, gender: info.gender, birthDate: info.birthDate };
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
-      await refreshUserProfile();
+      
+      // Profile refresh'i throttle et
+      const now = Date.now();
+      if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
+        lastProfileRefresh = now;
+        await refreshUserProfile();
+      }
     } catch (error) {
-      console.error('Update user info error:', error); throw error;
+      console.error('Update user info error:', error); 
+      throw error;
     }
   };
 
@@ -256,6 +282,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearUserPlan();
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
+      
+      // Auth state'i reset et
+      authInitialized = false;
+      lastProfileRefresh = 0;
 
       try {
         await Purchases.logOut();
@@ -278,7 +308,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUserProfile = async () => {
-    if (user) { try { await initializeUserProfile(); } catch (error) { console.error("Failed to refresh user profile:", error); } }
+    // Throttling kontrolü
+    const now = Date.now();
+    if (now - lastProfileRefresh < PROFILE_REFRESH_THROTTLE) {
+      console.log('🚫 Profile refresh throttled');
+      return;
+    }
+    
+    if (user) { 
+      try {
+        lastProfileRefresh = now;
+        await initializeUserProfile(); 
+      } catch (error) { 
+        console.error("Failed to refresh user profile:", error); 
+      } 
+    }
   };
 
   const getUserFromToken = async (token: string) => {
@@ -286,10 +330,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return { uid: payload.sub, isAnonymous: false, name: null, fullname: null, gender: null, birthDate: null };
     } catch (error) {
-      console.error('Failed to decode token:', error); return null;
+      console.error('Failed to decode token:', error); 
+      return null;
     }
   };
 
+  // Navigation effect'i sadece kritik durumlarda çalıştır
   useEffect(() => {
     const isReadyToRoute = !loading && !isAuthFlowActive;
     if (!isReadyToRoute) return;
@@ -301,7 +347,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!profileComplete && segments[1] !== 'complete-profile') {
             router.replace('/(auth)/complete-profile');
         } else if (profileComplete && inAuthGroup) {
-            // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
             router.replace('/(tabs)/home');
         }
     } else {
@@ -316,14 +361,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      {/* Protected router hook'unu burada çağırıyoruz */}
       <ProtectedRouterComponent />
     </AuthContext.Provider>
   );
 };
 
-// Hook'u component olarak wrap ediyoruz
 function ProtectedRouterComponent() {
   useProtectedRouter();
   return null;
+}
+
+// Development utilities
+if (__DEV__) {
+  (global as any).resetAuthState = () => {
+    authInitialized = false;
+    lastProfileRefresh = 0;
+    console.log('🔄 Auth state reset');
+  };
 }

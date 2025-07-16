@@ -1,7 +1,7 @@
-// components/wardrobe/FilterModal.tsx - GENDERED_CATEGORY_HIERARCHY ile güncellenmiş
+// components/wardrobe/FilterModal.tsx - GENDERED_CATEGORY_HIERARCHY ile güncellenmiş ve desenler için Image kullanıldı
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import Button from '@/components/common/Button';
@@ -102,6 +102,27 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
     setSelectedStyles([]);
   };
 
+  const renderColorDisplay = (color: { name: string; hex: string; }) => {
+    switch (color.hex) {
+      case 'pattern_leopard':
+        return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} />;
+      case 'pattern_zebra':
+        return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
+      case 'pattern_snakeskin':
+        return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
+      case 'pattern_striped':
+        return <Image source={require('@/assets/patterns/cizgili.webp')} style={styles.patternImage} />;
+      case 'pattern_plaid':
+        return <Image source={require('@/assets/patterns/ekose.webp')} style={styles.patternImage} />;
+      case 'pattern_floral':
+        return <Image source={require('@/assets/patterns/flowers.webp')} style={styles.patternImage} />;
+      case 'pattern_polka_dot':
+        return <Image source={require('@/assets/patterns/puantiye.webp')} style={styles.patternImage} />;
+      default:
+        return <View style={[styles.colorSwatch, { backgroundColor: color.hex, borderColor: theme.colors.border }]} />;
+    }
+  };
+
   const CollapsibleSection = ({ title, sectionKey, children }: { title: string; sectionKey: string; children: React.ReactNode }) => {
     const isExpanded = expandedSection === sectionKey;
     return (
@@ -166,7 +187,9 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
                     ]}
                     onPress={() => toggleSelection(selectedColors, color.name, setSelectedColors)}
                   >
-                    <View style={[styles.colorSwatch, { backgroundColor: color.hex, borderColor: theme.colors.border }]} />
+                    <View style={styles.colorSwatchContainer}>
+                      {renderColorDisplay(color)}
+                    </View>
                     <Text style={[
                       styles.filterOptionText, 
                       { color: theme.colors.text },
@@ -254,7 +277,21 @@ const styles = StyleSheet.create({
   filterOption: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1 },
   filterOptionText: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
   colorOption: { flexDirection: 'row', alignItems: 'center', padding: 8, paddingRight: 12, borderRadius: 20, borderWidth: 1 },
+  colorSwatchContainer: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
   colorSwatch: { width: 20, height: 20, borderRadius: 10, marginRight: 8, borderWidth: 1 },
+  patternImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
   modalFooter: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, paddingVertical: 15, paddingBottom: 25 },
   footerButton: { flex: 1, marginHorizontal: 8 },
 });

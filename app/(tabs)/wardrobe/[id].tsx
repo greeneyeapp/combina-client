@@ -16,38 +16,50 @@ import { getImageUri, checkImageExists } from '@/utils/fileSystemImageManager';
 import { ALL_COLORS } from '@/utils/constants';
 
 // Pattern/Color display component
-const ColorPatternDisplay = ({ color, size = 16, theme }: { 
-  color: { name: string; hex: string }, 
-  size?: number, 
-  theme: any 
+const ColorPatternDisplay = ({ color, size = 16, theme }: {
+    color: { name: string; hex: string },
+    size?: number,
+    theme: any
 }) => {
-  const circleStyle = {
-    width: size,
-    height: size,
-    borderRadius: size / 2,
-    borderWidth: color.name === 'white' ? 1 : 0,
-    borderColor: theme.colors.border,
-    overflow: 'hidden' as const,
-  };
+    const circleStyle = {
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: color.name === 'white' ? 1 : 0,
+        borderColor: theme.colors.border,
+        overflow: 'hidden' as const,
+    };
 
-  const renderContent = () => {
-    switch (color.hex) {
-      case 'pattern_leopard':
-        return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} />;
-      case 'pattern_zebra':
-        return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
-      case 'pattern_snakeskin':
-        return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
-      default:
-        return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
-    }
-  };
+    const renderContent = () => {
+        switch (color.hex) {
+            case 'pattern_leopard':
+                return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} resizeMode="cover" />;
+            case 'pattern_zebra':
+                return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} resizeMode="cover" />;
+            case 'pattern_snakeskin':
+                return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} resizeMode="cover" />;
 
-  return (
-    <View style={circleStyle}>
-      {renderContent()}
-    </View>
-  );
+            // --- YENİ EKLENEN DESENLER ---
+            case 'pattern_striped':
+                return <Image source={require('@/assets/patterns/cizgili.webp')} style={styles.patternImage} resizeMode="cover" />;
+            case 'pattern_plaid':
+                return <Image source={require('@/assets/patterns/ekose.webp')} style={styles.patternImage} resizeMode="cover" />;
+            case 'pattern_floral':
+                return <Image source={require('@/assets/patterns/flowers.webp')} style={styles.patternImage} resizeMode="cover" />;
+            case 'pattern_polka_dot':
+                return <Image source={require('@/assets/patterns/puantiye.webp')} style={styles.patternImage} resizeMode="cover" />;
+            // --- BİTİŞ ---
+
+            default:
+                return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
+        }
+    };
+
+    return (
+        <View style={circleStyle}>
+            {renderContent()}
+        </View>
+    );
 };
 
 export default function ClothingDetailScreen() {
@@ -78,7 +90,7 @@ export default function ClothingDetailScreen() {
                 }
 
                 const exists = await checkImageExists(item.originalImagePath, false);
-                
+
                 if (exists) {
                     const uri = getImageUri(item.originalImagePath, false);
                     setOriginalImageUri(uri);
@@ -137,7 +149,7 @@ export default function ClothingDetailScreen() {
                 </View>
             );
         }
-        
+
         if (isLoadingImage) {
             return (
                 <View style={[styles.imageContainer, { justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.card }]}>
@@ -146,7 +158,7 @@ export default function ClothingDetailScreen() {
                 </View>
             );
         }
-        
+
         if (imageLoadError || !originalImageUri) {
             return (
                 <View style={[styles.placeholderContainer, { backgroundColor: theme.colors.background }]}>
@@ -156,18 +168,18 @@ export default function ClothingDetailScreen() {
                 </View>
             );
         }
-        
+
         return (
             <View style={styles.imageContainer}>
-                <Image 
-                    source={{ uri: originalImageUri }} 
-                    style={styles.image} 
-                    resizeMode="cover" 
-                    onError={(error) => { 
+                <Image
+                    source={{ uri: originalImageUri }}
+                    style={styles.image}
+                    resizeMode="cover"
+                    onError={(error) => {
                         console.error('Original image load error:', error.nativeEvent.error);
-                        setImageLoadError(true); 
-                        setOriginalImageUri(''); 
-                    }} 
+                        setImageLoadError(true);
+                        setOriginalImageUri('');
+                    }}
                 />
                 <TouchableOpacity style={[styles.editButton, { backgroundColor: theme.colors.primary }]} onPress={handleEdit}>
                     <Edit2 color={theme.colors.white} size={20} />
@@ -198,7 +210,7 @@ export default function ClothingDetailScreen() {
                             {itemColors.map((colorName) => {
                                 const colorData = ALL_COLORS.find(c => c.name === colorName);
                                 if (!colorData) return null;
-                                
+
                                 return (
                                     <View key={colorName} style={[styles.colorTag, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
                                         <ColorPatternDisplay color={colorData} size={16} theme={theme} />

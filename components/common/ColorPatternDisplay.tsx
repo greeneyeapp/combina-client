@@ -54,6 +54,40 @@ const ColorPatternDisplay: React.FC<ColorPatternDisplayProps> = ({
             resizeMode="cover"
           />
         );
+      // --- YENİ EKLENEN DESENLER ---
+      case 'pattern_striped':
+        return (
+          <Image 
+            source={require('@/assets/patterns/cizgili.webp')} 
+            style={styles.patternImage} 
+            resizeMode="cover"
+          />
+        );
+      case 'pattern_plaid':
+        return (
+          <Image 
+            source={require('@/assets/patterns/ekose.webp')} 
+            style={styles.patternImage} 
+            resizeMode="cover"
+          />
+        );
+      case 'pattern_floral':
+        return (
+          <Image 
+            source={require('@/assets/patterns/flowers.webp')} 
+            style={styles.patternImage} 
+            resizeMode="cover"
+          />
+        );
+      case 'pattern_polka_dot':
+        return (
+          <Image 
+            source={require('@/assets/patterns/puantiye.webp')} 
+            style={styles.patternImage} 
+            resizeMode="cover"
+          />
+        );
+      // --- BİTİŞ ---
       default:
         return (
           <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />

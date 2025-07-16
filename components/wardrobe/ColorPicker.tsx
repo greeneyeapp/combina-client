@@ -9,11 +9,11 @@ import { ALL_COLORS } from '@/utils/constants';
 
 // Renk parlaklığını hesaplayarak, üzerine konulacak ikonun rengini belirler (siyah/beyaz).
 const getBrightness = (hex: string): number => {
-    if (!hex.startsWith('#')) return 129; // Desenler için açık renkli (siyah) check ikonu
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (!hex.startsWith('#')) return 129; // Desenler için açık renkli (siyah) check ikonu
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
 interface ColorPickerProps {
@@ -67,14 +67,24 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
   // Renk veya Desen dairesini render eden fonksiyon
   const renderColorItemDisplay = (color: { name: string; hex: string; }) => {
     switch (color.hex) {
-        case 'pattern_leopard':
-            return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} />;
-        case 'pattern_zebra':
-            return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
-        case 'pattern_snakeskin':
-            return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
-        default:
-            return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
+      case 'pattern_leopard':
+        return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} />;
+      case 'pattern_zebra':
+        return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
+      case 'pattern_snakeskin':
+        return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
+      // --- YENİ EKLENEN DESENLER ---
+      case 'pattern_striped':
+        return <Image source={require('@/assets/patterns/cizgili.webp')} style={styles.patternImage} />;
+      case 'pattern_plaid':
+        return <Image source={require('@/assets/patterns/ekose.webp')} style={styles.patternImage} />;
+      case 'pattern_floral':
+        return <Image source={require('@/assets/patterns/flowers.webp')} style={styles.patternImage} />;
+      case 'pattern_polka_dot':
+        return <Image source={require('@/assets/patterns/puantiye.webp')} style={styles.patternImage} />;
+      // --- BİTİŞ ---
+      default:
+        return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
     }
   };
 
@@ -86,20 +96,20 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
         </Text>
       );
     }
-    
+
     const colorData = ALL_COLORS.find(c => c.name === currentSelectedColors[0]);
     if (!colorData) return null;
 
     return (
       <View style={styles.selectedColorView}>
         <View style={[styles.colorCircleWrapper, { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: colorData.name === 'white' ? theme.colors.border : 'transparent' }]}>
-            {renderColorItemDisplay(colorData)}
+          {renderColorItemDisplay(colorData)}
         </View>
         <Text style={[styles.selectedColorText, { color: theme.colors.text }]}>
           {t(`colors.${colorData.name}`)}
         </Text>
         {currentSelectedColors.length > 1 && (
-          <Text style={[styles.plusMore, {color: theme.colors.textLight}]}>
+          <Text style={[styles.plusMore, { color: theme.colors.textLight }]}>
             + {currentSelectedColors.length - 1} {t('wardrobe.moreColors')}
           </Text>
         )}
@@ -115,7 +125,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
       >
         {renderSelectedColorsDisplay()}
       </TouchableOpacity>
-      
+
       {error && <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>}
 
       <Modal
@@ -168,7 +178,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                       {renderColorItemDisplay(color)}
                       {isSelected && (
                         <View style={styles.checkIconContainer}>
-                            <Check size={24} color={getBrightness(color.hex) > 128 ? 'black' : 'white'} />
+                          <Check size={24} color={getBrightness(color.hex) > 128 ? 'black' : 'white'} />
                         </View>
                       )}
                     </View>

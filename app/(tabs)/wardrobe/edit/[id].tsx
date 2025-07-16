@@ -33,10 +33,10 @@ type FormData = {
 };
 
 // Pattern/Color display component for preview
-const ColorPatternDisplay = ({ color, size = 20, theme }: { 
-  color: { name: string; hex: string }, 
-  size?: number, 
-  theme: any 
+const ColorPatternDisplay = ({ color, size = 20, theme }: {
+  color: { name: string; hex: string },
+  size?: number,
+  theme: any
 }) => {
   const circleStyle = {
     width: size,
@@ -50,11 +50,23 @@ const ColorPatternDisplay = ({ color, size = 20, theme }: {
   const renderContent = () => {
     switch (color.hex) {
       case 'pattern_leopard':
-        return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} />;
+        return <Image source={require('@/assets/patterns/leopard.webp')} style={styles.patternImage} resizeMode="cover" />;
       case 'pattern_zebra':
-        return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
+        return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} resizeMode="cover" />;
       case 'pattern_snakeskin':
-        return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
+        return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} resizeMode="cover" />;
+
+      // --- YENİ EKLENEN DESENLER ---
+      case 'pattern_striped': // Çizgili
+        return <Image source={require('@/assets/patterns/cizgili.webp')} style={styles.patternImage} resizeMode="cover" />;
+      case 'pattern_plaid': // Kareli
+        return <Image source={require('@/assets/patterns/ekose.webp')} style={styles.patternImage} resizeMode="cover" />;
+      case 'pattern_floral': // Çiçekli
+        return <Image source={require('@/assets/patterns/flowers.webp')} style={styles.patternImage} resizeMode="cover" />;
+      case 'pattern_polka_dot': // Puantiye
+        return <Image source={require('@/assets/patterns/puantiye.webp')} style={styles.patternImage} resizeMode="cover" />;
+      // --- BİTİŞ ---
+
       default:
         return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
     }
@@ -125,7 +137,7 @@ export default function EditClothingScreen() {
       }
 
       const exists = await checkImageExists(itemToEdit.originalImagePath, false);
-      
+
       if (exists) {
         const uri = getImageUri(itemToEdit.originalImagePath, false);
         setCurrentImageUri(uri);
@@ -149,7 +161,7 @@ export default function EditClothingScreen() {
     setCurrentImageUri(getImageUri(imagePaths.originalPath, false));
     setImageChanged(true);
     setShowGalleryPicker(false);
-    
+
     console.log('✅ New image selected for edit:', {
       original: imagePaths.originalPath,
       thumbnail: imagePaths.thumbnailPath,
@@ -352,9 +364,9 @@ export default function EditClothingScreen() {
               {watchedColors.length > 0 && (
                 <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
                   <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
-                    {t('wardrobe.colorSelectionInfo', { 
-                      selected: watchedColors.length, 
-                      max: 3 
+                    {t('wardrobe.colorSelectionInfo', {
+                      selected: watchedColors.length,
+                      max: 3
                     })}
                   </Text>
                   <View style={styles.selectedColorsPreview}>
@@ -362,11 +374,11 @@ export default function EditClothingScreen() {
                       const colorData = ALL_COLORS.find(c => c.name === colorName);
                       if (!colorData) return null;
                       return (
-                        <ColorPatternDisplay 
+                        <ColorPatternDisplay
                           key={colorName}
-                          color={colorData} 
-                          size={20} 
-                          theme={theme} 
+                          color={colorData}
+                          size={20}
+                          theme={theme}
                         />
                       );
                     })}
@@ -491,10 +503,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 16
   },
-  clothingImage: { 
-    width: '100%', 
-    height: '100%', 
-    resizeMode: 'cover' 
+  clothingImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover'
   },
   removeImageButton: {
     position: 'absolute',
@@ -529,25 +541,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16
   },
-  imagePlaceholderText: { 
-    fontFamily: 'Montserrat-Medium', 
-    fontSize: 16 
+  imagePlaceholderText: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: 16
   },
-  imageButtonsContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'center' 
+  imageButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center'
   },
-  imageButton: { 
-    flex: 1, 
-    marginHorizontal: 4 
+  imageButton: {
+    flex: 1,
+    marginHorizontal: 4
   },
-  formSection: { 
-    gap: 16 
+  formSection: {
+    gap: 16
   },
-  sectionTitle: { 
-    fontFamily: 'Montserrat-Bold', 
-    fontSize: 16, 
-    marginBottom: 8 
+  sectionTitle: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: 16,
+    marginBottom: 8
   },
   selectedColorsHeader: {
     padding: 12,
@@ -563,13 +575,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
-  errorText: { 
-    fontFamily: 'Montserrat-Regular', 
-    fontSize: 12, 
-    marginTop: 4 
+  errorText: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: 12,
+    marginTop: 4
   },
-  saveButton: { 
-    marginTop: 16 
+  saveButton: {
+    marginTop: 16
   },
   patternImage: {
     width: '100%',

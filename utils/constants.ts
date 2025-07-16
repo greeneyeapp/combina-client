@@ -58,7 +58,11 @@ export const ALL_COLORS: ColorInfo[] = [
 
   { name: 'leopard', hex: 'pattern_leopard' },
   { name: 'zebra', hex: 'pattern_zebra' },
-  { name: 'snakeskin', hex: 'pattern_snakeskin' }, // YENİ EKLENDİ
+  { name: 'snakeskin', hex: 'pattern_snakeskin' },
+  { name: 'striped', hex: 'pattern_striped' },
+  { name: 'plaid', hex: 'pattern_plaid' },
+  { name: 'floral', hex: 'pattern_floral' },
+  { name: 'polka-dot', hex: 'pattern_polka_dot' },
 ];
 
 export const OCCASION_HIERARCHY = {
@@ -69,28 +73,81 @@ export const OCCASION_HIERARCHY = {
   active: ['gym', 'yoga-pilates', 'outdoor-sports', 'hiking'],
   special: ['travel', 'weekend-getaway', 'holiday', 'festival', 'sightseeing']
 };
-
 export const GENDERED_CATEGORY_HIERARCHY = {
   female: {
-    'top': ['t-shirt', 'blouse', 'shirt', 'bodysuit', 'crop-top', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck'],
-    'bottom': ['jeans', 'trousers', 'leggings', 'joggers', 'skirt', 'shorts', 'culottes', 'wide-leg-trousers'],
-    'sets': ['dress', 'jumpsuit', 'romper', 'co-ord-set', 'tracksuit'],
-    'outerwear': ['coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'leather-jacket', 'blazer', 'vest'],
-    'modest-wear': ['tunic', 'long-cardigan', 'abaya', 'hijab-shawl', 'long-skirt'],
-    'shoes': ['sneakers', 'heels', 'boots', 'sandals', 'flats', 'loafers', 'wedges'],
-    'bags': ['handbag', 'crossbody-bag', 'backpack', 'clutch', 'tote-bag', 'fanny-pack'],
-    'accessories': ['jewelry', 'scarf', 'sunglasses', 'belt', 'hat', 'beanie', 'watch']
+    // KADIN KATEGORİLERİ (Yazlıktan Kışlığa Sıralı)
+    'top': [
+      'bralette', 'tank-top', 'crop-top', 'bodysuit', 't-shirt', 'blouse',
+      'shirt', 'tunic', 'vest', 'track-top', 'sweatshirt', 'hoodie', // GÜNCELLENDİ: track-top ortaya alındı
+      'pullover', 'sweater'
+    ],
+    'bottom': [
+      'mini-skirt', 'denim-shorts', 'fabric-shorts', 'athletic-shorts', 'bermuda-shorts',
+      'midi-skirt', 'long-skirt', 'leggings', 'track-bottom', 'linen-trousers', // GÜNCELLENDİ: track-bottom ortaya alındı
+      'jeans', 'trousers'
+    ],
+    'dresses-jumpsuits': [
+      'romper', 'sporty-dress', 'casual-dress', 'modest-dress', 'jumpsuit',
+      'evening-dress', 'modest-evening-dress'
+    ],
+    'outerwear': [
+      'blazer', 'denim-jacket', 'fabric-jacket', 'bomber-jacket', 'leather-jacket',
+      'raincoat', 'trenchcoat', 'cardigan', 'abaya', 'coat',
+      'overcoat', 'puffer-coat'
+    ],
+    'shoes': [
+      'slippers', 'sandals', 'flats', 'heels', 'sneakers',
+      'casual-sport-shoes', 'loafers',
+      'boots', 'tall-boots'
+    ],
+    'bags': [
+      'handbag', 'backpack', 'shoulder-bag', 'briefcase'
+    ],
+    'accessories': [
+      'sunglasses', 'ring', 'bracelet', 'earrings', 'necklace', 'belt',
+      'watch', 'hat', 'hijab', 'scarf', 'shawl'
+    ]
   },
   male: {
-    'top': ['t-shirt', 'shirt', 'polo-shirt', 'tank-top', 'sweater', 'cardigan', 'hoodie', 'turtleneck', 'henley-shirt'],
-    'bottom': ['jeans', 'trousers', 'chino-trousers', 'joggers', 'cargo-pants', 'shorts'],
-    'outerwear': ['coat', 'trenchcoat', 'jacket', 'bomber-jacket', 'denim-jacket', 'leather-jacket', 'blazer', 'vest', 'gilet'],
-    'suits': ['suit-jacket', 'suit-trousers', 'waistcoat'],
-    'shoes': ['sneakers', 'boots', 'sandals', 'loafers', 'classic-shoes', 'boat-shoes'],
-    'bags': ['backpack', 'messenger-bag', 'briefcase', 'fanny-pack'],
-    'accessories': ['sunglasses', 'belt', 'hat', 'beanie', 'watch', 'tie']
+    // ERKEK KATEGORİLERİ (Yazlıktan Kışlığa Sıralı)
+    'top': [
+      'tank-top', 't-shirt', 'polo-shirt', 'shirt', 'vest', 'track-top', // GÜNCELLENDİ: track-top ortaya alındı
+      'sweatshirt', 'hoodie', 'pullover', 'sweater'
+    ],
+    'bottom': [
+      'athletic-shorts', 'denim-shorts', 'fabric-shorts', 'bermuda-shorts',
+      'capri-pants', 'track-bottom', 'linen-trousers', 'jeans', 'trousers' // GÜNCELLENDİ: track-bottom ortaya alındı
+    ],
+    'outerwear': [
+      'cardigan', 'denim-jacket', 'fabric-jacket', 'leather-jacket', 'raincoat',
+      'trenchcoat', 'coat', 'overcoat', 'puffer-coat'
+    ],
+    'suits': [
+      'suit-jacket', 'suit-trousers', 'blazer', 'tuxedo'
+    ],
+    'shoes': [
+      'slippers', 'sandals', 'sneakers', 'casual-sport-shoes', 'loafers',
+      'classic-shoes', 'boots'
+    ],
+    'bags': [
+      'crossbody-bag', 'backpack', 'shoulder-bag', 'briefcase'
+    ],
+    'accessories': [
+      'sunglasses', 'ring', 'bracelet', 'earrings', 'necklace', 'belt',
+      'watch', 'hat', 'tie'
+    ]
   }
 };
 
 export const ALL_SEASONS = ['spring', 'summer', 'fall', 'winter'];
-export const ALL_STYLES = ['casual', 'formal', 'business', 'sportswear', 'party'];
+export const ALL_STYLES = [
+  'classic',
+  'smart_casual',
+  'casual',
+  'bohemian',
+  'minimalist',
+  'vintage',
+  'gothic',
+  'party',
+  'sportswear'
+];

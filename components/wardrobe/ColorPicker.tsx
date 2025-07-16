@@ -64,7 +64,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
     );
   }, [searchQuery, t]);
 
-  // Renk veya Desen dairesini render eden fonksiyon
   const renderColorItemDisplay = (color: { name: string; hex: string; }) => {
     switch (color.hex) {
       case 'pattern_leopard':
@@ -73,7 +72,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
         return <Image source={require('@/assets/patterns/zebra.webp')} style={styles.patternImage} />;
       case 'pattern_snakeskin':
         return <Image source={require('@/assets/patterns/snake.webp')} style={styles.patternImage} />;
-      // --- YENİ EKLENEN DESENLER ---
       case 'pattern_striped':
         return <Image source={require('@/assets/patterns/cizgili.webp')} style={styles.patternImage} />;
       case 'pattern_plaid':
@@ -82,7 +80,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
         return <Image source={require('@/assets/patterns/flowers.webp')} style={styles.patternImage} />;
       case 'pattern_polka_dot':
         return <Image source={require('@/assets/patterns/puantiye.webp')} style={styles.patternImage} />;
-      // --- BİTİŞ ---
       default:
         return <View style={{ backgroundColor: color.hex, width: '100%', height: '100%' }} />;
     }

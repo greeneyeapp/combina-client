@@ -1,4 +1,4 @@
-// services/aiService.ts - Optimize edilmiş versiyon
+// services/aiService.ts - Güncellenmiş ve optimize edilmiş
 
 import axios from 'axios';
 import { useApiAuthStore } from '@/store/apiAuthStore';
@@ -23,40 +23,42 @@ export interface OutfitSuggestionResponse {
   items: SuggestedItem[];
   description: string;
   suggestion_tip?: string;
-  pinterest_links?: PinterestLink[];
+  pinterest_links?: PinterestLink[]; // Sadece premium için
 }
 
-// Wardrobe item'ını backend için optimize et
+// Optimize edilmiş clothing item
 interface OptimizedClothingItem {
   id: string;
   name: string;
   category: string;
-  colors: string[];         // Çoklu renk desteği
+  colors: string[];
   season: string[];
-  style: string[];         // String array olarak gönder
+  style: string[];
 }
 
-// Outfit history'yi optimize et
+// Optimize edilmiş outfit
 interface OptimizedOutfit {
-  items: string[];         // Sadece ID'ler
+  items: string[];
   occasion: string;
   weather: string;
-  date: string;           // Analiz için tarih yeterli
+  date: string;
 }
 
-// ClothingItem'ı optimize edilmiş versiyona dönüştür
+/**
+ * ClothingItem'ı optimize edilmiş versiyona dönüştürür
+ */
 const optimizeClothingItem = (item: ClothingItem): OptimizedClothingItem => {
-  // Çoklu renk desteği - colors varsa onu kullan, yoksa color'dan oluştur
+  // Çoklu renk desteği
   const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
   
-  // Style array'e dönüştür - string'se split et
+  // Style array'e dönüştür
   const styleArray = typeof item.style === 'string' 
     ? item.style.split(',').map(s => s.trim()).filter(s => s.length > 0)
     : Array.isArray(item.style) 
       ? item.style 
-      : ['casual']; // Fallback
+      : ['casual'];
 
-  const optimized = {
+  return {
     id: item.id,
     name: item.name,
     category: item.category,
@@ -64,24 +66,11 @@ const optimizeClothingItem = (item: ClothingItem): OptimizedClothingItem => {
     season: item.season || [],
     style: styleArray
   };
-
-  // Debug: İlk item için detay log
-  if (item.id && Math.random() < 0.1) { // %10 şansla log
-    console.log('🔄 Item optimization:', {
-      original: {
-        id: item.id,
-        style: item.style,
-        colors: item.colors,
-        color: item.color
-      },
-      optimized: optimized
-    });
-  }
-
-  return optimized;
 };
 
-// Outfit'i optimize edilmiş versiyona dönüştür
+/**
+ * Outfit'i optimize edilmiş versiyona dönüştürür
+ */
 const optimizeOutfit = (outfit: Outfit): OptimizedOutfit => {
   return {
     items: outfit.items,
@@ -91,149 +80,157 @@ const optimizeOutfit = (outfit: Outfit): OptimizedOutfit => {
   };
 };
 
-// Wardrobe'ı akıllı filtreleme ile optimize et
-const filterRelevantWardrobe = (
+/**
+ * Gelişmiş akıllı filtreleme - Backend'in yaptığı işlemi destekler
+ */
+const intelligentWardrobeFilter = (
   wardrobe: ClothingItem[],
   weatherCondition: string,
-  occasion: string
-): OptimizedClothingItem[] => {
+  occasion: string,
+  plan: 'free' | 'premium'
+): ClothingItem[] => {
   
-  // İlk aşama: Temel filtreler (çok katı olmayan)
-  const basicFiltered = wardrobe.filter(item => {
-    // Sadece resmi olmayan item'ları filtrele
-    return !item.isImageMissing;
-  });
+  // Temel filtreleme
+  const validItems = wardrobe.filter(item => !item.isImageMissing);
   
-  // İkinci aşama: Uygun item'ları skorla
-  const scoredItems = basicFiltered.map(item => {
-    let score = 1; // Base score
+  // Plan bazlı ön filtreleme
+  const preFilterLimit = plan === 'premium' ? 400 : 300;
+  
+  if (validItems.length <= preFilterLimit) {
+    return validItems; // Zaten küçükse tamamını gönder
+  }
+  
+  // Skorlama sistemi
+  const scoredItems = validItems.map(item => {
+    let score = 1;
     
-    // Mevsim uygunluğu skorla (0-3 arası ekleme)
-    const seasonScore = item.season.reduce((acc, season) => {
-      switch (weatherCondition) {
-        case 'cold':
-        case 'snowy':
-          if (season === 'winter') return acc + 3;
-          if (season === 'fall') return acc + 2;
-          if (season === 'spring') return acc + 1;
-          return acc;
-        case 'cool':
-          if (season === 'fall') return acc + 3;
-          if (season === 'spring') return acc + 3;
-          if (season === 'winter') return acc + 1;
-          return acc;
-        case 'warm':
-          if (season === 'spring') return acc + 3;
-          if (season === 'summer') return acc + 2;
-          if (season === 'fall') return acc + 1;
-          return acc;
-        case 'hot':
-        case 'sunny':
-          if (season === 'summer') return acc + 3;
-          if (season === 'spring') return acc + 2;
-          return acc;
-        default:
-          return acc + 1; // Her mevsim için eşit skor
-      }
-    }, 0);
+    // Mevsim uygunluğu
+    const seasonScore = calculateSeasonScore(item, weatherCondition);
     
-    // Stil uygunluğu skorla (0-3 arası ekleme)
-    const styles = item.style ? item.style.split(',').map(s => s.trim()) : ['casual'];
-    const styleScore = styles.reduce((acc, style) => {
-      if (occasion.includes('formal') || occasion.includes('business') || occasion.includes('wedding')) {
-        if (style === 'formal') return acc + 3;
-        if (style === 'business') return acc + 3;
-        if (style === 'casual') return acc + 1;
-        return acc;
-      }
-      if (occasion.includes('gym') || occasion.includes('sport') || occasion.includes('yoga')) {
-        if (style === 'sportswear') return acc + 3;
-        return acc;
-      }
-      if (occasion.includes('beach') || occasion.includes('vacation')) {
-        if (style === 'beachwear') return acc + 3;
-        if (style === 'casual') return acc + 2;
-        return acc;
-      }
-      if (occasion.includes('party') || occasion.includes('night')) {
-        if (style === 'party') return acc + 3;
-        if (style === 'formal') return acc + 2;
-        if (style === 'casual') return acc + 1;
-        return acc;
-      }
-      // Casual occasions için
-      if (style === 'casual') return acc + 3;
-      return acc + 1;
-    }, 0);
+    // Stil uygunluğu
+    const styleScore = calculateStyleScore(item, occasion);
     
-    // Kategori çeşitliliği için bonus (temel kategoriler öncelikli)
-    const categoryBonus = (() => {
-      const essentialCategories = ['t-shirt', 'jeans', 'trousers', 'shirt', 'sweater', 'sneakers'];
-      return essentialCategories.includes(item.category) ? 1 : 0;
-    })();
+    // Temel önem (t-shirt, jeans vs. özel parçalar)
+    const importanceScore = calculateImportanceScore(item);
+    
+    // Renk çeşitliliği
+    const colorScore = calculateColorDiversityScore(item);
     
     return {
-      item: optimizeClothingItem(item),
-      score: score + seasonScore + styleScore + categoryBonus
+      item,
+      score: score + seasonScore + styleScore + importanceScore + colorScore
     };
   });
   
-  // Skorlara göre sırala ve akıllı filtreleme yap
-  const sortedItems = scoredItems.sort((a, b) => b.score - a.score);
-  
-  // Kategori bazlı dağılım için akıllı seçim
-  const categoryGroups = sortedItems.reduce((acc, { item, score }) => {
-    if (!acc[item.category]) acc[item.category] = [];
-    acc[item.category].push({ item, score });
-    return acc;
-  }, {} as Record<string, Array<{ item: OptimizedClothingItem; score: number }>>);
-  
-  // Her kategoriden en iyi skorlu item'ları seç
-  const selectedItems: OptimizedClothingItem[] = [];
-  const maxPerCategory = calculateMaxPerCategory(Object.keys(categoryGroups).length);
-  
-  Object.entries(categoryGroups).forEach(([category, items]) => {
-    // Her kategoriden maksimum kaç item alınacağını belirle
-    const limit = Math.min(items.length, maxPerCategory);
-    const bestItems = items.slice(0, limit).map(i => i.item);
-    selectedItems.push(...bestItems);
-  });
-  
-  return selectedItems;
+  // Skor bazlı sıralama ve kategori dengeleme
+  return balancedSelection(scoredItems, preFilterLimit);
 };
 
-// Dinamik limit hesaplama - wardrobe büyüklüğüne göre
-const calculateDynamicLimit = (
-  filteredWardrobe: OptimizedClothingItem[], 
-  plan: 'free' | 'premium'
-): number => {
-  const itemCount = filteredWardrobe.length;
-  
-  // Plan bazlı maksimum limitler
-  const maxLimits = {
-    free: 150,      // Free kullanıcılar için makul limit
-    premium: 300    // Premium kullanıcılar için daha yüksek limit
+/**
+ * Mevsim uygunluk skoru
+ */
+const calculateSeasonScore = (item: ClothingItem, weather: string): number => {
+  const seasonMap: Record<string, string[]> = {
+    'hot': ['summer'],
+    'warm': ['spring', 'summer'],
+    'cool': ['fall', 'spring'],
+    'cold': ['winter', 'fall']
   };
   
-  // Eğer filtrelenmiş wardrobe zaten küçükse tamamını gönder
-  if (itemCount <= maxLimits[plan]) {
-    return itemCount;
+  const appropriateSeasons = seasonMap[weather] || ['spring', 'summer', 'fall', 'winter'];
+  const matchingSeasons = item.season.filter(s => appropriateSeasons.includes(s));
+  
+  return matchingSeasons.length > 0 ? 2 : 0;
+};
+
+/**
+ * Stil uygunluk skoru
+ */
+const calculateStyleScore = (item: ClothingItem, occasion: string): number => {
+  const styles = typeof item.style === 'string' 
+    ? item.style.split(',').map(s => s.trim()) 
+    : Array.isArray(item.style) ? item.style : ['casual'];
+  
+  // Durum bazlı stil eşleştirmesi - gerçek stil listesine göre
+  if (occasion.includes('business') || occasion.includes('formal') || occasion.includes('office')) {
+    return styles.some(s => ['classic', 'smart_casual', 'minimalist'].includes(s.toLowerCase())) ? 3 : 0;
   }
   
-  // Büyük wardrobe'lar için limit
-  return maxLimits[plan];
+  if (occasion.includes('party') || occasion.includes('night') || occasion.includes('celebration')) {
+    return styles.some(s => ['party', 'vintage', 'gothic'].includes(s.toLowerCase())) ? 3 : 1;
+  }
+  
+  if (occasion.includes('sport') || occasion.includes('gym') || occasion.includes('yoga')) {
+    return styles.some(s => ['sportswear', 'casual'].includes(s.toLowerCase())) ? 3 : 0;
+  }
+  
+  if (occasion.includes('date') || occasion.includes('dinner')) {
+    return styles.some(s => ['smart_casual', 'classic', 'vintage', 'party'].includes(s.toLowerCase())) ? 3 : 1;
+  }
+  
+  if (occasion.includes('weekend') || occasion.includes('brunch') || occasion.includes('coffee')) {
+    return styles.some(s => ['casual', 'bohemian', 'minimalist'].includes(s.toLowerCase())) ? 3 : 1;
+  }
+  
+  // Default casual durumlar için
+  return styles.some(s => ['casual', 'smart_casual'].includes(s.toLowerCase())) ? 2 : 1;
 };
 
-// Kategori başına maksimum item sayısını hesapla
-const calculateMaxPerCategory = (totalCategories: number): number => {
-  // Kategori sayısına göre dinamik limit
-  if (totalCategories <= 5) return 25;   // Az kategori varsa kategori başına daha fazla
-  if (totalCategories <= 10) return 20;  // Orta sayıda kategori
-  if (totalCategories <= 15) return 15;  // Çok kategori varsa kategori başına daha az
-  if (totalCategories <= 20) return 12;  // Daha fazla kategori
-  return 10; // Çok fazla kategori durumunda minimum
+/**
+ * Temel önem skoru - vazgeçilmez parçalar
+ */
+const calculateImportanceScore = (item: ClothingItem): number => {
+  const essentialCategories = [
+    't-shirt', 'shirt', 'jeans', 'trousers', 'sneakers', 
+    'dress', 'blouse', 'jacket', 'boots', 'flats'
+  ];
+  
+  return essentialCategories.includes(item.category.toLowerCase()) ? 1 : 0;
 };
 
+/**
+ * Renk çeşitliliği skoru
+ */
+const calculateColorDiversityScore = (item: ClothingItem): number => {
+  const colors = item.colors || [item.color];
+  const hasNeutral = colors.some(c => 
+    ['black', 'white', 'gray', 'navy', 'beige', 'cream'].includes(c || '')
+  );
+  
+  return hasNeutral ? 1 : 0.5;
+};
+
+/**
+ * Dengeli seçim - kategori çeşitliliğini korur
+ */
+const balancedSelection = (
+  scoredItems: Array<{item: ClothingItem, score: number}>, 
+  limit: number
+): ClothingItem[] => {
+  const sorted = scoredItems.sort((a, b) => b.score - a.score);
+  
+  const selected: ClothingItem[] = [];
+  const categoryCount: Record<string, number> = {};
+  const maxPerCategory = Math.max(3, Math.floor(limit / 15)); // Kategori başına limit
+  
+  for (const {item, score} of sorted) {
+    if (selected.length >= limit) break;
+    
+    const category = item.category.toLowerCase();
+    const currentCount = categoryCount[category] || 0;
+    
+    if (currentCount < maxPerCategory) {
+      selected.push(item);
+      categoryCount[category] = currentCount + 1;
+    }
+  }
+  
+  return selected;
+};
+
+/**
+ * Ana kombin öneri fonksiyonu
+ */
 export async function getOutfitSuggestion(
   language: string,
   gender: 'female' | 'male' | undefined,
@@ -247,57 +244,43 @@ export async function getOutfitSuggestion(
     const token = useApiAuthStore.getState().jwt;
     if (!token) throw new Error('User not authenticated');
 
-    // Wardrobe'ı akıllı filtreleme ile optimize et
-    const relevantWardrobe = filterRelevantWardrobe(wardrobe, weatherCondition, occasion);
+    // Akıllı filtreleme uygula
+    const filteredWardrobe = intelligentWardrobeFilter(
+      wardrobe, 
+      weatherCondition, 
+      occasion, 
+      plan
+    );
     
-    // Dinamik limit - kategori çeşitliliğine göre
-    const maxWardrobeItems = calculateDynamicLimit(relevantWardrobe, plan);
-    const optimizedWardrobe = relevantWardrobe.slice(0, maxWardrobeItems);
-    
-    // Outfit history'yi optimize et
-    const optimizedHistory = last5Outfits.map(optimizeOutfit);
+    // Optimize et
+    const optimizedWardrobe = filteredWardrobe.map(optimizeClothingItem);
+    const optimizedHistory = last5Outfits.slice(0, 5).map(optimizeOutfit);
 
-    // Payload'ı hazırla
+    // Payload hazırla
     const payload = {
       language,
       gender,
       plan,
-      wardrobe: optimizedWardrobe,          // Optimize edilmiş wardrobe
-      last_5_outfits: optimizedHistory,     // Optimize edilmiş history
+      wardrobe: optimizedWardrobe,
+      last_5_outfits: optimizedHistory,
       weather_condition: weatherCondition,
       occasion,
-      // Ek context bilgileri
       context: {
         total_wardrobe_size: wardrobe.length,
         filtered_wardrobe_size: optimizedWardrobe.length,
-        user_plan: plan
+        user_plan: plan,
+        optimization_applied: true
       }
     };
 
-    console.log('🚀 Sending optimized data to AI service:', {
-      wardrobeItems: `${optimizedWardrobe.length}/${wardrobe.length}`,
-      filteredByWeather: weatherCondition,
-      filteredByOccasion: occasion,
-      historyItems: optimizedHistory.length,
+    console.log('🚀 Sending AI request:', {
+      originalWardrobe: wardrobe.length,
+      filteredWardrobe: optimizedWardrobe.length,
+      plan: plan,
+      weather: weatherCondition,
+      occasion: occasion,
       payloadSize: calculatePayloadSize(payload)
     });
-
-    // DETAYLI DEBUG: İlk wardrobe item'ını log'la
-    if (optimizedWardrobe.length > 0) {
-      console.log('📦 Sample wardrobe item:', {
-        id: optimizedWardrobe[0].id,
-        name: optimizedWardrobe[0].name,
-        category: optimizedWardrobe[0].category,
-        colors: optimizedWardrobe[0].colors,
-        season: optimizedWardrobe[0].season,
-        style: optimizedWardrobe[0].style
-      });
-    }
-
-    // DETAYLI DEBUG: History sample
-    if (optimizedHistory.length > 0) {
-      console.log('📋 Sample history item:', optimizedHistory[0]);
-    }
 
     const response = await axios.post<OutfitSuggestionResponse>(
       `${API_URL}/api/suggest-outfit`,
@@ -307,7 +290,7 @@ export async function getOutfitSuggestion(
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        timeout: 30000 // 30 saniye timeout
+        timeout: 35000 // 35 saniye
       }
     );
     
@@ -324,6 +307,7 @@ export async function getOutfitSuggestion(
       url: error.config?.url
     });
 
+    // Hata durumlarına göre özel mesajlar
     if (error.response?.status === 429) {
       showAlert({
         title: t('suggestions.limitExceededTitle'),
@@ -331,17 +315,21 @@ export async function getOutfitSuggestion(
         buttons: [{ text: t('common.ok'), onPress: () => {} }]
       });
     } else if (error.response?.status === 413) {
-      // Payload too large hatası
       showAlert({
         title: t('common.error'),
-        message: t('suggestions.tooManyItemsError', 'Too many wardrobe items. Please try again.'),
+        message: t('suggestions.tooManyItemsError', 'Wardrobe too large. Please try again.'),
         buttons: [{ text: t('common.ok'), onPress: () => {} }]
       });
     } else if (error.code === 'ECONNABORTED') {
-      // Timeout hatası
       showAlert({
         title: t('common.error'),
         message: t('suggestions.timeoutError', 'Request timed out. Please try again.'),
+        buttons: [{ text: t('common.ok'), onPress: () => {} }]
+      });
+    } else if (error.response?.status === 500) {
+      showAlert({
+        title: t('common.error'),
+        message: t('suggestions.aiServiceError', 'AI service temporarily unavailable. Please try again.'),
         buttons: [{ text: t('common.ok'), onPress: () => {} }]
       });
     } else {
@@ -355,7 +343,9 @@ export async function getOutfitSuggestion(
   }
 }
 
-// Wardrobe istatistikleri için yardımcı fonksiyon
+/**
+ * Gardrop istatistikleri
+ */
 export const getWardrobeStats = (wardrobe: ClothingItem[]) => {
   const validItems = wardrobe.filter(item => !item.isImageMissing);
   
@@ -371,15 +361,70 @@ export const getWardrobeStats = (wardrobe: ClothingItem[]) => {
     return acc;
   }, {} as Record<string, number>);
   
+  const colorCount = validItems.reduce((acc, item) => {
+    const colors = item.colors || [item.color];
+    colors.forEach(color => {
+      if (color) acc[color] = (acc[color] || 0) + 1;
+    });
+    return acc;
+  }, {} as Record<string, number>);
+  
   return {
     totalItems: validItems.length,
     categoryBreakdown: categoryCount,
     seasonBreakdown: seasonCount,
-    missingImages: wardrobe.length - validItems.length
+    colorBreakdown: colorCount,
+    missingImages: wardrobe.length - validItems.length,
+    optimizationScore: calculateOptimizationScore(validItems)
   };
 };
 
-// Debug için veri boyutunu hesapla
+/**
+ * Gardrop optimizasyon skoru
+ */
+const calculateOptimizationScore = (wardrobe: ClothingItem[]): number => {
+  if (wardrobe.length === 0) return 0;
+  
+  // Kategori çeşitliliği
+  const categories = new Set(wardrobe.map(item => item.category));
+  const categoryScore = Math.min(categories.size / 10, 1) * 0.3;
+  
+  // Renk çeşitliliği
+  const colors = new Set();
+  wardrobe.forEach(item => {
+    const itemColors = item.colors || [item.color];
+    itemColors.forEach(color => color && colors.add(color));
+  });
+  const colorScore = Math.min(colors.size / 15, 1) * 0.3;
+  
+  // Mevsim dengesi
+  const seasons = ['spring', 'summer', 'fall', 'winter'];
+  const seasonCoverage = seasons.filter(season => 
+    wardrobe.some(item => item.season.includes(season))
+  ).length;
+  const seasonScore = (seasonCoverage / 4) * 0.2;
+  
+  // Stil çeşitliliği - gerçek stil listesine göre
+  const availableStyles = ['classic', 'smart_casual', 'casual', 'bohemian', 'minimalist', 'vintage', 'gothic', 'party', 'sportswear'];
+  const styles = new Set();
+  wardrobe.forEach(item => {
+    const itemStyles = typeof item.style === 'string' 
+      ? item.style.split(',').map(s => s.trim()) 
+      : Array.isArray(item.style) ? item.style : ['casual'];
+    itemStyles.forEach(style => {
+      if (availableStyles.includes(style)) {
+        styles.add(style);
+      }
+    });
+  });
+  const styleScore = Math.min(styles.size / availableStyles.length, 1) * 0.2;
+  
+  return Math.round((categoryScore + colorScore + seasonScore + styleScore) * 100);
+};
+
+/**
+ * Payload boyutunu hesapla
+ */
 export const calculatePayloadSize = (data: any): string => {
   const jsonString = JSON.stringify(data);
   const sizeInBytes = new Blob([jsonString]).size;
@@ -390,5 +435,21 @@ export const calculatePayloadSize = (data: any): string => {
     return `${(sizeInBytes / 1024).toFixed(1)} KB`;
   } else {
     return `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+};
+
+/**
+ * GPT API durumunu kontrol et
+ */
+export const checkGPTStatus = async (): Promise<any> => {
+  try {
+    const token = useApiAuthStore.getState().jwt;
+    const response = await axios.get(`${API_URL}/api/gpt-status`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('GPT status check failed:', error);
+    return { status: 'unknown' };
   }
 };

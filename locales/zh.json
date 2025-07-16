@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "正在重定向..."
+  },
+  "register": {
+    "name": "姓名",
+    "gender": "性别",
+    "birthDate": "出生日期"
   }
 }

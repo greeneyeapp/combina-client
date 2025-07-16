@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "Nagre-redirect..."
+  },
+  "register": {
+    "name": "Pangalan",
+    "gender": "Kasarian",
+    "birthDate": "Araw ng Kapanganakan"
   }
 }

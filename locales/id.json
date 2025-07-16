@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "Mengarahkan..."
+  },
+  "register": {
+    "name": "Nama",
+    "gender": "Jenis Kelamin",
+    "birthDate": "Tanggal Lahir"
   }
 }

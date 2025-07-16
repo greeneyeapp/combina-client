@@ -1,53 +1,95 @@
-// utils/appInitialization.ts - File system based image storage initialization
+// utils/appInitialization.ts - File system tekrarı tamamen düzeltilmiş
 
 import { useClothingStore } from '@/store/clothingStore';
 import { initializeFileSystem, getFileSystemHealth, cleanupOrphanedImages } from '@/utils/fileSystemImageManager';
 
-export const initializeApp = async () => {
-  try {
-    console.log('🚀 Initializing app with file system storage...');
+// Global singleton state
+let isInitializing = false;
+let isInitialized = false;
+let initializationPromise: Promise<any> | null = null;
+let maintenanceScheduled = false;
 
-    // Initialize file system directories
+export const initializeApp = async () => {
+  // Prevent duplicate initialization
+  if (isInitialized) {
+    console.log('📋 App already initialized, skipping...');
+    return { success: true, system: 'file_system_storage', cached: true };
+  }
+
+  if (isInitializing) {
+    console.log('⏳ App initialization in progress, waiting...');
+    return await initializationPromise;
+  }
+
+  isInitializing = true;
+  
+  initializationPromise = performInitialization();
+  
+  try {
+    const result = await initializationPromise;
+    isInitialized = true;
+    return result;
+  } catch (error) {
+    console.error('❌ App initialization failed:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  } finally {
+    isInitializing = false;
+    initializationPromise = null;
+  }
+};
+
+const performInitialization = async () => {
+  try {
+    // File system'i initialize et - fileSystemImageManager'da singleton var
     await initializeFileSystem();
 
-    // File system validation and cleanup
-    setTimeout(async () => {
-      try {
-        const { validateClothingImages, cleanupOrphanedFiles } = useClothingStore.getState();
-        
-        // Validate existing clothing items
-        const result = await validateClothingImages();
-        if (result.updatedCount > 0 || result.removedCount > 0) {
-          console.log(`📊 File system validation: ${result.updatedCount} updated, ${result.removedCount} removed`);
-        } else {
-          console.log('✅ All file system assets validated successfully');
-        }
+    // Maintenance'i SADECE development'ta ve TEK SEFERLIK schedule et
+    if (__DEV__ && !maintenanceScheduled) {
+      scheduleMaintenanceTasks();
+    }
 
-        // Cleanup orphaned files
-        const cleanupResult = await cleanupOrphanedFiles();
-        if (cleanupResult.removedCount > 0) {
-          console.log(`🧹 Cleaned up ${cleanupResult.removedCount} orphaned files, freed ${Math.round(cleanupResult.freedSpace / 1024)} KB`);
-        }
-
-      } catch (error) {
-        console.warn('⚠️ File system validation failed:', error);
-      }
-    }, 1500);
-
-    console.log('✅ App initialization completed with file system storage');
-    
     return {
       success: true,
-      system: 'file_system_storage'
+      system: 'file_system_storage',
+      timestamp: new Date().toISOString()
     };
     
   } catch (error) {
     console.error('❌ App initialization failed:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
+    throw error;
   }
+};
+
+// Schedule maintenance tasks to run only once
+const scheduleMaintenanceTasks = () => {
+  if (maintenanceScheduled) {
+    console.log('📋 Maintenance tasks already scheduled, skipping...');
+    return;
+  }
+
+  maintenanceScheduled = true;
+  
+  // SADECE clothing store validation'ını bekle - diğer validation'lar zaten çalışacak
+  setTimeout(async () => {
+    try {
+      console.log('🔧 Starting scheduled maintenance tasks...');
+      
+      const { cleanupOrphanedFiles } = useClothingStore.getState();
+      
+      // SADECE orphaned files cleanup - clothing validation zaten store'da çalışıyor
+      const cleanupResult = await cleanupOrphanedFiles();
+      if (cleanupResult.removedCount > 0) {
+        console.log(`🧹 Cleaned up ${cleanupResult.removedCount} orphaned files, freed ${Math.round(cleanupResult.freedSpace / 1024)} KB`);
+      } else {
+        console.log('✅ No orphaned files found');
+      }
+
+      console.log('✅ Maintenance tasks completed');
+      
+    } catch (error) {
+      console.warn('⚠️ Maintenance tasks failed:', error);
+    }
+  }, 4000); // 4 saniye delay - store validation'dan sonra
 };
 
 // File system health diagnostics
@@ -203,7 +245,7 @@ export const performFileSystemMaintenance = async (t?: (key: string, options?: a
   const errors: string[] = [];
   
   try {
-    // Reinitialize directories
+    // Reinitialize directories sadece gerekirse
     await initializeFileSystem();
     actions.push(translate('appInit.directoriesReinitialized'));
     
@@ -240,3 +282,15 @@ export const performFileSystemMaintenance = async (t?: (key: string, options?: a
     };
   }
 };
+
+// Reset initialization state (for development/testing)
+export const resetInitializationState = () => {
+  isInitializing = false;
+  isInitialized = false;
+  initializationPromise = null;
+  maintenanceScheduled = false;
+  console.log('🔄 Initialization state reset');
+};
+
+// Check if app is initialized
+export const isAppInitialized = () => isInitialized;

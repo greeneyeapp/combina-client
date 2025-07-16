@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "पुनঃনির্দেশিত করা হচ্ছে..."
+  },
+  "register": {
+    "name": "नाम",
+    "gender": "लिंग",
+    "birthDate": "जन्म तिथि"
   }
 }

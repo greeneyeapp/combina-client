@@ -1,4 +1,4 @@
-// utils/fileSystemImageManager.ts - File system görsel yönetimi
+// utils/fileSystemImageManager.ts - Global singleton pattern ile düzeltilmiş
 
 import * as FileSystem from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
@@ -13,6 +13,10 @@ const THUMBNAILS_DIR = `${WARDROBE_DIR}thumbnails/`;
 const THUMBNAIL_SIZE = 300;
 const THUMBNAIL_QUALITY = 0.8;
 
+// Global initialization flag - bu dosyada da singleton pattern
+let fileSystemInitialized = false;
+let initializationPromise: Promise<void> | null = null;
+
 export interface ImagePaths {
   originalPath: string;
   thumbnailPath: string;
@@ -20,9 +24,39 @@ export interface ImagePaths {
 }
 
 /**
- * File system klasörlerini oluşturur
+ * File system klasörlerini oluşturur (Singleton)
  */
 export const initializeFileSystem = async (): Promise<void> => {
+  // Eğer zaten initialize edilmişse, tekrar etme
+  if (fileSystemInitialized) {
+    console.log('📋 File system already initialized, skipping...');
+    return;
+  }
+
+  // Eğer initialization devam ediyorsa, bekle
+  if (initializationPromise) {
+    console.log('⏳ File system initialization in progress, waiting...');
+    return initializationPromise;
+  }
+
+  // Yeni initialization başlat
+  initializationPromise = performFileSystemInitialization();
+  
+  try {
+    await initializationPromise;
+    fileSystemInitialized = true;
+  } catch (error) {
+    console.error('❌ File system initialization failed:', error);
+    throw error;
+  } finally {
+    initializationPromise = null;
+  }
+};
+
+/**
+ * Gerçek file system initialization işlemi
+ */
+const performFileSystemInitialization = async (): Promise<void> => {
   try {
     // Ana wardrobe klasörü
     const wardrobeInfo = await FileSystem.getInfoAsync(WARDROBE_DIR);
@@ -54,6 +88,7 @@ export const initializeFileSystem = async (): Promise<void> => {
  */
 export const saveImageFromGallery = async (asset: MediaLibrary.Asset): Promise<ImagePaths> => {
   try {
+    // File system'in hazır olduğundan emin ol
     await initializeFileSystem();
 
     const fileName = `item_${generateUniqueId()}`;
@@ -102,6 +137,7 @@ export const saveImageFromGallery = async (asset: MediaLibrary.Asset): Promise<I
  */
 export const saveImageFromCamera = async (imageUri: string): Promise<ImagePaths> => {
   try {
+    // File system'in hazır olduğundan emin ol
     await initializeFileSystem();
 
     const fileName = `item_${generateUniqueId()}`;
@@ -275,7 +311,9 @@ export const cleanupOrphanedImages = async (usedFileNames: string[]): Promise<{
       }
     }
 
-    console.log(`🧹 Cleaned up ${removedCount} orphaned files, freed ${Math.round(freedSpace / 1024)} KB`);
+    if (removedCount > 0) {
+      console.log(`🧹 Cleaned up ${removedCount} orphaned files, freed ${Math.round(freedSpace / 1024)} KB`);
+    }
 
     return { removedCount, freedSpace };
   } catch (error) {
@@ -343,4 +381,20 @@ export const getFileSystemHealth = async (): Promise<{
       issues: ['Failed to perform health check']
     };
   }
+};
+
+/**
+ * Development utility - file system state'ini reset et
+ */
+export const resetFileSystemInitialization = (): void => {
+  fileSystemInitialized = false;
+  initializationPromise = null;
+  console.log('🔄 File system initialization state reset');
+};
+
+/**
+ * File system'in initialize edilip edilmediğini kontrol et
+ */
+export const isFileSystemInitialized = (): boolean => {
+  return fileSystemInitialized;
 };

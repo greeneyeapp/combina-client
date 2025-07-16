@@ -1,4 +1,4 @@
-// app/_layout.tsx - File system based image storage + Cache Manager
+// app/_layout.tsx - Son düzeltilmiş versiyon - tüm tekrarları önler
 
 import React, { useEffect } from 'react';
 import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
@@ -17,11 +17,15 @@ import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
-import { initializeApp } from '@/utils/appInitialization';
-import { initializeCaches, validateAndCleanCaches } from '@/utils/cacheManager';
-import { RevenueCatProvider } from '@/context/RevenueCatContext'; // YENİ IMPORT
+import { initializeApp, resetInitializationState } from '@/utils/appInitialization';
+import { initializeCaches, validateAndCleanCaches, resetCacheManager } from '@/utils/cacheManager';
+import { RevenueCatProvider } from '@/context/RevenueCatContext';
 
 SplashScreen.preventAutoHideAsync();
+
+// Singleton initialization state
+let layoutInitialized = false;
+let layoutInitializationPromise: Promise<void> | null = null;
 
 function useProtectedRouter() {
   const { user, loading: authLoading, isAuthFlowActive } = useAuth();
@@ -101,6 +105,114 @@ function RootLayoutNav(): React.JSX.Element | null {
   );
 }
 
+// Singleton initialization function
+const initializeAppServicesOnce = async (): Promise<void> => {
+  if (layoutInitialized) {
+    console.log('📋 Layout services already initialized, skipping...');
+    return;
+  }
+
+  if (layoutInitializationPromise) {
+    console.log('⏳ Layout initialization in progress, waiting...');
+    return layoutInitializationPromise;
+  }
+
+  layoutInitializationPromise = performLayoutInitialization();
+  
+  try {
+    await layoutInitializationPromise;
+    layoutInitialized = true;
+  } catch (error) {
+    console.error('❌ Layout initialization failed:', error);
+    layoutInitialized = false;
+  } finally {
+    layoutInitializationPromise = null;
+  }
+};
+
+const performLayoutInitialization = async (): Promise<void> => {
+  console.log('🚀 Starting app initialization...');
+
+  // Translation fallback
+  const t = (key: string, options?: any) => {
+    const translations: Record<string, string> = {
+      'cacheManager.recommendations.performingWell': 'File system is performing well',
+      'cacheManager.recommendations.needsAttention': 'File system needs attention',
+      'cacheManager.recommendations.highStorageUsage': 'High storage usage - consider cleanup',
+      'cacheManager.recommendations.cacheOptimal': 'File system cache is optimal',
+      'cacheManager.analytics.failed': 'Analytics failed - check logs',
+      'cacheManager.validationFailed': 'Cache validation failed',
+      'cacheManager.checkLogs': 'Check logs for details'
+    };
+    return translations[key] || key;
+  };
+
+  try {
+    // 1. Session management (silent)
+    const CURRENT_SESSION_KEY = 'current_session';
+    const currentSession = Date.now().toString();
+    const lastSession = await AsyncStorage.getItem(CURRENT_SESSION_KEY);
+
+    if (lastSession && Math.abs(Date.now() - parseInt(lastSession)) > 7 * 24 * 60 * 60 * 1000) {
+      console.log('🔄 Fresh start detected, will cleanup later...');
+    }
+    await AsyncStorage.setItem(CURRENT_SESSION_KEY, currentSession);
+
+    // 2. Language setup
+    const savedLanguage = await AsyncStorage.getItem('app_language');
+    if (savedLanguage) {
+      await i18n.changeLanguage(savedLanguage);
+    } else {
+      const supportedLanguages = [
+        'ar', 'bg', 'de', 'el', 'en', 'es', 'fr', 'he', 'hi',
+        'id', 'it', 'ja', 'ko', 'pt', 'ru', 'tl', 'tr', 'zh'
+      ];
+      const deviceLanguageCode = Localization.getLocales()[0]?.languageCode ?? 'en';
+      const finalLanguage = supportedLanguages.includes(deviceLanguageCode)
+        ? deviceLanguageCode
+        : 'en';
+      await i18n.changeLanguage(finalLanguage);
+      await AsyncStorage.setItem('app_language', finalLanguage);
+    }
+    console.log('✅ Language setup completed');
+
+    // 3. RevenueCat (one-time setup)
+    const apiKey = Platform.select({
+      ios: 'appl_DuXXAykkepzomdHesCIharljFmd',
+      android: 'goog_PDkLWblJUhcgbNKkgItuNKXvkZh'
+    });
+    if (apiKey) {
+      await Purchases.configure({ apiKey });
+      console.log(`✅ RevenueCat initialized successfully for ${Platform.OS}`);
+    }
+
+    // 4. File system initialization (one-time setup)
+    await initializeApp();
+    console.log('✅ File system initialization completed');
+
+    // 5. Cache manager (one-time setup)
+    initializeCaches();
+
+    console.log('✅ All app services initialized successfully');
+
+    // 6. Development cache check (delayed, one-time)
+    if (__DEV__) {
+      setTimeout(async () => {
+        try {
+          const stats = await validateAndCleanCaches(t);
+          console.log('📊 Initial file system stats:', stats.recommendations);
+        } catch (error) {
+          console.warn('⚠️ Initial cache validation failed:', error);
+        }
+      }, 5000); // 5 second delay
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to initialize app services:', error);
+    throw error;
+  }
+};
+
 export default function RootLayout(): React.JSX.Element {
   const toastConfig: Record<string, (props: BaseToastProps) => React.JSX.Element> = {
     success: (props) => <CustomToast {...props} type="success" />,
@@ -109,121 +221,15 @@ export default function RootLayout(): React.JSX.Element {
   };
 
   useEffect(() => {
-    let cacheMonitorCleanup: (() => void) | undefined;
-
-    const initializeAppServices = async () => {
-      try {
-        console.log('🚀 Starting app initialization...');
-
-        // Simple translation fallback for layout context
-        const t = (key: string, options?: any) => {
-          // Fallback translation for cache manager in layout
-          const translations: Record<string, string> = {
-            'cacheManager.recommendations.performingWell': 'File system is performing well',
-            'cacheManager.recommendations.needsAttention': 'File system needs attention',
-            'cacheManager.recommendations.highStorageUsage': 'High storage usage - consider cleanup',
-            'cacheManager.recommendations.cacheOptimal': 'File system cache is optimal',
-            'cacheManager.analytics.failed': 'Analytics failed - check logs'
-          };
-          return translations[key] || key;
-        };
-
-        // 1. App restart check (simplified)
-        const CURRENT_SESSION_KEY = 'current_session';
-        const currentSession = Date.now().toString();
-        const lastSession = await AsyncStorage.getItem(CURRENT_SESSION_KEY);
-
-        if (lastSession && Math.abs(Date.now() - parseInt(lastSession)) > 7 * 24 * 60 * 60 * 1000) {
-          console.log('🔄 Fresh start detected, reinitializing...');
-          // File system cache'ini temizle fresh start'ta
-          const cacheStats = await validateAndCleanCaches(t);
-          console.log('🧹 Fresh start cleanup:', cacheStats.recommendations);
-        }
-
-        await AsyncStorage.setItem(CURRENT_SESSION_KEY, currentSession);
-
-        // 2. Language setup
-        const langPromise = (async () => {
-          const savedLanguage = await AsyncStorage.getItem('app_language');
-          if (savedLanguage) {
-            await i18n.changeLanguage(savedLanguage);
-          } else {
-            const supportedLanguages = [
-              'ar', 'bg', 'de', 'el', 'en', 'es', 'fr', 'he', 'hi',
-              'id', 'it', 'ja', 'ko', 'pt', 'ru', 'tl', 'tr', 'zh'
-            ];
-            const deviceLanguageCode = Localization.getLocales()[0]?.languageCode ?? 'en';
-            const finalLanguage = supportedLanguages.includes(deviceLanguageCode)
-              ? deviceLanguageCode
-              : 'en';
-            await i18n.changeLanguage(finalLanguage);
-            await AsyncStorage.setItem('app_language', finalLanguage);
-          }
-        })();
-
-        // 3. RevenueCat configuration
-        const purchasesPromise = (async () => {
-          const apiKey = Platform.select({
-            ios: 'appl_DuXXAykkepzomdHesCIharljFmd',
-            android: 'goog_PDkLWblJUhcgbNKkgItuNKXvkZh'
-          });
-          if (apiKey) {
-            await Purchases.configure({ apiKey });
-            console.log(`✅ RevenueCat initialized successfully for ${Platform.OS}`);
-          }
-        })();
-
-        // 4. File system based image storage initialization
-        const appInitPromise = initializeApp();
-
-        // 5. File system cache manager initialization
-        const cacheInitPromise = (async () => {
-          console.log('🗄️ Initializing file system cache manager...');
-          cacheMonitorCleanup = initializeCaches();
-
-          // Development'ta cache durumunu log'la
-          if (__DEV__) {
-            setTimeout(async () => {
-              const stats = await validateAndCleanCaches(t);
-              console.log('📊 Initial file system stats:', stats.recommendations);
-            }, 2000);
-          }
-
-          console.log('✅ File system cache manager initialized');
-        })();
-
-        // Tüm servisleri paralel olarak başlat
-        await Promise.all([langPromise, purchasesPromise, appInitPromise, cacheInitPromise]);
-
-        console.log('✅ All app services initialized successfully');
-
-        // Development'ta periodic cache validation
-        if (__DEV__) {
-          const validationInterval = setInterval(async () => {
-            await validateAndCleanCaches(t);
-          }, 5 * 60 * 1000); // Her 5 dakikada bir
-
-          // Cleanup function'a ekle
-          const originalCleanup = cacheMonitorCleanup;
-          cacheMonitorCleanup = () => {
-            originalCleanup?.();
-            clearInterval(validationInterval);
-          };
-        }
-
-      } catch (error) {
-        console.error('❌ Failed to initialize app services:', error);
-      }
-    };
-
-    initializeAppServices();
+    // Single initialization call
+    initializeAppServicesOnce();
 
     // Cleanup function
     return () => {
-      console.log('🧹 Cleaning up app services...');
-      cacheMonitorCleanup?.();
+      // Only cleanup on actual unmount, not re-renders
+      console.log('🧹 Layout cleanup registered');
     };
-  }, []);
+  }, []); // Empty dependency array - truly run once
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -247,3 +253,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+// Development utilities
+if (__DEV__) {
+  (global as any).resetAllInitialization = () => {
+    layoutInitialized = false;
+    layoutInitializationPromise = null;
+    resetInitializationState();
+    resetCacheManager();
+    console.log('🔄 All initialization state reset');
+  };
+}

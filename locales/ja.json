@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "リダイレクトしています..."
+  },
+  "register": {
+    "name": "名前",
+    "gender": "性別",
+    "birthDate": "生年月日"
   }
 }

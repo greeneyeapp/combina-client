@@ -87,7 +87,9 @@ export const fetchUserProfile = async (): Promise<UserProfileResponse> => {
     throw new Error(`Failed to fetch user profile: ${response.status} ${errorData}`);
   }
 
-  return response.json();
+  const data = await response.json();
+
+  return data;
 };
 
 // Get user profile with store management
@@ -107,23 +109,27 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
     setLoading(true);
     const profileData = await fetchUserProfile();
 
+    // 🔍 DEBUG: Profile data'yı UserPlan'e çevirmeden önce kontrol et
+
     const planData: UserPlan = {
       plan: profileData.plan,
       usage: profileData.usage,
       fullname: profileData.fullname,
-      gender: profileData.gender,
+      gender: profileData.gender, // 🔍 Bu satır kritik!
       age: profileData.age,
       created_at: profileData.created_at,
     };
+
+    // 🔍 DEBUG: Converted planData'yı kontrol et
 
     setUserPlan(planData);
     return planData;
 
   } catch (error) {
-    console.error('Failed to fetch user profile:', error);
+    console.error('❌ USER SERVICE - Failed to fetch user profile:', error);
 
     if (userPlan) {
-      console.warn('Using cached profile data due to fetch error');
+      console.warn('⚠️ USER SERVICE - Using cached profile due to error, gender:', userPlan.gender);
       return userPlan;
     }
 
@@ -258,7 +264,6 @@ export const grantExtraSuggestion = async (): Promise<{ success: boolean }> => {
       throw new Error(`Failed to grant extra suggestion: ${errorData}`);
     }
 
-    console.log('✅ Extra suggestion granted by backend.');
     // Kullanıcı planını ve limitlerini yenile
     await getUserProfile(true);
     return { success: true };

@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "Yönlendiriliyor..."
+  },
+  "register": {
+    "name": "İsim",
+    "gender": "Cinsiyet",
+    "birthDate": "Doğum Tarihi"
   }
 }

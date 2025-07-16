@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "리디렉션 중..."
+  },
+  "register": {
+    "name": "이름",
+    "gender": "성별",
+    "birthDate": "생년월일"
   }
 }

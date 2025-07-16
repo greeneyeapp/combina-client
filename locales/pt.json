@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "Redirecionando..."
+  },
+  "register": {
+    "name": "Nome",
+    "gender": "Gênero",
+    "birthDate": "Data de Nascimento"
   }
 }

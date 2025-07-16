@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "מפנה..."
+  },
+  "register": {
+    "name": "שם",
+    "gender": "מין",
+    "birthDate": "תאריך לידה"
   }
 }

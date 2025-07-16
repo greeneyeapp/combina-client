@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "جاري إعادة التوجيه..."
+  },
+  "register": {
+    "name": "الاسم",
+    "gender": "الجنس",
+    "birthDate": "تاريخ الميلاد"
   }
 }

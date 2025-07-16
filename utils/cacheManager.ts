@@ -1,4 +1,4 @@
-// utils/cacheManager.ts - Translation düzeltmesi
+// utils/cacheManager.ts - Düzeltilmiş ve optimize edilmiş versiyon
 
 import * as FileSystem from 'expo-file-system';
 import { getFileSystemHealth, cleanupOrphanedImages } from '@/utils/fileSystemImageManager';
@@ -25,14 +25,23 @@ const DEFAULT_CONFIG: CacheConfig = {
   autoCleanup: true
 };
 
+// Global state to prevent duplicate initialization
 let cleanupTimer: NodeJS.Timeout | null = null;
 let isCleanupRunning = false;
+let isCacheManagerInitialized = false;
 
 /**
  * Initialize file system cache monitoring
  */
 export const initializeCaches = (t?: (key: string, options?: any) => string): (() => void) => {
+  // Prevent duplicate initialization
+  if (isCacheManagerInitialized) {
+    console.log('📋 Cache manager already initialized, skipping...');
+    return () => {}; // Return empty cleanup function
+  }
+
   console.log('🗄️ Initializing file system cache manager...');
+  isCacheManagerInitialized = true;
   
   // Start periodic cleanup if enabled
   if (DEFAULT_CONFIG.autoCleanup) {
@@ -41,20 +50,18 @@ export const initializeCaches = (t?: (key: string, options?: any) => string): ((
   
   // Return cleanup function
   return () => {
-    if (cleanupTimer) {
-      clearInterval(cleanupTimer);
-      cleanupTimer = null;
-    }
-    console.log('🧹 Cache manager cleanup completed');
+    cleanupCacheManager();
   };
 };
 
 /**
  * Start periodic cache monitoring
  */
-export const startCacheMonitor = (): void => {
+const startCacheMonitor = (): void => {
+  // Prevent duplicate timers
   if (cleanupTimer) {
-    clearInterval(cleanupTimer);
+    console.log('📋 Cache monitor already running, skipping...');
+    return;
   }
   
   cleanupTimer = setInterval(async () => {
@@ -64,6 +71,18 @@ export const startCacheMonitor = (): void => {
   }, DEFAULT_CONFIG.cleanupInterval);
   
   console.log('📊 Cache monitor started - will run every 24 hours');
+};
+
+/**
+ * Cleanup cache manager resources
+ */
+const cleanupCacheManager = (): void => {
+  if (cleanupTimer) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+  }
+  isCacheManagerInitialized = false;
+  console.log('🧹 Cache manager cleanup completed');
 };
 
 /**
@@ -152,7 +171,7 @@ const performScheduledCleanup = async (): Promise<void> => {
   console.log('🧹 Starting scheduled cache cleanup...');
   
   try {
-    const { clothing, cleanupOrphanedFiles } = useClothingStore.getState();
+    const { cleanupOrphanedFiles } = useClothingStore.getState();
     
     // Get current file system health
     const health = await getFileSystemHealth();
@@ -336,4 +355,12 @@ export const forceCacheCleanup = async (t: (key: string, options?: any) => strin
       errors
     };
   }
+};
+
+/**
+ * Reset cache manager state (for development/testing)
+ */
+export const resetCacheManager = (): void => {
+  cleanupCacheManager();
+  console.log('🔄 Cache manager state reset');
 };

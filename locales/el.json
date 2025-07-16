@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "Ανακατεύθυνση..."
+  },
+  "register": {
+    "name": "Όνομα",
+    "gender": "Φύλο",
+    "birthDate": "Ημερομηνία Γέννησης"
   }
 }

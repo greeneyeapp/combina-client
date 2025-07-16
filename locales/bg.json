@@ -746,5 +746,10 @@
   },
   "navigation": {
     "redirecting": "Пренасочване..."
+  },
+  "register": {
+    "name": "Име",
+    "gender": "Пол",
+    "birthDate": "Дата на раждане"
   }
 }

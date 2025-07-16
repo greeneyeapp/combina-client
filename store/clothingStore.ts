@@ -1,4 +1,4 @@
-// store/clothingStore.ts - File system based image storage
+// store/clothingStore.ts - Tekrarları önlenmiş file system based image storage
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -42,6 +42,10 @@ interface ClothingState {
   setValidating: (validating: boolean) => void;
   cleanupOrphanedFiles: () => Promise<{ removedCount: number; freedSpace: number }>;
 }
+
+// Global validation flag to prevent multiple simultaneous validations
+let isGlobalValidationRunning = false;
+let validationExecuted = false;
 
 // File system validation function
 const validateFileSystemAssets = async (): Promise<{ 
@@ -176,6 +180,10 @@ export const useClothingStore = create<ClothingState>()(
           clothing: [],
           isValidated: false
         });
+
+        // Reset global validation flags
+        isGlobalValidationRunning = false;
+        validationExecuted = false;
       },
 
       setValidated: (validated) => set({ isValidated: validated }),
@@ -183,8 +191,16 @@ export const useClothingStore = create<ClothingState>()(
 
       validateClothingImages: async () => {
         const { isValidated, isValidating } = get();
-        if (isValidated || isValidating) return { updatedCount: 0, removedCount: 0 };
+        
+        // Multiple prevention checks
+        if (isValidated || isValidating || isGlobalValidationRunning || validationExecuted) {
+          console.log('📋 File system validation already completed or in progress, skipping...');
+          return { updatedCount: 0, removedCount: 0 };
+        }
 
+        console.log('🔄 Starting file system validation...');
+        isGlobalValidationRunning = true;
+        validationExecuted = true;
         set({ isValidating: true });
         
         try {
@@ -195,6 +211,8 @@ export const useClothingStore = create<ClothingState>()(
           console.error('❌ Error validating images:', error);
           set({ isValidating: false });
           return { updatedCount: 0, removedCount: 0 };
+        } finally {
+          isGlobalValidationRunning = false;
         }
       },
 
@@ -221,15 +239,38 @@ export const useClothingStore = create<ClothingState>()(
       storage: createJSONStorage(() => simpleStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
+          // Reset validation state on rehydration
           state.isValidated = false;
           state.isValidating = false;
 
-          // File system validation
-          setTimeout(() => {
-            state.validateClothingImages();
-          }, 1000);
+          // Single validation with multiple safety checks
+          if (!validationExecuted && !isGlobalValidationRunning) {
+            console.log('📋 Scheduling file system validation after rehydration...');
+            
+            setTimeout(() => {
+              // Final safety check before validation
+              if (!validationExecuted && !isGlobalValidationRunning && !state.isValidated && !state.isValidating) {
+                console.log('🔄 Executing scheduled file system validation...');
+                state.validateClothingImages();
+              } else {
+                console.log('📋 File system validation already handled, skipping scheduled validation');
+              }
+            }, 2000); // 2 second delay to ensure everything is loaded
+          }
         }
       }
     }
   )
 );
+
+// Development utility to reset validation state
+if (__DEV__) {
+  (global as any).resetClothingValidation = () => {
+    const store = useClothingStore.getState();
+    store.setValidated(false);
+    store.setValidating(false);
+    isGlobalValidationRunning = false;
+    validationExecuted = false;
+    console.log('🔄 Clothing validation state reset');
+  };
+}

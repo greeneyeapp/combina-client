@@ -51,10 +51,13 @@ export const useUserPlanStore = create<UserPlanState>()(
       loading: false,
       lastFetched: null,
 
-      setUserPlan: (plan) => set({
-        userPlan: plan,
-        lastFetched: new Date().toISOString()
-      }),
+      setUserPlan: (plan) => {
+
+        set({
+          userPlan: plan,
+          lastFetched: new Date().toISOString()
+        });
+      },
 
       updateUsage: (usage) => set((state) => ({
         userPlan: state.userPlan ? { ...state.userPlan, usage } : null

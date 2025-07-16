@@ -1,4 +1,4 @@
-// components/wardrobe/FilterModal.tsx - GENDERED_CATEGORY_HIERARCHY ile güncellenmiş ve desenler için Image kullanıldı
+// components/wardrobe/FilterModal.tsx - Debug versiyonu
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
@@ -38,10 +38,10 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
   const [expandedSection, setExpandedSection] = useState<string | null>('category');
 
   const categoryHierarchy = useMemo(() => {
+    
     if (gender === 'male') {
       return GENDERED_CATEGORY_HIERARCHY.male;
     } else if (gender === 'unisex') {
-      // Unisex için her iki cinsiyetin kategorilerini birleştir
       const maleCategories = GENDERED_CATEGORY_HIERARCHY.male;
       const femaleCategories = GENDERED_CATEGORY_HIERARCHY.female;
       const merged: Record<string, string[]> = {};
@@ -68,7 +68,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApply, 
       
       return merged;
     }
-    // Default olarak female kategorilerini kullan
+    
     return GENDERED_CATEGORY_HIERARCHY.female;
   }, [gender]);
 
@@ -267,6 +267,11 @@ const styles = StyleSheet.create({
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   modalTitle: { fontFamily: 'Montserrat-Bold', fontSize: 22 },
   closeButton: { padding: 5 },
+  
+  // DEBUG CONTAINER
+  debugContainer: { padding: 8, borderRadius: 8, marginBottom: 10 },
+  debugText: { fontSize: 12, fontFamily: 'Montserrat-Regular' },
+  
   sectionContainer: { borderBottomWidth: 1, borderBottomColor: '#eee' },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 18 },

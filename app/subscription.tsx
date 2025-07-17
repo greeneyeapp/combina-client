@@ -1,4 +1,4 @@
-// app/(tabs)/profile/subscription.tsx - Restore purchases düzeltilmiş kod
+// app/subscription.tsx - Donma sorunları ve "Aboneliği Yönet" butonu düzeltilmiş kod
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Linking } from 'react-native';
@@ -16,16 +16,8 @@ import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
 import { useRevenueCat } from '@/context/RevenueCatContext';
 
-// Restore Purchases için ek import
-import { restorePurchases } from '@/services/purchaseService';
-
-// Çeviri dosyasındaki ikon isimlerini gerçek bileşenlerle eşleştirir
 const IconMap: { [key: string]: React.ElementType } = {
-  Shirt,
-  TrendingUp,
-  Sparkles,
-  Heart,
-  ShieldX,
+  Shirt, TrendingUp, Sparkles, Heart, ShieldX
 };
 
 const getPackageIdentifier = (pkg: PurchasesPackage): 'premium_monthly' | 'premium_annual' | null => {
@@ -50,39 +42,21 @@ const mapEntitlementsToDetailedPlan = (entitlements: any): {
   if (!entitlements?.premium_access?.isActive) {
     return { plan: 'free', type: null, productIdentifier: null };
   }
-
   const productId = entitlements.premium_access.productIdentifier?.toLowerCase() || '';
-
   if (productId.includes('annual') || productId.includes('yearly')) {
-    return {
-      plan: 'premium',
-      type: 'yearly',
-      productIdentifier: entitlements.premium_access.productIdentifier
-    };
+    return { plan: 'premium', type: 'yearly', productIdentifier: entitlements.premium_access.productIdentifier };
   } else if (productId.includes('monthly')) {
-    return {
-      plan: 'premium',
-      type: 'monthly',
-      productIdentifier: entitlements.premium_access.productIdentifier
-    };
+    return { plan: 'premium', type: 'monthly', productIdentifier: entitlements.premium_access.productIdentifier };
   }
-
-  return {
-    plan: 'premium',
-    type: 'monthly',
-    productIdentifier: entitlements.premium_access.productIdentifier
-  };
+  return { plan: 'premium', type: 'monthly', productIdentifier: entitlements.premium_access.productIdentifier };
 };
 
 export default function SubscriptionScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { show: showAlert } = useAlertStore();
-
-  // RevenueCat context'inden refresh fonksiyonunu da al
   const { customerInfo, isLoading: isRevenueCatLoading, currentPlan, refreshCustomerInfo } = useRevenueCat();
   const currentPlanInfo = customerInfo ? mapEntitlementsToDetailedPlan(customerInfo.entitlements.active) : { plan: 'free' as const, type: null, productIdentifier: null };
-
   const [isYearly, setIsYearly] = useState(true);
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,7 +76,6 @@ export default function SubscriptionScreen() {
         setLoading(false);
       }
     };
-
     loadOfferings();
   }, []);
 
@@ -110,21 +83,14 @@ export default function SubscriptionScreen() {
     setPurchasingId(packageToPurchase.identifier);
     try {
       await Purchases.purchasePackage(packageToPurchase);
-
-      // Satın alma sonrası context'i yenile
       await refreshCustomerInfo();
-
-      const successMessage = isUpgrade
-        ? t('subscription.upgradeSuccessMessage')
-        : t('subscription.purchaseSuccessMessage');
-
+      const successMessage = isUpgrade ? t('subscription.upgradeSuccessMessage') : t('subscription.purchaseSuccessMessage');
       Toast.show({
         type: 'success',
         text1: t('subscription.purchaseSuccessTitle'),
         text2: successMessage
       });
       router.back();
-
     } catch (error: any) {
       if (!error.userCancelled) {
         showAlert({
@@ -138,10 +104,17 @@ export default function SubscriptionScreen() {
     }
   };
 
+  const manageSubscriptionInStore = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+    } else {
+      Linking.openURL('https://play.google.com/store/account/subscriptions');
+    }
+  };
+
   const handlePurchase = async (packageToPurchase: PurchasesPackage) => {
     const newPackageType = getPackageType(packageToPurchase);
 
-    // 1. Aynı plana tekrar abone olmasını engelle
     if (currentPlanInfo.plan === 'premium' && currentPlanInfo.type === newPackageType) {
       showAlert({
         title: t('subscription.alreadySubscribedTitle'),
@@ -151,29 +124,18 @@ export default function SubscriptionScreen() {
       return;
     }
 
-    // 2. Yıllıktan aylığa düşüşü engelle (App Store üzerinden yapılmalı)
     if (currentPlanInfo.type === 'yearly' && newPackageType === 'monthly') {
       showAlert({
         title: t('subscription.downgradeTitle'),
         message: t('subscription.downgradeMessage'),
         buttons: [
           { text: t('common.cancel'), variant: 'outline' },
-          {
-            text: t('subscription.manageSubscription'),
-            onPress: () => {
-              if (Platform.OS === 'ios') {
-                Linking.openURL('https://apps.apple.com/account/subscriptions');
-              } else {
-                Linking.openURL('https://play.google.com/store/account/subscriptions');
-              }
-            }
-          }
+          { text: t('subscription.manageSubscription'), onPress: manageSubscriptionInStore }
         ]
       });
       return;
     }
 
-    // 3. Aylıktan yıllığa yükseltme onayı
     const isUpgrade = currentPlanInfo.type === 'monthly' && newPackageType === 'yearly';
     if (isUpgrade) {
       showAlert({
@@ -181,16 +143,11 @@ export default function SubscriptionScreen() {
         message: t('subscription.upgradeConfirmMessage'),
         buttons: [
           { text: t('common.cancel'), variant: 'outline' },
-          {
-            text: t('subscription.confirmUpgrade'),
-            onPress: () => proceedWithPurchase(packageToPurchase, true)
-          }
+          { text: t('subscription.confirmUpgrade'), onPress: () => proceedWithPurchase(packageToPurchase, true) }
         ]
       });
       return;
     }
-
-    // 4. Standart yeni satın alma
     proceedWithPurchase(packageToPurchase, false);
   };
 
@@ -219,7 +176,6 @@ export default function SubscriptionScreen() {
 
   const renderCurrentFreePlanInfo = () => {
     if (currentPlan !== 'free') return null;
-
     const freeFeatures = t('subscription.free.features', { returnObjects: true }) as string[];
 
     return (
@@ -243,10 +199,8 @@ export default function SubscriptionScreen() {
 
   const getYearlySavings = () => {
     if (!offerings) return 0;
-
     const yearlyPackage = offerings.availablePackages.find(p => getPackageIdentifier(p) === 'premium_annual');
     const monthlyPackage = offerings.availablePackages.find(p => getPackageIdentifier(p) === 'premium_monthly');
-
     if (yearlyPackage && monthlyPackage) {
       const yearlyPrice = yearlyPackage.product.price;
       const totalMonthlyPrice = monthlyPackage.product.price * 12;
@@ -273,7 +227,6 @@ export default function SubscriptionScreen() {
             {t('subscription.monthly')}
           </Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={[styles.toggleOption, isYearly && { backgroundColor: theme.colors.primary }]}
           onPress={() => setIsYearly(true)}
@@ -290,14 +243,14 @@ export default function SubscriptionScreen() {
       </View>
     );
   };
-
-  const getButtonState = (packageType: 'monthly' | 'yearly') => {
+    const getButtonState = (packageType: 'monthly' | 'yearly') => {
     if (currentPlanInfo.plan === 'free') {
       return {
         label: t('subscription.startPlan', { plan: t(`subscription.${packageType}`) }),
         variant: 'primary' as const,
         disabled: false,
-        icon: null
+        icon: null,
+        onPressAction: (pkg: PurchasesPackage) => handlePurchase(pkg),
       };
     }
 
@@ -306,7 +259,8 @@ export default function SubscriptionScreen() {
         label: t('subscription.currentPlan'),
         variant: 'outline' as const,
         disabled: true,
-        icon: <CheckCircle2 size={16} color={theme.colors.success} />
+        icon: <CheckCircle2 size={16} color={theme.colors.success} />,
+        onPressAction: () => {},
       };
     }
 
@@ -315,7 +269,8 @@ export default function SubscriptionScreen() {
         label: t('subscription.upgradeToYearly'),
         variant: 'primary' as const,
         disabled: false,
-        icon: <TrendingUp size={16} color="#FFFFFF" />
+        icon: <TrendingUp size={16} color="#FFFFFF" />,
+        onPressAction: (pkg: PurchasesPackage) => handlePurchase(pkg),
       };
     }
 
@@ -324,7 +279,8 @@ export default function SubscriptionScreen() {
         label: t('subscription.manageInAppStore'),
         variant: 'outline' as const,
         disabled: false,
-        icon: <ExternalLink size={16} color={theme.colors.primary} />
+        icon: <ExternalLink size={16} color={theme.colors.primary} />,
+        onPressAction: () => manageSubscriptionInStore(),
       };
     }
 
@@ -332,18 +288,17 @@ export default function SubscriptionScreen() {
       label: t('subscription.selectPlan'),
       variant: 'primary' as const,
       disabled: false,
-      icon: null
+      icon: null,
+      onPressAction: (pkg: PurchasesPackage) => handlePurchase(pkg),
     };
   };
 
   const renderSelectedPlan = () => {
     if (!offerings) return null;
-
     const selectedPackage = offerings.availablePackages.find(p => {
       const id = getPackageIdentifier(p);
       return isYearly ? id === 'premium_annual' : id === 'premium_monthly';
     });
-
     if (!selectedPackage) return null;
 
     const isLoading = purchasingId === selectedPackage.identifier;
@@ -354,42 +309,20 @@ export default function SubscriptionScreen() {
 
     return (
       <View style={[styles.planCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.primary }]}>
-        <LinearGradient
-          colors={['#FFD700', '#FFA500']}
-          style={styles.premiumBadge}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-        >
+        <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.premiumBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
           <Crown size={16} color="#FFFFFF" />
           <Text style={styles.premiumBadgeText}>{t('subscription.premium')}</Text>
         </LinearGradient>
-
         <View style={styles.priceSection}>
           <View style={styles.priceRow}>
-            <Text style={[styles.price, { color: theme.colors.text }]}>
-              {selectedPackage.product.priceString}
-            </Text>
-            <Text style={[styles.priceUnit, { color: theme.colors.textLight }]}>
-              /{isYearly ? t('subscription.year') : t('subscription.month')}
-            </Text>
+            <Text style={[styles.price, { color: theme.colors.text }]}>{selectedPackage.product.priceString}</Text>
+            <Text style={[styles.priceUnit, { color: theme.colors.textLight }]}>/{isYearly ? t('subscription.year') : t('subscription.month')}</Text>
           </View>
-
-          {isYearly && savingsPercentage > 0 && (
-            <Text style={[styles.priceSubtext, { color: theme.colors.success }]}>
-              {t('subscription.savePercent', { percent: savingsPercentage })} {t('subscription.comparedToMonthly')}
-            </Text>
-          )}
-
-          {!isYearly && (
-            <Text style={[styles.priceSubtext, { color: theme.colors.textLight }]}>
-              {t('subscription.billedMonthly')}
-            </Text>
-          )}
+          {isYearly && savingsPercentage > 0 && <Text style={[styles.priceSubtext, { color: theme.colors.success }]}>{t('subscription.savePercent', { percent: savingsPercentage })} {t('subscription.comparedToMonthly')}</Text>}
+          {!isYearly && <Text style={[styles.priceSubtext, { color: theme.colors.textLight }]}>{t('subscription.billedMonthly')}</Text>}
         </View>
-
         <View style={styles.featuresContainer}>
-          <Text style={[styles.featuresTitle, { color: theme.colors.text }]}>
-            {t('subscription.whatsIncluded')}
-          </Text>
+          <Text style={[styles.featuresTitle, { color: theme.colors.text }]}>{t('subscription.whatsIncluded')}</Text>
           {premiumFeatures.map((feature, index) => {
             const IconComponent = IconMap[feature.icon];
             return (
@@ -400,10 +333,9 @@ export default function SubscriptionScreen() {
             );
           })}
         </View>
-
         <Button
           label={isLoading ? t('subscription.processing') : buttonState.label}
-          onPress={() => handlePurchase(selectedPackage)}
+          onPress={() => buttonState.onPressAction(selectedPackage)}
           variant={buttonState.variant}
           style={styles.planButton}
           disabled={buttonState.disabled || isLoading}
@@ -423,7 +355,6 @@ export default function SubscriptionScreen() {
         </View>
       );
     }
-
     if (!offerings) {
       return (
         <View style={styles.centeredContainer}>
@@ -431,22 +362,15 @@ export default function SubscriptionScreen() {
         </View>
       );
     }
-
     return (
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderCurrentSubscriptionStatus()}
         {renderCurrentFreePlanInfo()}
-
         <View style={styles.heroSection}>
           <Crown color="#FFD700" size={32} />
-          <Text style={[styles.heroTitle, { color: theme.colors.text }]}>
-            {t('subscription.premiumHeroTitle')}
-          </Text>
-          <Text style={[styles.heroSubtitle, { color: theme.colors.textLight }]}>
-            {t('subscription.premiumHeroSubtitle')}
-          </Text>
+          <Text style={[styles.heroTitle, { color: theme.colors.text }]}>{t('subscription.premiumHeroTitle')}</Text>
+          <Text style={[styles.heroSubtitle, { color: theme.colors.textLight }]}>{t('subscription.premiumHeroSubtitle')}</Text>
         </View>
-
         {renderPlanToggle()}
         {renderSelectedPlan()}
       </ScrollView>
@@ -459,9 +383,7 @@ export default function SubscriptionScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft color={theme.colors.text} size={24} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.colors.text }]}>
-          {t('subscription.title')}
-        </Text>
+        <Text style={[styles.title, { color: theme.colors.text }]}>{t('subscription.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
       {renderContent()}
@@ -469,197 +391,42 @@ export default function SubscriptionScreen() {
   );
 }
 
-// Stillerin tamamı burada (YENİ: restoreButton stilleri eklendi)
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16 },
   backButton: { padding: 8 },
   title: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 24 },
   content: { flex: 1 },
-  centeredContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 16,
-    padding: 24
-  },
+  centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, padding: 24 },
   messageText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
-
-  statusContainer: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statusText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  statusSubtext: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 14,
-    marginLeft: 26,
-  },
-
-  freePlanContainer: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  freePlanHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  freePlanTitle: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 14,
-    marginLeft: 8,
-  },
-  freePlanFeatures: {
-    gap: 6,
-    marginBottom: 16, // YENİ: restore button için space
-  },
-  freePlanFeatureText: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-
-  heroSection: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    paddingHorizontal: 24,
-    paddingTop: 32
-  },
-  heroTitle: {
-    fontFamily: 'PlayfairDisplay-Bold',
-    fontSize: 28,
-    textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 8
-  },
-  heroSubtitle: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 16,
-    textAlign: 'center',
-    lineHeight: 22
-  },
-
-  toggleContainer: {
-    flexDirection: 'row',
-    marginHorizontal: 16,
-    marginBottom: 24,
-    padding: 4,
-    borderRadius: 12,
-  },
-  toggleOption: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    minHeight: 48,
-  },
-  toggleText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 14,
-  },
-  saveBadge: {
-    position: 'absolute',
-    top: -8,
-    right: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
-  },
-  saveText: {
-    fontSize: 10,
-    fontFamily: 'Montserrat-Bold',
-    color: '#FFFFFF',
-  },
-
-  planCard: {
-    marginHorizontal: 16,
-    marginBottom: 32,
-    padding: 24,
-    borderRadius: 20,
-    borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  premiumBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 20,
-  },
-  premiumBadgeText: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 14,
-    color: '#FFFFFF',
-    marginLeft: 6,
-  },
-
+  statusContainer: { marginHorizontal: 16, marginTop: 16, padding: 16, borderRadius: 12, borderWidth: 2 },
+  statusHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  statusText: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginLeft: 8 },
+  statusSubtext: { fontFamily: 'Montserrat-Regular', fontSize: 14, marginLeft: 26 },
+  freePlanContainer: { marginHorizontal: 16, marginTop: 16, padding: 16, borderRadius: 12, borderWidth: 1 },
+  freePlanHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  freePlanTitle: { fontFamily: 'Montserrat-Bold', fontSize: 14, marginLeft: 8 },
+  freePlanFeatures: { gap: 6, marginBottom: 16 },
+  freePlanFeatureText: { fontFamily: 'Montserrat-Regular', fontSize: 13, lineHeight: 18 },
+  heroSection: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24, paddingTop: 32 },
+  heroTitle: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 28, textAlign: 'center', marginTop: 16, marginBottom: 8 },
+  heroSubtitle: { fontFamily: 'Montserrat-Regular', fontSize: 16, textAlign: 'center', lineHeight: 22 },
+  toggleContainer: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 24, padding: 4, borderRadius: 12 },
+  toggleOption: { flex: 1, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 48 },
+  toggleText: { fontFamily: 'Montserrat-Bold', fontSize: 14 },
+  saveBadge: { position: 'absolute', top: -8, right: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  saveText: { fontSize: 10, fontFamily: 'Montserrat-Bold', color: '#FFFFFF' },
+  planCard: { marginHorizontal: 16, marginBottom: 32, padding: 24, borderRadius: 20, borderWidth: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8 },
+  premiumBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, marginBottom: 20 },
+  premiumBadgeText: { fontFamily: 'Montserrat-Bold', fontSize: 14, color: '#FFFFFF', marginLeft: 6 },
   priceSection: { marginBottom: 24 },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 4
-  },
-  price: {
-    fontFamily: 'PlayfairDisplay-Bold',
-    fontSize: 36
-  },
-  priceUnit: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 16,
-    marginLeft: 4
-  },
-  priceSubtext: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
-  },
-
+  priceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },
+  price: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 36 },
+  priceUnit: { fontFamily: 'Montserrat-Regular', fontSize: 16, marginLeft: 4 },
+  priceSubtext: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
   featuresContainer: { marginBottom: 24 },
-  featuresTitle: {
-    fontFamily: 'Montserrat-Bold',
-    fontSize: 16,
-    marginBottom: 16,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12
-  },
-  featureText: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
-    marginLeft: 12,
-    flex: 1
-  },
+  featuresTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 16 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  featureText: { fontFamily: 'Montserrat-Medium', fontSize: 14, marginLeft: 12, flex: 1 },
   planButton: { marginTop: 8 },
 });

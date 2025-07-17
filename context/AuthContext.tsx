@@ -1,6 +1,4 @@
-// context/AuthContext.tsx - Optimize edilmiş versiyon
-
-import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
+import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { initializeUserProfile } from '@/services/userService';
@@ -24,10 +22,10 @@ interface AuthContextType {
   refreshUserProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -39,66 +37,33 @@ let authInitialized = false;
 let lastProfileRefresh = 0;
 const PROFILE_REFRESH_THROTTLE = 60 * 1000; // 1 dakika minimum aralık
 
-function useProtectedRouter() {
-  const { user, loading: authLoading, isAuthFlowActive } = useAuth();
-  const segments = useSegments();
-  const navigationState = useRootNavigationState();
-
-  useEffect(() => {
-    if (!navigationState?.key) return;
-
-    const isNotFound = segments.includes('+not-found');
-
-    if (isNotFound) {
-      const timer = setTimeout(() => {
-        if (user) {
-          const profileComplete = user.gender && user.birthDate;
-          if (profileComplete) {
-            router.replace('/(tabs)/home');
-          } else {
-            router.replace('/(auth)/complete-profile');
-          }
-        } else {
-          router.replace('/(auth)');
-        }
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-
-    if (authLoading || isAuthFlowActive) {
-      return;
-    }
-
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (user) {
-      const profileComplete = user.gender && user.birthDate;
-      if (!profileComplete && segments[1] !== 'complete-profile') {
-        router.replace('/(auth)/complete-profile');
-      } else if (profileComplete && inAuthGroup) {
-        router.replace('/(tabs)/home');
-      }
-    } else {
-      if (!inAuthGroup) {
-        router.replace('/(auth)');
-      }
-    }
-  }, [navigationState?.key, user, segments, authLoading, isAuthFlowActive]);
-}
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthFlowActive, setAuthFlowActive] = useState(false);
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = React.useState<any | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [isAuthFlowActive, setAuthFlowActive] = React.useState(false);
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
   const segments = useSegments();
+  const navigationState = useRootNavigationState();
 
-  useEffect(() => {
+
+  React.useEffect(() => {
     loadJwt();
   }, [loadJwt]);
 
-  useEffect(() => {
+  const getUserFromToken = async (token: string) => {
+    try {
+      const payloadBase64 = token.split('.')[1];
+      const decodedPayload = atob(payloadBase64);
+      const payload = JSON.parse(decodedPayload);
+      return { uid: payload.sub, isAnonymous: false, name: null, fullname: null, gender: null, birthDate: null };
+    } catch (error) {
+      console.error('Failed to decode token:', error);
+      return null;
+    }
+  };
+
+  React.useEffect(() => {
     // Prevent multiple initializations
     if (!isReady || authInitialized) return;
 
@@ -109,7 +74,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (jwt) {
         let finalUser = null;
         try {
-          // 1. Adım: Token ve önbellekten kullanıcıyı oluştur (AĞ BAĞLANTISI GEREKTİRMEZ)
           const userInfo = await getUserFromToken(jwt);
           let cachedData = {};
           try {
@@ -126,27 +90,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           finalUser = { ...userInfo, ...cachedData };
-          setUser(finalUser); // Kullanıcıyı hemen ayarla, arayüz bekletilmesin.
+          setUser(finalUser);
           if (finalUser?.uid) await Purchases.logIn(finalUser.uid);
 
         } catch (error) {
-          // BU BLOK SADECE TOKEN GEÇERSİZSE VEYA ÇOK KRİTİK BİR HATA VARSA ÇALIŞIR
           console.error('Critical auth validation failed, logging out:', error);
           await clearJwt();
           clearUserPlan();
           setUser(null);
           await AsyncStorage.removeItem(USER_CACHE_KEY);
           setLoading(false);
-          return; // Fonksiyondan çık
+          return;
         }
-
-        // 2. Adım: Profili arka planda güncelle (OTURUMU ETKİLEMEZ)
+        
         if (finalUser && finalUser.uid) {
           try {
             console.log('🔄 Refreshing user profile in background...');
             await initializeUserProfile();
           } catch (profileError) {
-            // Profil güncelleme başarısız olursa sadece logla, OTURUMU KAPATMA!
             console.warn('Could not refresh user profile on startup. App will use cached data:', profileError);
           }
         }
@@ -163,7 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initializeAuth();
   }, [isReady, jwt]);
 
-  const signInWithGoogle = async (accessToken: string) => {
+    const signInWithGoogle = async (accessToken: string) => {
     setLoading(true);
 
     try {
@@ -188,7 +149,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await Purchases.logIn(user_info.uid);
       }
 
-      // Profile initialization'ı throttle et
       const now = Date.now();
       if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
         lastProfileRefresh = now;
@@ -252,7 +212,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await Purchases.logIn(user_info.uid);
       }
 
-      // Profile initialization'ı throttle et
       const now = Date.now();
       if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
         lastProfileRefresh = now;
@@ -276,8 +235,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updatedUser = { ...user, name: info.name, fullname: info.name, displayName: info.name, gender: info.gender, birthDate: info.birthDate };
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
-
-      // Profile refresh'i throttle et
       const now = Date.now();
       if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
         lastProfileRefresh = now;
@@ -299,7 +256,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
 
-      // Auth state'i reset et
       authInitialized = false;
       lastProfileRefresh = 0;
 
@@ -310,9 +266,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
       }
 
-      if (inAuthGroup) {
-        router.replace('/(auth)');
-      }
+      router.replace('/(auth)');
 
     } catch (error) {
       console.error("🚨 Logout Error:", error);
@@ -324,7 +278,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const refreshUserProfile = async () => {
-    // Throttling kontrolü
     const now = Date.now();
     if (now - lastProfileRefresh < PROFILE_REFRESH_THROTTLE) {
       console.log('🚫 Profile refresh throttled');
@@ -341,25 +294,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const getUserFromToken = async (token: string) => {
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return { uid: payload.sub, isAnonymous: false, name: null, fullname: null, gender: null, birthDate: null };
-    } catch (error) {
-      console.error('Failed to decode token:', error);
-      return null;
-    }
-  };
-
-  // Navigation effect'i sadece kritik durumlarda çalıştır
-  useEffect(() => {
-    const isReadyToRoute = !loading && !isAuthFlowActive;
-    if (!isReadyToRoute) return;
+  React.useEffect(() => {
+    if (!navigationState?.key || loading || isAuthFlowActive) return;
 
     const inAuthGroup = segments[0] === '(auth)';
 
     if (user && jwt) {
-      const profileComplete = user.gender && user.birthDate && user.name;
+      const profileComplete = user.gender && user.birthDate;
       if (!profileComplete && segments[1] !== 'complete-profile') {
         router.replace('/(auth)/complete-profile');
       } else if (profileComplete && inAuthGroup) {
@@ -370,28 +311,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         router.replace('/(auth)');
       }
     }
-  }, [user, jwt, loading, isAuthFlowActive, segments]);
+  }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key]);
 
   const value = { user, loading, isAuthFlowActive, setAuthFlowActive, signInWithGoogle, signInWithApple, updateUserInfo, logout, refreshUserProfile };
 
   return (
     <AuthContext.Provider value={value}>
       {children}
-      <ProtectedRouterComponent />
     </AuthContext.Provider>
   );
 };
-
-function ProtectedRouterComponent() {
-  useProtectedRouter();
-  return null;
-}
-
-// Development utilities
-if (__DEV__) {
-  (global as any).resetAuthState = () => {
-    authInitialized = false;
-    lastProfileRefresh = 0;
-    console.log('🔄 Auth state reset');
-  };
-}

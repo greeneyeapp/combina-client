@@ -25,6 +25,9 @@ export type ClothingItem = {
     height: number;
     fileSize?: number;
   };
+
+  // HATA İÇİN EKLENEN SATIR
+  isImageMissing?: boolean;
 };
 
 interface ClothingState {

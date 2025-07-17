@@ -107,11 +107,12 @@ export default function ProfileScreen() {
       const result = await restorePurchases();
 
       if (result.success) {
-        if (result.restoredPlan && result.restoredPlan !== 'free') {
+        // --- 1. DEĞİŞİKLİK BURADA: `result.restoredPlan` yerine `result.newPlan` kullanıldı ---
+        if (result.newPlan && result.newPlan !== 'free') {
           showAlert({
             title: t('subscription.restoreSuccessTitle'),
             message: t('subscription.restoreSuccessMessage', {
-              plan: t(`profile.plans.${result.restoredPlan}`)
+              plan: t(`profile.plans.${result.newPlan}`)
             }),
             buttons: [{ text: t('common.ok') }]
           });

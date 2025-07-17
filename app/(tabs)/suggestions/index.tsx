@@ -82,17 +82,13 @@ export default function SuggestionsScreen() {
     [suggestion, outfits]
   );
 
-  // --- 1. DEĞİŞİKLİK: Reklam ikonunun gösterilip gösterilmeyeceğini belirleyen useMemo ---
   const showAdIcon = useMemo(() => {
-    // Premium kullanıcılar asla reklam ikonu görmez
     if (userPlan?.plan === 'premium') {
       return false;
     }
-    // Free kullanıcının kalan hakkı yoksa ikonu göster
     if (userPlan && userPlan.usage.remaining <= 0) {
       return true;
     }
-    // Diğer tüm durumlarda (hak varsa, veri yükleniyorsa vb.) ikonu gösterme
     return false;
   }, [userPlan]);
 
@@ -207,8 +203,10 @@ export default function SuggestionsScreen() {
       });
       return;
     }
-
-    if (!bypassLimitCheck) {
+    
+    // --- 2. DEĞİŞİKLİK BURADA: Premium kontrolü eklendi ---
+    // Eğer kullanıcı premium değilse ve limit kontrolünü atlamıyorsa reklam mantığını çalıştır
+    if (userPlan?.plan !== 'premium' && !bypassLimitCheck) {
       const usageCheck = await canGetSuggestion();
       if (!usageCheck.canSuggest) {
         showAlert({
@@ -311,7 +309,6 @@ export default function SuggestionsScreen() {
     const { daily_limit, current_usage, rewarded_count = 0, percentage_used } = userPlan.usage;
     const isUnlimited = userPlan.plan === 'premium';
 
-    // Toplam efektif limiti hesapla
     const effective_limit = daily_limit + rewarded_count;
 
     return (
@@ -473,7 +470,6 @@ export default function SuggestionsScreen() {
           loading={generating}
           style={styles.generateButton}
           disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading}
-          // --- 2. DEĞİŞİKLİK: İkonu koşullu olarak render et ---
           icon={showAdIcon ? <Film color={theme.colors.white} size={18} /> : <Wand2 color={theme.colors.white} size={18} />}
         />
 

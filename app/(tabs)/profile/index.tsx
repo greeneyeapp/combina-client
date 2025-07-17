@@ -160,9 +160,9 @@ export default function ProfileScreen() {
 
   const getLanguageName = (code: string) => languages.find(l => l.code === code)?.name || code;
   const handleLanguagePress = () => router.push('/(tabs)/profile/language');
-  const handleSubscriptionPress = () => router.push('/profile/subscription' as any);
-  const handleStoragePress = () => router.push('/(tabs)/profile/storage' as any);
-
+  const handleSubscriptionPress = () => router.push('/subscription');
+  const handleStoragePress = () => router.push('/storage');
+  
   const handleLogout = () => {
     showAlert({
       title: t('logout.alertTitle'),

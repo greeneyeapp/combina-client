@@ -219,7 +219,7 @@ export default function WardrobeScreen() {
           <ActivityIndicator size="small" color={theme.colors.textLight} />
         ) : (
           limitInfo &&
-          <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
+          <TouchableOpacity onPress={() => router.push('/subscription')}>
             <Text style={[styles.usageText, { color: getUsageColor() }]}>
               {t('wardrobe.limit')}: {limitInfo.currentCount} / {limitInfo.limit === Infinity ? '∞' : limitInfo.limit}
               {limitInfo.plan !== 'premium' && <Text> ✨</Text>}

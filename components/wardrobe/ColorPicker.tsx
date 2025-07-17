@@ -161,6 +161,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               data={filteredColors}
               keyExtractor={(item) => item.name}
               numColumns={4}
+              style={{ flex: 1 }}
               contentContainerStyle={styles.listContainer}
               renderItem={({ item: color }) => {
                 const isSelected = currentSelectedColors.includes(color.name);
@@ -208,8 +209,13 @@ const styles = StyleSheet.create({
   placeholderText: { fontFamily: 'Montserrat-Regular', fontSize: 16 },
   errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
-  modalContent: { maxHeight: '85%', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 16 },
+  modalContent: {
+    height: '85%', // maxHeight'i height ile değiştirin
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    flexDirection: 'column' // Dikey flex layout'u ekleyin
+  }, modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 16 },
   modalTitle: { fontFamily: 'Montserrat-Bold', fontSize: 18 },
   selectedColorsHeader: { padding: 12, borderRadius: 8, marginBottom: 16 },
   selectedColorsHeaderText: { fontSize: 14, fontFamily: 'Montserrat-SemiBold' },

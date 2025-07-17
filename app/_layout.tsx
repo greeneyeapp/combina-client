@@ -99,6 +99,22 @@ function RootLayoutNav(): React.JSX.Element | null {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="+not-found" />
+        <Stack.Screen
+          name="subscription"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="storage"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+            headerShown: false,
+          }}
+        />
       </Stack>
       <OnboardingGuide />
     </>
@@ -118,7 +134,7 @@ const initializeAppServicesOnce = async (): Promise<void> => {
   }
 
   layoutInitializationPromise = performLayoutInitialization();
-  
+
   try {
     await layoutInitializationPromise;
     layoutInitialized = true;

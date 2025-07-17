@@ -264,7 +264,7 @@ export default function StorageManagementScreen() {
         <HeaderBar
           title={t('storage.title')}
           leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-          onLeftPress={() => router.replace('/(tabs)/profile')}
+          onLeftPress={() => router.back()}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -281,7 +281,7 @@ export default function StorageManagementScreen() {
       <HeaderBar
         title={t('storage.title')}
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-        onLeftPress={() => router.replace('/(tabs)/profile')}
+        onLeftPress={() => router.back()}
       />
 
       <ScrollView

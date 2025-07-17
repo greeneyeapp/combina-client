@@ -87,9 +87,6 @@ export default function SubscriptionScreen() {
   const [offerings, setOfferings] = useState<PurchasesOffering | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasingId, setPurchasingId] = useState<string | null>(null);
-  
-  // Restore işlemi için loading state
-  const [isRestoring, setIsRestoring] = useState(false);
 
   useEffect(() => {
     const loadOfferings = async () => {
@@ -109,69 +106,6 @@ export default function SubscriptionScreen() {
     loadOfferings();
   }, []);
 
-  // YENİ: Restore Purchases fonksiyonu
-  const handleRestorePurchases = async () => {
-    setIsRestoring(true);
-    
-    try {
-      console.log('🔄 Starting restore purchases...');
-      
-      // purchaseService'teki restore fonksiyonunu kullan
-      const result = await restorePurchases();
-      
-      if (result.success) {
-        // RevenueCat context'ini manuel olarak yenile
-        console.log('🔄 Refreshing RevenueCat context...');
-        await refreshCustomerInfo();
-        
-        // Kısa bir delay ekle ki context güncellensin
-        setTimeout(async () => {
-          await refreshCustomerInfo();
-          
-          // Güncellenmiş bilgileri kontrol et
-          const updatedInfo = await Purchases.getCustomerInfo();
-          const updatedPlan = mapEntitlementsToDetailedPlan(updatedInfo.entitlements.active);
-          
-          if (updatedPlan.plan === 'premium') {
-            Toast.show({
-              type: 'success',
-              text1: t('subscription.restoreSuccessTitle'),
-              text2: t('subscription.restoreSuccessMessage', { type: t(`subscription.${updatedPlan.type}`) })
-            });
-          } else {
-            showAlert({
-              title: t('subscription.restoreNoSubscriptionTitle'),
-              message: t('subscription.restoreNoSubscriptionMessage'),
-              buttons: [{ text: t('common.ok') }]
-            });
-          }
-        }, 1000);
-        
-      } else {
-        throw new Error(result.error || 'Restore failed');
-      }
-      
-    } catch (error: any) {
-      console.error('❌ Restore purchases failed:', error);
-      
-      if (error.message?.includes('no purchases to restore')) {
-        showAlert({
-          title: t('subscription.restoreNoSubscriptionTitle'),
-          message: t('subscription.restoreNoSubscriptionMessage'),
-          buttons: [{ text: t('common.ok') }]
-        });
-      } else {
-        showAlert({
-          title: t('subscription.restoreFailTitle'),
-          message: error.message || t('subscription.restoreFailMessage'),
-          buttons: [{ text: t('common.ok') }]
-        });
-      }
-    } finally {
-      setIsRestoring(false);
-    }
-  };
-
   const proceedWithPurchase = async (packageToPurchase: PurchasesPackage, isUpgrade: boolean) => {
     setPurchasingId(packageToPurchase.identifier);
     try {
@@ -189,7 +123,7 @@ export default function SubscriptionScreen() {
         text1: t('subscription.purchaseSuccessTitle'),
         text2: successMessage
       });
-      router.replace('/(tabs)/profile');
+      router.back();
 
     } catch (error: any) {
       if (!error.userCancelled) {
@@ -302,18 +236,6 @@ export default function SubscriptionScreen() {
               • {feature}
             </Text>
           ))}
-        </View>
-        
-        {/* YENİ: Restore Purchases butonu sadece free plan'dayken göster */}
-        <View style={styles.restoreButtonContainer}>
-          <Button
-            label={isRestoring ? t('subscription.restoring') : t('subscription.restorePurchases')}
-            onPress={handleRestorePurchases}
-            variant="outline"
-            style={styles.restoreButton}
-            disabled={isRestoring}
-            loading={isRestoring}
-          />
         </View>
       </View>
     );
@@ -534,7 +456,7 @@ export default function SubscriptionScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.replace('/(tabs)/profile')} style={styles.backButton}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft color={theme.colors.text} size={24} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.text }]}>
@@ -543,7 +465,7 @@ export default function SubscriptionScreen() {
         <View style={{ width: 24 }} />
       </View>
       {renderContent()}
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
@@ -617,16 +539,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat-Regular',
     fontSize: 13,
     lineHeight: 18,
-  },
-  
-  // YENİ: Restore button container ve button stilleri
-  restoreButtonContainer: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(128, 128, 128, 0.2)',
-    paddingTop: 16,
-  },
-  restoreButton: {
-    marginTop: 0,
   },
 
   heroSection: {

@@ -46,7 +46,7 @@ function useProtectedRouter() {
 
   useEffect(() => {
     if (!navigationState?.key) return;
-    
+
     const isNotFound = segments.includes('+not-found');
 
     if (isNotFound) {
@@ -68,7 +68,7 @@ function useProtectedRouter() {
     if (authLoading || isAuthFlowActive) {
       return;
     }
-    
+
     const inAuthGroup = segments[0] === '(auth)';
 
     if (user) {
@@ -101,49 +101,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Prevent multiple initializations
     if (!isReady || authInitialized) return;
-    
+
     const initializeAuth = async () => {
       console.log('🔐 Initializing auth...');
       authInitialized = true;
-      
+
       if (jwt) {
+        let finalUser = null;
         try {
+          // 1. Adım: Token ve önbellekten kullanıcıyı oluştur (AĞ BAĞLANTISI GEREKTİRMEZ)
           const userInfo = await getUserFromToken(jwt);
-          
-          // Cached user data'yı kontrol et
-          let finalUser = userInfo;
+          let cachedData = {};
           try {
             const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
             if (cachedUser) {
-              const cached = JSON.parse(cachedUser);
-              finalUser = { ...userInfo, ...cached };
+              cachedData = JSON.parse(cachedUser);
             }
-          } catch (error) {
-            console.error('Failed to load cached user:', error);
+          } catch (e) {
+            console.warn('Could not load cached user data:', e);
           }
-          
-          setUser(finalUser);
+
+          if (!userInfo) {
+            throw new Error("Invalid token could not be decoded.");
+          }
+
+          finalUser = { ...userInfo, ...cachedData };
+          setUser(finalUser); // Kullanıcıyı hemen ayarla, arayüz bekletilmesin.
           if (finalUser?.uid) await Purchases.logIn(finalUser.uid);
-          
-          // Initialize profile sadece user veri tamamsa
-          if (finalUser && finalUser.uid) {
-            await initializeUserProfile();
-          }
+
         } catch (error) {
-          console.error('Auth initialization failed:', error);
-          await clearJwt(); 
-          clearUserPlan(); 
+          // BU BLOK SADECE TOKEN GEÇERSİZSE VEYA ÇOK KRİTİK BİR HATA VARSA ÇALIŞIR
+          console.error('Critical auth validation failed, logging out:', error);
+          await clearJwt();
+          clearUserPlan();
           setUser(null);
           await AsyncStorage.removeItem(USER_CACHE_KEY);
+          setLoading(false);
+          return; // Fonksiyondan çık
         }
+
+        // 2. Adım: Profili arka planda güncelle (OTURUMU ETKİLEMEZ)
+        if (finalUser && finalUser.uid) {
+          try {
+            console.log('🔄 Refreshing user profile in background...');
+            await initializeUserProfile();
+          } catch (profileError) {
+            // Profil güncelleme başarısız olursa sadece logla, OTURUMU KAPATMA!
+            console.warn('Could not refresh user profile on startup. App will use cached data:', profileError);
+          }
+        }
+
       } else {
-        setUser(null); 
+        setUser(null);
         clearUserPlan();
         await AsyncStorage.removeItem(USER_CACHE_KEY);
       }
+
       setLoading(false);
     };
-    
+
     initializeAuth();
   }, [isReady, jwt]);
 
@@ -171,14 +187,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      
+
       // Profile initialization'ı throttle et
       const now = Date.now();
       if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
         lastProfileRefresh = now;
         await initializeUserProfile();
       }
-      
+
       setLoading(false);
       return completeUserInfo;
     } catch (error) {
@@ -190,7 +206,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signInWithApple = async (credential: any) => {
     setLoading(true);
-    
+
     try {
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
@@ -235,7 +251,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (user_info.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      
+
       // Profile initialization'ı throttle et
       const now = Date.now();
       if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
@@ -260,7 +276,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updatedUser = { ...user, name: info.name, fullname: info.name, displayName: info.name, gender: info.gender, birthDate: info.birthDate };
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
-      
+
       // Profile refresh'i throttle et
       const now = Date.now();
       if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
@@ -268,7 +284,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         await refreshUserProfile();
       }
     } catch (error) {
-      console.error('Update user info error:', error); 
+      console.error('Update user info error:', error);
       throw error;
     }
   };
@@ -282,7 +298,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearUserPlan();
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
-      
+
       // Auth state'i reset et
       authInitialized = false;
       lastProfileRefresh = 0;
@@ -293,7 +309,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (revenueCatError) {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
       }
-      
+
       if (inAuthGroup) {
         router.replace('/(auth)');
       }
@@ -314,14 +330,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('🚫 Profile refresh throttled');
       return;
     }
-    
-    if (user) { 
+
+    if (user) {
       try {
         lastProfileRefresh = now;
-        await initializeUserProfile(); 
-      } catch (error) { 
-        console.error("Failed to refresh user profile:", error); 
-      } 
+        await initializeUserProfile();
+      } catch (error) {
+        console.error("Failed to refresh user profile:", error);
+      }
     }
   };
 
@@ -330,7 +346,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const payload = JSON.parse(atob(token.split('.')[1]));
       return { uid: payload.sub, isAnonymous: false, name: null, fullname: null, gender: null, birthDate: null };
     } catch (error) {
-      console.error('Failed to decode token:', error); 
+      console.error('Failed to decode token:', error);
       return null;
     }
   };
@@ -343,19 +359,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const inAuthGroup = segments[0] === '(auth)';
 
     if (user && jwt) {
-        const profileComplete = user.gender && user.birthDate && user.name;
-        if (!profileComplete && segments[1] !== 'complete-profile') {
-            router.replace('/(auth)/complete-profile');
-        } else if (profileComplete && inAuthGroup) {
-            router.replace('/(tabs)/home');
-        }
+      const profileComplete = user.gender && user.birthDate && user.name;
+      if (!profileComplete && segments[1] !== 'complete-profile') {
+        router.replace('/(auth)/complete-profile');
+      } else if (profileComplete && inAuthGroup) {
+        router.replace('/(tabs)/home');
+      }
     } else {
-        if (!inAuthGroup) {
-            router.replace('/(auth)');
-        }
+      if (!inAuthGroup) {
+        router.replace('/(auth)');
+      }
     }
   }, [user, jwt, loading, isAuthFlowActive, segments]);
-  
+
   const value = { user, loading, isAuthFlowActive, setAuthFlowActive, signInWithGoogle, signInWithApple, updateUserInfo, logout, refreshUserProfile };
 
   return (

@@ -73,7 +73,7 @@ export default function HomeScreen() {
                 subtitle: t('home.premiumSubtitle', 'Unlock premium features'),
                 icon: <Crown size={32} color={theme.colors.white} />,
                 gradient: ['#F59E0B', '#FBBF24'],
-                onPress: () => router.push('/profile/subscription' as any),
+                onPress: () => router.push('/subscription'),
             });
         }
 
@@ -91,7 +91,7 @@ export default function HomeScreen() {
             id: 'storage',
             title: t('home.storageTitle', 'Storage Management'),
             icon: <HardDrive size={20} color={theme.colors.primary} />,
-            onPress: () => router.push('/(tabs)/profile/storage' as any),
+            onPress: () => router.push('/storage'),
         },
     ];
 

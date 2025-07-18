@@ -1,7 +1,7 @@
-// components/wardrobe/ColorPicker.tsx - Scroll sorunu düzeltildi
+// components/wardrobe/ColorPicker.tsx - Modal yükseklik sorunu düzeltildi
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TextInput, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TextInput, Image } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { Check, X, Search } from 'lucide-react-native';
@@ -134,15 +134,24 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+            {/* Header - sabit yükseklik */}
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
                 {multiSelect ? t('wardrobe.selectColors') : t('wardrobe.color')}
               </Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <TouchableOpacity 
+                onPress={() => {
+                  setModalVisible(false);
+                  setSearchQuery('');
+                }}
+                style={styles.closeButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
                 <X size={24} color={theme.colors.textLight} />
               </TouchableOpacity>
             </View>
 
+            {/* Search Bar - sabit yükseklik */}
             <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
               <Search size={18} color={theme.colors.textLight} />
               <TextInput
@@ -154,6 +163,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               />
             </View>
 
+            {/* MultiSelect info - sabit yükseklik (varsa) */}
             {multiSelect && (
               <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
                 <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
@@ -162,47 +172,53 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               </View>
             )}
 
-            <FlatList
-              data={filteredColors}
-              keyExtractor={(item) => item.name}
-              numColumns={4}
-              style={styles.flatListContainer}
-              contentContainerStyle={styles.listContainer}
-              showsVerticalScrollIndicator={true}
-              bounces={true}
-              scrollEnabled={true}
-              nestedScrollEnabled={true}
-              renderItem={({ item: color }) => {
-                const isSelected = currentSelectedColors.includes(color.name);
-                const isDisabled = multiSelect && !isSelected && currentSelectedColors.length >= maxColors;
-                return (
-                  <TouchableOpacity
-                    style={[styles.colorItemContainer, isDisabled && styles.disabledColorItem]}
-                    onPress={() => handleSelect(color.name)}
-                    disabled={isDisabled}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.colorCircleWrapper, { borderColor: isSelected ? theme.colors.primary : 'transparent' }]}>
-                      {renderColorItemDisplay(color)}
-                      {isSelected && (
-                        <View style={styles.checkIconContainer}>
-                          <Check size={24} color={getBrightness(color.hex) > 128 ? 'black' : 'white'} />
-                        </View>
-                      )}
-                    </View>
-                    <Text style={[styles.colorName, { color: isSelected ? theme.colors.primary : theme.colors.textLight, opacity: isDisabled ? 0.5 : 1 }]} numberOfLines={1}>
-                      {t(`colors.${color.name}`)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
+            {/* Colors List - flex:1 olarak kalanı kaplayacak */}
+            <View style={styles.flatListContainer}>
+              <FlatList
+                data={filteredColors}
+                keyExtractor={(item) => item.name}
+                numColumns={4}
+                contentContainerStyle={styles.listContainer}
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                scrollEnabled={true}
+                nestedScrollEnabled={true}
+                renderItem={({ item: color }) => {
+                  const isSelected = currentSelectedColors.includes(color.name);
+                  const isDisabled = multiSelect && !isSelected && currentSelectedColors.length >= maxColors;
+                  return (
+                    <TouchableOpacity
+                      style={[styles.colorItemContainer, isDisabled && styles.disabledColorItem]}
+                      onPress={() => handleSelect(color.name)}
+                      disabled={isDisabled}
+                      activeOpacity={0.7}
+                    >
+                      <View style={[styles.colorCircleWrapper, { borderColor: isSelected ? theme.colors.primary : 'transparent' }]}>
+                        {renderColorItemDisplay(color)}
+                        {isSelected && (
+                          <View style={styles.checkIconContainer}>
+                            <Check size={24} color={getBrightness(color.hex) > 128 ? 'black' : 'white'} />
+                          </View>
+                        )}
+                      </View>
+                      <Text style={[styles.colorName, { color: isSelected ? theme.colors.primary : theme.colors.textLight, opacity: isDisabled ? 0.5 : 1 }]} numberOfLines={1}>
+                        {t(`colors.${color.name}`)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            </View>
             
+            {/* Footer - sabit yükseklik (varsa) */}
             {multiSelect && (
               <View style={[styles.modalFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
                 <TouchableOpacity 
                   style={[styles.doneButton, { backgroundColor: theme.colors.primary }]} 
-                  onPress={() => setModalVisible(false)}
+                  onPress={() => {
+                    setModalVisible(false);
+                    setSearchQuery('');
+                  }}
                 >
                   <Text style={[styles.doneButtonText, { color: theme.colors.white }]}>
                     {t('common.save')}
@@ -254,26 +270,37 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)' 
   },
   modalContent: {
-    height: '85%',
+    // Ana değişiklik: Sabit yükseklik yerine maksimum yükseklik kullan
+    maxHeight: '70%',
+    minHeight: '50%', 
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,
-    flex: 1,
+    flex: 0, // flex: 1'den flex: 0'a değiştirildi
   },
   modalHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    paddingBottom: 16 
+    paddingBottom: 16,
+    // Sabit yükseklik belirtildi
+    height: 60,
   },
   modalTitle: { 
     fontFamily: 'Montserrat-Bold', 
     fontSize: 18 
   },
+  closeButton: {
+    // Kapat butonunun tıklanabilir alanını artır
+    padding: 8,
+    borderRadius: 8,
+  },
   selectedColorsHeader: { 
     padding: 12, 
     borderRadius: 8, 
-    marginBottom: 16 
+    marginBottom: 16,
+    // Sabit yükseklik
+    minHeight: 40,
   },
   selectedColorsHeaderText: { 
     fontSize: 14, 
@@ -285,7 +312,7 @@ const styles = StyleSheet.create({
     borderRadius: 10, 
     paddingHorizontal: 15, 
     marginBottom: 15, 
-    minHeight: 50, 
+    minHeight: 50, // Sabit yükseklik
     borderWidth: 1, 
     borderColor: '#ddd' 
   },
@@ -296,7 +323,9 @@ const styles = StyleSheet.create({
     fontSize: 16 
   },
   flatListContainer: {
+    // Ana değişiklik: flex: 1 ile kalan alanı kullan
     flex: 1,
+    minHeight: 200, // Minimum yükseklik garantisi
   },
   listContainer: { 
     paddingBottom: 20,
@@ -341,7 +370,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, 
     paddingTop: 16, 
     paddingBottom: 16, 
-    paddingHorizontal: 0 
+    paddingHorizontal: 0,
+    // Sabit yükseklik
+    minHeight: 70,
   },
   doneButton: { 
     paddingVertical: 14, 

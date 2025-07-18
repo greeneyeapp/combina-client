@@ -20,7 +20,11 @@
         "NSCameraUsageDescription": "This app uses camera to take photos of clothing items for your wardrobe.",
         "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select clothing photos.",
         "NSLocationWhenInUseUsageDescription": "This app uses location to provide weather-based outfit suggestions.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to provide weather-based outfit suggestions."
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses location to provide weather-based outfit suggestions.",
+        "NSFaceIDUsageDescription": "Allow Combina to access your Face ID biometric data for secure authentication."
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {

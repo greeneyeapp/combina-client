@@ -1,7 +1,6 @@
-// services/userService.ts - Optimize edilmiş versiyon
+// services/userService.ts - Firebase dependency kaldırılmış versiyon
 
 import API_URL from '@/config';
-import { auth } from '@/firebaseConfig';
 import { useUserPlanStore, UserPlan } from '@/store/userPlanStore';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { apiDeduplicator } from '@/utils/apiDeduplication';
@@ -29,26 +28,13 @@ let isInitializing = false;
 const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 dakika
 const MIN_FETCH_INTERVAL = 30 * 1000; // 30 saniye minimum aralık
 
-// Get authenticated token helper
+// DÜZELTME: Firebase dependency kaldırıldı
 const getAuthToken = async (): Promise<string> => {
   const storedJwt = useApiAuthStore.getState().jwt;
-  if (storedJwt) return storedJwt;
-
-  const user = auth.currentUser;
-  if (!user) throw new Error('User not authenticated');
-
-  const idToken = await user.getIdToken();
-  const tokenResponse = await fetch(`${API_URL}/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id_token: idToken })
-  });
-
-  if (!tokenResponse.ok) throw new Error('Failed to get auth token');
-  const { access_token } = await tokenResponse.json();
-
-  useApiAuthStore.getState().setJwt(access_token);
-  return access_token;
+  if (!storedJwt) {
+    throw new Error('User not authenticated - no JWT token');
+  }
+  return storedJwt;
 };
 
 // Optimized fetch user profile
@@ -148,8 +134,9 @@ export const initializeUserProfile = async (): Promise<void> => {
       return;
     }
 
-    const user = auth.currentUser;
-    if (!user || user.isAnonymous) {
+    // DÜZELTME: Firebase check kaldırıldı, sadece JWT kontrolü
+    const token = useApiAuthStore.getState().jwt;
+    if (!token) {
       useUserPlanStore.getState().clearUserPlan();
       return;
     }

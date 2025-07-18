@@ -45,7 +45,6 @@
     "expo-system-ui": "~5.0.10",
     "expo-updates": "~0.28.17",
     "expo-web-browser": "~14.2.0",
-    "firebase": "^11.9.1",
     "i18next": "^25.2.1",
     "lucide-react-native": "^0.513.0",
     "react": "19.0.0",
@@ -68,7 +67,6 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@react-native/gradle-plugin": "0.76.9",
-    "@types/firebase": "^2.4.32",
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
     "typescript": "~5.8.3"

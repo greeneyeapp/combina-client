@@ -1,4 +1,4 @@
-// app/(tabs)/home/index.tsx - With Storage Management Quick Action
+// app/(tabs)/home/index.tsx - Modal yönlendirme sorunu düzeltildi
 
 import React from 'react';
 import {
@@ -34,7 +34,6 @@ export default function HomeScreen() {
     const { theme } = useTheme();
     const { currentPlan, isLoading: isPlanLoading } = useRevenueCat();
 
-    // Feature cards - alt alta gösterilecek
     const getFeatureCards = () => {
         const baseCards = [
             {
@@ -55,7 +54,6 @@ export default function HomeScreen() {
             },
         ];
 
-        // Premium kullanıcılar için 3. kart eklenir
         if (currentPlan === 'premium') {
             baseCards.push({
                 id: 'history-premium',
@@ -66,14 +64,14 @@ export default function HomeScreen() {
                 onPress: () => router.push('/(tabs)/history'),
             });
         } else {
-            // Free kullanıcılar için Premium upgrade kartı
             baseCards.push({
                 id: 'premium',
                 title: t('home.premiumTitle', 'Upgrade Style'),
                 subtitle: t('home.premiumSubtitle', 'Unlock premium features'),
                 icon: <Crown size={32} color={theme.colors.white} />,
                 gradient: ['#F59E0B', '#FBBF24'],
-                onPress: () => router.push('/subscription'),
+                // ÇÖZÜM: router.push yerine router.navigate kullanılıyor.
+                onPress: () => router.navigate('/subscription'),
             });
         }
 
@@ -91,7 +89,8 @@ export default function HomeScreen() {
             id: 'storage',
             title: t('home.storageTitle', 'Storage Management'),
             icon: <HardDrive size={20} color={theme.colors.primary} />,
-            onPress: () => router.push('/storage'),
+            // ÇÖZÜM: router.push yerine router.navigate kullanılıyor.
+            onPress: () => router.navigate('/storage'),
         },
     ];
 
@@ -153,7 +152,6 @@ export default function HomeScreen() {
 
         return (
             <View style={styles.headerContent}>
-                {/* Premium badge göster */}
                 {currentPlan === 'premium' && (
                     <View style={[styles.premiumBadge, { backgroundColor: 'rgba(255, 215, 0, 0.2)' }]}>
                         <Crown size={16} color="#FFD700" />
@@ -196,7 +194,6 @@ export default function HomeScreen() {
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            {/* Sadece HeaderBar sabit kalır */}
             <HeaderBar
                 title={t('home.title', 'Discover Style')}
                 style={{ backgroundColor: theme.colors.background }}
@@ -207,7 +204,6 @@ export default function HomeScreen() {
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
             >
-                {/* Welcome section artık scroll edilebilir */}
                 <LinearGradient
                     colors={[
                         theme.colors.primary,
@@ -221,7 +217,6 @@ export default function HomeScreen() {
                     {renderWelcomeSection()}
                 </LinearGradient>
 
-                {/* Feature Cards - Alt alta düzenlendi */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         {t('home.featuresTitle', 'Explore Features')}
@@ -231,7 +226,6 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                {/* Quick Actions */}
                 <View style={styles.section}>
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         {t('home.quickActionsTitle', 'Quick Actions')}
@@ -241,7 +235,6 @@ export default function HomeScreen() {
                     </View>
                 </View>
 
-                {/* Premium özellikler vurgusu - sadece free kullanıcılar için */}
                 {currentPlan !== 'premium' && (
                     <View style={[styles.upgradeSection, { backgroundColor: theme.colors.primaryLight }]}>
                         <View style={styles.upgradeHeader}>
@@ -255,7 +248,8 @@ export default function HomeScreen() {
                         </Text>
                         <TouchableOpacity
                             style={[styles.upgradeButton, { backgroundColor: theme.colors.primary }]}
-                            onPress={() => router.push('/profile/subscription' as any)}
+                            // ÇÖZÜM: Yanlış rota '/profile/subscription' düzeltildi ve router.navigate kullanıldı.
+                            onPress={() => router.navigate('/subscription')}
                             activeOpacity={0.8}
                         >
                             <Crown size={16} color={theme.colors.white} />
@@ -355,10 +349,7 @@ const styles = StyleSheet.create({
         fontFamily: 'PlayfairDisplay-Bold',
         marginBottom: 16,
     },
-    // YENİ: Alt alta kart düzeni
-    featuresContainer: {
-        // Alt alta kart containerı
-    },
+    featuresContainer: {},
     featureCard: {
         borderRadius: 20,
         overflow: 'hidden',
@@ -372,15 +363,14 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         backgroundColor: 'transparent',
         borderWidth: 0,
-        width: '100%', // Full width
+        width: '100%',
     },
     cardGradient: {
         padding: 20,
-        minHeight: 100, // Daha kompakt yükseklik
+        minHeight: 100,
         justifyContent: 'center',
         width: '100%',
     },
-    // YENİ: Horizontal card layout
     cardContent: {
         flexDirection: 'row',
         alignItems: 'center',

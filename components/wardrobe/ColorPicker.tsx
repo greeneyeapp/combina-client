@@ -1,4 +1,4 @@
-// kodlar/components/wardrobe/ColorPicker.tsx - Desenler için SVG yerine Image kullanıldı
+// components/wardrobe/ColorPicker.tsx - Scroll sorunu düzeltildi
 
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TextInput, Image, ScrollView } from 'react-native';
@@ -130,12 +130,17 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}
+        supportedOrientations={['portrait', 'landscape']}
       >
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPressOut={() => setModalVisible(false)}>
-          <View onStartShouldSetResponder={() => true} style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>{multiSelect ? t('wardrobe.selectColors') : t('wardrobe.color')}</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}><X size={24} color={theme.colors.textLight} /></TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+                {multiSelect ? t('wardrobe.selectColors') : t('wardrobe.color')}
+              </Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <X size={24} color={theme.colors.textLight} />
+              </TouchableOpacity>
             </View>
 
             <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
@@ -161,8 +166,12 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               data={filteredColors}
               keyExtractor={(item) => item.name}
               numColumns={4}
-              style={{ flex: 1 }}
+              style={styles.flatListContainer}
               contentContainerStyle={styles.listContainer}
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+              scrollEnabled={true}
+              nestedScrollEnabled={true}
               renderItem={({ item: color }) => {
                 const isSelected = currentSelectedColors.includes(color.name);
                 const isDisabled = multiSelect && !isSelected && currentSelectedColors.length >= maxColors;
@@ -171,6 +180,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                     style={[styles.colorItemContainer, isDisabled && styles.disabledColorItem]}
                     onPress={() => handleSelect(color.name)}
                     disabled={isDisabled}
+                    activeOpacity={0.7}
                   >
                     <View style={[styles.colorCircleWrapper, { borderColor: isSelected ? theme.colors.primary : 'transparent' }]}>
                       {renderColorItemDisplay(color)}
@@ -187,43 +197,120 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                 );
               }}
             />
+            
             {multiSelect && (
               <View style={[styles.modalFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
-                <TouchableOpacity style={[styles.doneButton, { backgroundColor: theme.colors.primary }]} onPress={() => setModalVisible(false)}>
-                  <Text style={[styles.doneButtonText, { color: theme.colors.white }]}>{t('common.save')}</Text>
+                <TouchableOpacity 
+                  style={[styles.doneButton, { backgroundColor: theme.colors.primary }]} 
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={[styles.doneButtonText, { color: theme.colors.white }]}>
+                    {t('common.save')}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  buttonContainer: { borderWidth: 1, borderRadius: 8, padding: 12, minHeight: 50, justifyContent: 'center' },
-  selectedColorView: { flexDirection: 'row', alignItems: 'center' },
-  selectedColorText: { fontFamily: 'Montserrat-Regular', fontSize: 16, marginLeft: 12 },
-  plusMore: { fontFamily: 'Montserrat-Regular', fontSize: 14, marginLeft: 8 },
-  placeholderText: { fontFamily: 'Montserrat-Regular', fontSize: 16 },
-  errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  buttonContainer: { 
+    borderWidth: 1, 
+    borderRadius: 8, 
+    padding: 12, 
+    minHeight: 50, 
+    justifyContent: 'center' 
+  },
+  selectedColorView: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  selectedColorText: { 
+    fontFamily: 'Montserrat-Regular', 
+    fontSize: 16, 
+    marginLeft: 12 
+  },
+  plusMore: { 
+    fontFamily: 'Montserrat-Regular', 
+    fontSize: 14, 
+    marginLeft: 8 
+  },
+  placeholderText: { 
+    fontFamily: 'Montserrat-Regular', 
+    fontSize: 16 
+  },
+  errorText: { 
+    fontFamily: 'Montserrat-Regular', 
+    fontSize: 12, 
+    marginTop: 4 
+  },
+  modalOverlay: { 
+    flex: 1, 
+    justifyContent: 'flex-end', 
+    backgroundColor: 'rgba(0,0,0,0.5)' 
+  },
   modalContent: {
-    height: '85%', // maxHeight'i height ile değiştirin
+    height: '85%',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,
-    flexDirection: 'column' // Dikey flex layout'u ekleyin
-  }, modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 16 },
-  modalTitle: { fontFamily: 'Montserrat-Bold', fontSize: 18 },
-  selectedColorsHeader: { padding: 12, borderRadius: 8, marginBottom: 16 },
-  selectedColorsHeaderText: { fontSize: 14, fontFamily: 'Montserrat-SemiBold' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 15, marginBottom: 15, minHeight: 50, borderWidth: 1, borderColor: '#ddd' },
-  searchInput: { flex: 1, marginLeft: 10, fontFamily: 'Montserrat-Regular', fontSize: 16 },
-  listContainer: { paddingBottom: 20 },
-  colorItemContainer: { flex: 1, alignItems: 'center', marginVertical: 8 },
-  disabledColorItem: { opacity: 0.4 },
+    flex: 1,
+  },
+  modalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingBottom: 16 
+  },
+  modalTitle: { 
+    fontFamily: 'Montserrat-Bold', 
+    fontSize: 18 
+  },
+  selectedColorsHeader: { 
+    padding: 12, 
+    borderRadius: 8, 
+    marginBottom: 16 
+  },
+  selectedColorsHeaderText: { 
+    fontSize: 14, 
+    fontFamily: 'Montserrat-SemiBold' 
+  },
+  searchBar: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderRadius: 10, 
+    paddingHorizontal: 15, 
+    marginBottom: 15, 
+    minHeight: 50, 
+    borderWidth: 1, 
+    borderColor: '#ddd' 
+  },
+  searchInput: { 
+    flex: 1, 
+    marginLeft: 10, 
+    fontFamily: 'Montserrat-Regular', 
+    fontSize: 16 
+  },
+  flatListContainer: {
+    flex: 1,
+  },
+  listContainer: { 
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  colorItemContainer: { 
+    flex: 1, 
+    alignItems: 'center', 
+    marginVertical: 8,
+    maxWidth: '25%',
+  },
+  disabledColorItem: { 
+    opacity: 0.4 
+  },
   colorCircleWrapper: {
     width: 52,
     height: 52,
@@ -238,11 +325,34 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  checkIconContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
-  colorName: { fontFamily: 'Montserrat-Medium', fontSize: 12, marginTop: 8, textAlign: 'center' },
-  modalFooter: { borderTopWidth: 1, paddingTop: 16, paddingBottom: 16, paddingHorizontal: 0 },
-  doneButton: { paddingVertical: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  doneButtonText: { fontFamily: 'Montserrat-Bold', fontSize: 16 },
+  checkIconContainer: { 
+    ...StyleSheet.absoluteFillObject, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(0,0,0,0.2)' 
+  },
+  colorName: { 
+    fontFamily: 'Montserrat-Medium', 
+    fontSize: 12, 
+    marginTop: 8, 
+    textAlign: 'center' 
+  },
+  modalFooter: { 
+    borderTopWidth: 1, 
+    paddingTop: 16, 
+    paddingBottom: 16, 
+    paddingHorizontal: 0 
+  },
+  doneButton: { 
+    paddingVertical: 14, 
+    borderRadius: 8, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  doneButtonText: { 
+    fontFamily: 'Montserrat-Bold', 
+    fontSize: 16 
+  },
 });
 
 export default ColorPicker;

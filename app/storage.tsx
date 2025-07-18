@@ -1,4 +1,4 @@
-// app/storage.tsx - Modal sorunu düzeltilmiş versiyon
+// app/storage.tsx - İçerik ortalandı ve butonlar kaldırıldı
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -6,7 +6,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   RefreshControl
 } from 'react-native';
@@ -18,37 +17,18 @@ import {
   ArrowLeft,
   HardDrive,
   FileText,
-  Zap,
   CheckCircle,
   AlertCircle,
   XCircle,
-  RefreshCw,
-  Trash2,
-  Settings,
-  BarChart3,
-  TrendingUp,
   Database,
-  Shield,
-  ChevronDown,
-  ChevronUp
+  BarChart3,
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
-import Button from '@/components/common/Button';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  getFileSystemHealth,
-  cleanupOrphanedImages,
-  listAllImages
-} from '@/utils/fileSystemImageManager';
-import {
-  performFileSystemMaintenance,
-  diagnoseFileSystemHealth,
-  getFileSystemStats
-} from '@/utils/appInitialization';
-import { getCacheAnalytics, forceCacheCleanup, validateAndCleanCaches } from '@/utils/cacheManager';
-import { useClothingStore } from '@/store/clothingStore';
+import { getFileSystemHealth } from '@/utils/fileSystemImageManager';
+import { diagnoseFileSystemHealth } from '@/utils/appInitialization';
+import { getCacheAnalytics } from '@/utils/cacheManager';
 import useAlertStore from '@/store/alertStore';
-import Toast from 'react-native-toast-message';
 
 interface StorageStats {
   fileSystem: {
@@ -78,7 +58,6 @@ export default function StorageManagementScreen() {
   const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [activeOperations, setActiveOperations] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadStorageStats();
@@ -112,7 +91,7 @@ export default function StorageManagementScreen() {
         usage: {
           totalItems: diagnosis.totalItems,
           itemsWithImages: diagnosis.withValidPaths,
-          orphanedFiles: diagnosis.systemHealth.issues.length
+          orphanedFiles: diagnosis.systemHealth.issues.length 
         }
       });
     } catch (error) {
@@ -126,119 +105,6 @@ export default function StorageManagementScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
-
-  const performOperation = async (operationType: string, operation: () => Promise<any>) => {
-    setActiveOperations(prev => new Set(prev).add(operationType));
-
-    try {
-      const result = await operation();
-
-      let titleKey = '';
-      let message = '';
-      switch (operationType) {
-        case 'validate':
-          titleKey = 'validationComplete';
-          message = t('storage.validationResults', {
-            updated: result.updatedCount || 0,
-            removed: result.removedCount || 0
-          });
-          break;
-        case 'cleanup':
-          titleKey = 'cleanupComplete';
-          message = t('storage.cleanupResults', {
-            removed: result.removedCount || result.removedFiles || 0,
-            freed: Math.round((result.freedSpace || result.freedSpaceKB || 0) / 1024)
-          });
-          break;
-        case 'maintenance':
-          titleKey = 'maintenanceComplete';
-          message = t('storage.maintenanceResults');
-          break;
-      }
-
-      if (titleKey && message) {
-        Toast.show({
-          type: 'success',
-          text1: t(`storage.${titleKey}`),
-          text2: message,
-          position: 'top',
-          visibilityTime: 3000,
-        });
-      }
-
-      await loadStorageStats();
-    } catch (error) {
-      console.error(`${operationType} operation failed:`, error);
-      showAlert({
-        title: t('common.error'),
-        message: t('storage.operationFailed'),
-        buttons: [{ text: t('common.ok'), onPress: () => {} }]
-      });
-    } finally {
-      setActiveOperations(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(operationType);
-        return newSet;
-      });
-    }
-  };
-
-  // ✅ ÖNEMLİ DÜZELTME: Modal sorunu burada - showAlert callback'inde router.back() kullanımı
-  const handlePerformMaintenance = () => {
-    showAlert({
-      title: t('storage.performMaintenance'),
-      message: t('storage.maintenanceWarning'),
-      buttons: [
-        { 
-          text: t('common.cancel'), 
-          variant: 'outline',
-          onPress: () => {
-            // Burada hiçbir şey yapmıyoruz, sadece modal'ı kapatıyoruz
-            console.log('Maintenance cancelled');
-          }
-        },
-        {
-          text: t('common.continue'),
-          onPress: () => {
-            // ✅ DÜZELTME: Doğrudan performOperation çağırıyoruz
-            performOperation('maintenance', () => performFileSystemMaintenance(t));
-          },
-          variant: 'primary',
-        },
-      ],
-    });
-  };
-
-  // ✅ DÜZELTME: Router.back() çağrısını optimize etme
-  const handleBackPress = () => {
-    // Eğer bir işlem devam ediyorsa, kullanıcıyı uyar
-    if (activeOperations.size > 0) {
-      showAlert({
-        title: t('common.error'),
-        message: t('storage.operationFailed'),
-        buttons: [
-          { 
-            text: t('common.cancel'), 
-            onPress: () => {},
-            variant: 'outline'
-          },
-          { 
-            text: t('common.continue'), 
-            onPress: () => {
-              // Force exit - operations'ları temizle ve çık
-              setActiveOperations(new Set());
-              router.back();
-            },
-            variant: 'destructive'
-          }
-        ]
-      });
-      return;
-    }
-    
-    // Normal çıkış
-    router.back();
   };
 
   const getHealthColor = (score: number, isHealthy: boolean) => {
@@ -259,14 +125,13 @@ export default function StorageManagementScreen() {
     return t('storage.healthy');
   };
 
-  const renderStatCard = (title: string, value: string, subtitle?: string, icon?: React.ReactNode, color?: string) => (
+  const renderStatCard = (title: string, value: string, icon?: React.ReactNode, color?: string) => (
     <View style={[styles.statCard, { backgroundColor: theme.colors.card }]}>
       <View style={styles.statHeader}>
         {icon}
         <Text style={[styles.statTitle, { color: theme.colors.textLight }]}>{title}</Text>
       </View>
       <Text style={[styles.statValue, { color: color || theme.colors.text }]}>{value}</Text>
-      {subtitle && <Text style={[styles.statSubtitle, { color: theme.colors.textLight }]}>{subtitle}</Text>}
     </View>
   );
 
@@ -276,7 +141,7 @@ export default function StorageManagementScreen() {
         <HeaderBar
           title={t('storage.title')}
           leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-          onLeftPress={handleBackPress}
+          onLeftPress={() => router.back()}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -293,7 +158,7 @@ export default function StorageManagementScreen() {
       <HeaderBar
         title={t('storage.title')}
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-        onLeftPress={handleBackPress}
+        onLeftPress={() => router.back()}
       />
 
       <ScrollView
@@ -343,25 +208,21 @@ export default function StorageManagementScreen() {
             {renderStatCard(
               t('storage.totalSize'),
               `${storageStats?.fileSystem.totalSizeMB || 0} MB`,
-              undefined,
               <HardDrive color={theme.colors.primary} size={20} />
             )}
             {renderStatCard(
               t('storage.fileCount'),
               `${storageStats?.fileSystem.fileCount || 0}`,
-              undefined,
               <FileText color={theme.colors.secondary} size={20} />
             )}
             {renderStatCard(
               t('storage.totalItems'),
               `${storageStats?.usage.totalItems || 0}`,
-              undefined,
               <Database color={theme.colors.accent} size={20} />
             )}
             {renderStatCard(
               t('storage.averageFileSize'),
               `${storageStats?.cache.averageFileSizeKB || 0} KB`,
-              undefined,
               <BarChart3 color={theme.colors.primary} size={20} />
             )}
           </View>
@@ -384,33 +245,6 @@ export default function StorageManagementScreen() {
             </View>
           </View>
         )}
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            {t('storage.actions')}
-          </Text>
-
-          <View style={styles.actionsGrid}>
-            <Button
-              label={t('storage.refreshStats')}
-              onPress={() => loadStorageStats(true)}
-              variant="outline"
-              style={styles.actionButton}
-              disabled={isRefreshing}
-              loading={isRefreshing}
-              icon={<RefreshCw color={theme.colors.accent} size={20} />}
-            />
-            <Button
-              label={activeOperations.has('maintenance') ? t('storage.performing') : t('storage.performMaintenance')}
-              onPress={handlePerformMaintenance}
-              variant="primary"
-              style={styles.actionButton}
-              disabled={activeOperations.has('maintenance')}
-              loading={activeOperations.has('maintenance')}
-              icon={<Settings color={theme.colors.white} size={20} />}
-            />
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -434,16 +268,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
+    flexGrow: 1, // DEĞİŞİKLİK: İçeriğin dikeyde büyümesini sağlar
+    justifyContent: 'center', // DEĞİŞİKLİK: İçeriği dikeyde ortalar
+    padding: 24,
     paddingBottom: 32,
   },
   section: {
     marginBottom: 24,
+    width: '100%', // Genişliğin tam olmasını garantiler
   },
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Montserrat-Bold',
-    marginBottom: 12,
+    marginBottom: 16, // Boşluk artırıldı
+    textAlign: 'center', // Başlığı ortala
   },
   healthCard: {
     padding: 16,
@@ -497,11 +335,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 20,
     fontFamily: 'Montserrat-Bold',
-    marginBottom: 4,
-  },
-  statSubtitle: {
-    fontSize: 11,
-    fontFamily: 'Montserrat-Regular',
   },
   recommendationsCard: {
     padding: 16,
@@ -518,11 +351,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Montserrat-Regular',
     lineHeight: 20,
-  },
-  actionsGrid: {
-    gap: 12,
-  },
-  actionButton: {
-    marginBottom: 8,
   },
 });

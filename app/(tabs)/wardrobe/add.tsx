@@ -1,6 +1,6 @@
-// app/(tabs)/wardrobe/add.tsx - Düzeltilmiş focus ve UX sorunları
+// app/(tabs)/wardrobe/add.tsx - Renk seçimi alanı düzeltildi
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -22,8 +22,7 @@ import { generateUniqueId } from '@/utils/helpers';
 import { useFocusEffect } from '@react-navigation/native';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
-import { ImagePaths, getImageUri } from '@/utils/fileSystemImageManager';
-import { ALL_COLORS } from '@/utils/constants';
+import { commitTempImage, deleteTempImage } from '@/utils/fileSystemImageManager';
 
 type FormData = {
   name: string;
@@ -39,18 +38,18 @@ export default function AddClothingScreen() {
   const { theme } = useTheme();
   const { addClothing } = useClothingStore();
   const { userPlan } = useUserPlanStore();
-  const [selectedImagePaths, setSelectedImagePaths] = useState<ImagePaths | null>(null);
+  const [tempImageUri, setTempImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const { show: showAlert } = useAlertStore();
+  const formSubmitted = useRef(false);
 
   const {
     control,
     handleSubmit,
     formState: { errors },
     reset,
-    watch,
   } = useForm<FormData>({
     defaultValues: {
       name: '',
@@ -62,63 +61,62 @@ export default function AddClothingScreen() {
     },
   });
 
-  const watchedColors = watch('colors', []);
+  useEffect(() => {
+    return () => {
+      if (tempImageUri && !formSubmitted.current) {
+        deleteTempImage(tempImageUri);
+        console.log('Cancelled add, cleaned up temp image:', tempImageUri);
+      }
+    };
+  }, [tempImageUri]);
 
   useFocusEffect(
     useCallback(() => {
+      formSubmitted.current = false;
       reset({ name: '', category: '', colors: [], season: [], style: [], notes: '' });
-      setSelectedImagePaths(null);
+      if (tempImageUri) {
+        deleteTempImage(tempImageUri);
+      }
+      setTempImageUri(null);
       setIsLoading(false);
       setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
     }, [reset])
   );
 
-  const handleOpenGalleryPicker = () => {
-    setShowGalleryPicker(true);
-  };
-
-  const handleImageSelected = (imagePaths: ImagePaths) => {
-    setSelectedImagePaths(imagePaths);
-    console.log('✅ Image paths selected for add:', {
-      original: imagePaths.originalPath,
-      thumbnail: imagePaths.thumbnailPath,
-      fileName: imagePaths.fileName
-    });
+  const handleImageSelected = (uri: string) => {
+    if (tempImageUri) {
+        deleteTempImage(tempImageUri);
+    }
+    setTempImageUri(uri);
     setShowGalleryPicker(false);
   };
 
   const removeImage = () => {
-    setSelectedImagePaths(null);
+    if (tempImageUri) {
+      deleteTempImage(tempImageUri);
+    }
+    setTempImageUri(null);
   };
 
   const onSubmit = async (data: FormData) => {
-    if (!selectedImagePaths) {
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.imageRequired'),
-        buttons: [{ text: t('common.ok') }]
-      });
+    if (!tempImageUri) {
+      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok') }] });
       return;
     }
     if (!data.category) {
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.categoryRequired'),
-        buttons: [{ text: t('common.ok') }]
-      });
+      showAlert({ title: t('common.error'), message: t('wardrobe.categoryRequired'), buttons: [{ text: t('common.ok') }] });
       return;
     }
     if (!data.colors || data.colors.length === 0) {
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.colorRequired'),
-        buttons: [{ text: t('common.ok') }]
-      });
+      showAlert({ title: t('common.error'), message: t('wardrobe.colorRequired'), buttons: [{ text: t('common.ok') }] });
       return;
     }
 
     setIsLoading(true);
     try {
+      const finalImagePaths = await commitTempImage(tempImageUri);
+      formSubmitted.current = true;
+
       const newItem = {
         id: generateUniqueId(),
         name: data.name,
@@ -128,8 +126,8 @@ export default function AddClothingScreen() {
         season: data.season,
         style: data.style.join(','),
         notes: data.notes,
-        originalImagePath: selectedImagePaths.originalPath,
-        thumbnailImagePath: selectedImagePaths.thumbnailPath,
+        originalImagePath: finalImagePaths.originalPath,
+        thumbnailImagePath: finalImagePaths.thumbnailPath,
         createdAt: new Date().toISOString(),
       };
 
@@ -147,28 +145,20 @@ export default function AddClothingScreen() {
       router.replace('/(tabs)/wardrobe');
     } catch (error) {
       console.error('❌ Error adding clothing item:', error);
-      showAlert({
-        title: t('common.error'),
-        message: t('wardrobe.errorAddingItem'),
-        buttons: [{ text: t('common.ok') }]
-      });
+      showAlert({ title: t('common.error'), message: t('wardrobe.errorAddingItem'), buttons: [{ text: t('common.ok') }] });
     } finally {
       setIsLoading(false);
     }
   };
 
   const renderImageSection = () => {
-    if (selectedImagePaths) {
-      const imageUri = getImageUri(selectedImagePaths.originalPath, false);
-      
+    if (tempImageUri) {
       return (
         <View style={styles.imageContainer}>
           <Image
-            source={{ uri: imageUri }}
+            source={{ uri: tempImageUri }}
             style={styles.clothingImage}
-            onError={(error) => {
-              console.error('Image load error:', error);
-            }}
+            onError={(e) => console.error('Failed to load temp image:', e.nativeEvent.error)}
           />
           <TouchableOpacity
             style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]}
@@ -176,20 +166,19 @@ export default function AddClothingScreen() {
           >
             <X color={theme.colors.white} size={20} />
           </TouchableOpacity>
-          <View style={[styles.imageInfo, { backgroundColor: theme.colors.card }]}>
-            <Text style={[styles.imageInfoText, { color: theme.colors.textLight }]}>
-              {t('wardrobe.storedInApp')}
-            </Text>
-          </View>
         </View>
       );
     }
     return (
-      <View style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}>
+      <TouchableOpacity 
+        style={[styles.imagePlaceholder, { backgroundColor: theme.colors.card }]}
+        onPress={() => setShowGalleryPicker(true)}
+      >
+        <ImageIcon color={theme.colors.textLight} size={48} />
         <Text style={[styles.imagePlaceholderText, { color: theme.colors.textLight }]}>
           {t('wardrobe.addPhoto')}
         </Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -213,8 +202,8 @@ export default function AddClothingScreen() {
             <View style={styles.imageButtonsContainer}>
               <Button
                 icon={<ImageIcon color={theme.colors.text} size={20} />}
-                label={t('wardrobe.choosePhoto')}
-                onPress={handleOpenGalleryPicker}
+                label={tempImageUri ? t('wardrobe.changePhoto') : t('wardrobe.choosePhoto')}
+                onPress={() => setShowGalleryPicker(true)}
                 variant="outline"
                 style={styles.imageButton}
                 disabled={isLoading}
@@ -222,31 +211,22 @@ export default function AddClothingScreen() {
             </View>
           </View>
           <View style={styles.formSection}>
-            <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.name')}
-              </Text>
-              <Controller
-                control={control}
-                name="name"
-                rules={{ required: t('wardrobe.nameRequired') as string }}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    placeholder={t('wardrobe.namePlaceholder')}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    error={errors.name?.message}
-                    editable={!isLoading}
-                    returnKeyType="next"
-                    onSubmitEditing={() => {
-                      // Klavyeyi kapat ve fokus temizle
-                      scrollViewRef.current?.scrollTo({ y: 200, animated: true });
-                    }}
-                  />
-                )}
-              />
-            </View>
+            <Controller
+              control={control}
+              name="name"
+              rules={{ required: t('wardrobe.nameRequired') as string }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label={t('wardrobe.name')}
+                  placeholder={t('wardrobe.namePlaceholder')}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  error={errors.name?.message}
+                  editable={!isLoading}
+                />
+              )}
+            />
 
             <Controller
               control={control}
@@ -261,7 +241,7 @@ export default function AddClothingScreen() {
                 />
               )}
             />
-
+            
             <View>
               <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                 {t('wardrobe.colors')}
@@ -283,72 +263,44 @@ export default function AddClothingScreen() {
             </View>
 
             <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.season')}
-              </Text>
-              <Controller
-                control={control}
-                name="season"
-                rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }}
-                render={({ field: { onChange, value } }) => (
-                  <SeasonPicker
-                    selectedSeasons={value}
-                    onSelectSeason={onChange}
-                  />
-                )}
-              />
-              {errors.season && (
-                <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.season.message}
-                </Text>
-              )}
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.season')}</Text>
+                <Controller
+                    control={control}
+                    name="season"
+                    rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }}
+                    render={({ field: { onChange, value } }) => <SeasonPicker selectedSeasons={value} onSelectSeason={onChange} />}
+                />
+                {errors.season && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>}
             </View>
 
             <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.style')}
-              </Text>
-              <Controller
-                control={control}
-                name="style"
-                rules={{ validate: (value) => value.length > 0 || (t('wardrobe.styleRequired') as string) }}
-                render={({ field: { onChange, value } }) => (
-                  <StylePicker
-                    selectedStyles={value}
-                    onSelectStyles={onChange}
-                    multiSelect={true}
-                  />
-                )}
-              />
-              {errors.style && (
-                <Text style={[styles.errorText, { color: theme.colors.error }]}>
-                  {errors.style.message}
-                </Text>
-              )}
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.style')}</Text>
+                <Controller
+                    control={control}
+                    name="style"
+                    rules={{ validate: (value) => value.length > 0 || (t('wardrobe.styleRequired') as string) }}
+                    render={({ field: { onChange, value } }) => <StylePicker selectedStyles={value} onSelectStyles={onChange} multiSelect />}
+                />
+                {errors.style && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>}
             </View>
 
-            <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.notes')}
-              </Text>
-              <Controller
-                control={control}
-                name="notes"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    placeholder={t('wardrobe.notesPlaceholder')}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    multiline
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                    editable={!isLoading}
-                    returnKeyType="done"
-                  />
-                )}
-              />
-            </View>
+            <Controller
+              control={control}
+              name="notes"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <Input
+                  label={t('wardrobe.notes')}
+                  placeholder={t('wardrobe.notesPlaceholder')}
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  editable={!isLoading}
+                />
+              )}
+            />
             <Button
               label={isLoading ? t('common.saving') : t('wardrobe.saveItem')}
               onPress={handleSubmit(onSubmit)}
@@ -387,7 +339,6 @@ const styles = StyleSheet.create({
   clothingImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover'
   },
   removeImageButton: {
     position: 'absolute',
@@ -397,22 +348,8 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     justifyContent: 'center',
-    alignItems: 'center'
-  },
-  imageInfo: {
-    position: 'absolute',
-    bottom: 8,
-    left: 8,
-    right: 8,
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(0,0,0,0.7)'
-  },
-  imageInfoText: {
-    fontSize: 12,
-    fontFamily: 'Montserrat-Regular',
-    color: '#FFFFFF',
-    textAlign: 'center'
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)'
   },
   imagePlaceholder: {
     width: '100%',
@@ -420,11 +357,15 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16
+    marginBottom: 16,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#ddd'
   },
   imagePlaceholderText: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 16
+    fontSize: 16,
+    marginTop: 8,
   },
   imageButtonsContainer: {
     flexDirection: 'row',
@@ -440,12 +381,12 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Montserrat-Bold',
     fontSize: 16,
-    marginBottom: 8
+    marginBottom: 8,
   },
   errorText: {
     fontFamily: 'Montserrat-Regular',
     fontSize: 12,
-    marginTop: 4
+    marginTop: 4,
   },
   saveButton: {
     marginTop: 16

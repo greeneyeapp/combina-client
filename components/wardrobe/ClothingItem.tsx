@@ -1,4 +1,4 @@
-// components/wardrobe/ClothingItem.tsx - Görsel optimizasyonu
+// kodlar/components/wardrobe/ClothingItem.tsx - Görsel optimizasyonu
 
 import React, { useState, useEffect, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
@@ -21,7 +21,6 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   const { theme } = useTheme();
 
   const [imageError, setImageError] = useState(false);
-  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
 
   useEffect(() => {
     setImageError(false);
@@ -35,14 +34,6 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   };
 
   const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
-
-  // Resim yüklendiğinde aspect ratio'yu hesapla
-  const handleImageLoad = (event: any) => {
-    const { width, height } = event.nativeEvent.source;
-    if (width && height) {
-      setImageAspectRatio(width / height);
-    }
-  };
 
   const renderColorIndicators = () => {
     const displayColors = itemColors.slice(0, 3);
@@ -105,29 +96,11 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
       );
     }
 
-    // SEÇENEK 1: Dinamik yükseklik
-    /* 
-    const maxAspectRatio = 1.5;
-    const minAspectRatio = 0.7; 
-    const clampedAspectRatio = Math.max(minAspectRatio, Math.min(maxAspectRatio, imageAspectRatio));
-    return (
-      <Image
-        source={{ uri: thumbnailUri }}
-        style={[styles.image, { aspectRatio: clampedAspectRatio }]}
-        resizeMode="contain"
-        onLoad={handleImageLoad}
-        onError={() => setImageError(true)}
-      />
-    );
-    */
-
-    // SEÇENEK 2: Kare format ama doğru orantıda
     return (
       <Image
         source={{ uri: thumbnailUri }}
         style={styles.image}
-        resizeMode="contain" // Görüntüyü kırpmadan sığdır
-        onLoad={handleImageLoad}
+        resizeMode="cover" // BU AYARIN 'cover' OLDUĞUNDAN EMİN OLUN
         onError={() => setImageError(true)}
       />
     );
@@ -179,12 +152,12 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    aspectRatio: 1, // Kare format için geri ekle
+    aspectRatio: 1,
     position: 'relative',
     backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden', // Bu önemli - taşan kısımları gizle
+    overflow: 'hidden',
   },
   image: {
     width: '100%',
@@ -192,7 +165,7 @@ const styles = StyleSheet.create({
   },
   placeholderContainer: {
     width: '100%',
-    height: 120,
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },

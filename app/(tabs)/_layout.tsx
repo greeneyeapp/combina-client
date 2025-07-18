@@ -1,4 +1,5 @@
-// app/(tabs)/_layout.tsx - Ana sayfa ile güncellenmiş
+// app/(tabs)/_layout.tsx - Tab bar metin sığma sorunu düzeltildi
+
 import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -46,16 +47,17 @@ export default function TabLayout() {
           elevation: 0,
           shadowOpacity: 0,
           height: 60,
-          paddingBottom: 8,
+          paddingTop: 2, // İkon ve metin için üst boşluk
+          paddingBottom: 5, // Alt boşluk azaltıldı
         },
         tabBarLabelStyle: {
           fontFamily: 'Montserrat-Medium',
-          fontSize: 12,
+          fontSize: 11, // Yazı tipi boyutu 12'den 11'e düşürüldü
         },
         headerShown: false,
       }}>
       
-      {/* YENİ: Ana Sayfa */}
+      {/* Ana Sayfa */}
       <Tabs.Screen
         name="home/index"
         options={{

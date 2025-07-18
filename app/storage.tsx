@@ -1,4 +1,4 @@
-// app/storage.tsx - İstenen metin kaldırıldı
+// app/storage.tsx - Async pop-up onayı sorunu düzeltildi
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -185,20 +185,19 @@ export default function StorageManagementScreen() {
     }
   };
 
+  // --- IŞTE DÜZELTME BURADA ---
   const handlePerformMaintenance = () => {
     showAlert({
       title: t('storage.performMaintenance'),
       message: t('storage.maintenanceWarning'),
       buttons: [
-        { text: t('common.cancel'), variant: 'outline', onPress: () => { } },
+        { text: t('common.cancel'), variant: 'outline' },
         {
           text: t('common.continue'),
-          // 'async' ve 'await' kaldırıldı
-          onPress: () => {
-            // İşlemi doğrudan çağırmak yerine bir setTimeout içine alın
-            setTimeout(() => {
-              performOperation('maintenance', () => performFileSystemMaintenance(t));
-            }, 50); // 50ms gecikme, UI'ın akıcı kalmasına yardımcı olur
+          // onPress fonksiyonunu 'async' olarak işaretleyip,
+          // işlemi 'await' ile bekleyerek kararlı hale getiriyoruz.
+          onPress: async () => {
+            await performOperation('maintenance', () => performFileSystemMaintenance(t));
           },
           variant: 'primary'
         }
@@ -314,13 +313,13 @@ export default function StorageManagementScreen() {
             {renderStatCard(
               t('storage.fileCount'),
               `${storageStats?.fileSystem.fileCount || 0}`,
-              undefined, // <--- METİN BURADAN KALDIRILDI
+              undefined, 
               <FileText color={theme.colors.secondary} size={20} />
             )}
             {renderStatCard(
               t('storage.totalItems'),
               `${storageStats?.usage.totalItems || 0}`,
-              undefined, // Alt başlık kaldırıldı
+              undefined,
               <Database color={theme.colors.accent} size={20} />
             )}
             {renderStatCard(

@@ -32,6 +32,7 @@ export function useAuth() {
   return context;
 }
 
+// Global initialization tracking
 let authInitialized = false;
 let lastProfileRefresh = 0;
 const PROFILE_REFRESH_THROTTLE = 60 * 1000; // 1 dakika minimum aralık
@@ -44,6 +45,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const { clearUserPlan } = useUserPlanStore();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+
 
   React.useEffect(() => {
     loadJwt();
@@ -62,6 +64,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   React.useEffect(() => {
+    // Prevent multiple initializations
     if (!isReady || authInitialized) return;
 
     const initializeAuth = async () => {
@@ -72,10 +75,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         let finalUser = null;
         try {
           const userInfo = await getUserFromToken(jwt);
-          if (!userInfo) {
-            throw new Error("Invalid token could not be decoded.");
-          }
-          
           let cachedData = {};
           try {
             const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
@@ -86,45 +85,62 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             console.warn('Could not load cached user data:', e);
           }
 
+          if (!userInfo) {
+            throw new Error("Invalid token could not be decoded.");
+          }
+
           finalUser = { ...userInfo, ...cachedData };
           setUser(finalUser);
           if (finalUser?.uid) await Purchases.logIn(finalUser.uid);
 
-          // Arka planda profili sessizce yenile
-          console.log('🔄 Refreshing user profile in background...');
-          initializeUserProfile().catch(profileError => {
-            console.warn('Could not refresh user profile on startup. App will use cached data:', profileError);
-          });
-
         } catch (error) {
-          // Sadece token geçersizse veya kritik bir hata varsa çıkış yap
           console.error('Critical auth validation failed, logging out:', error);
-          await logout(); // Logout fonksiyonunu çağırarak temiz bir çıkış sağla
+          await clearJwt();
+          clearUserPlan();
+          setUser(null);
+          await AsyncStorage.removeItem(USER_CACHE_KEY);
+          setLoading(false);
           return;
         }
+        
+        if (finalUser && finalUser.uid) {
+          try {
+            console.log('🔄 Refreshing user profile in background...');
+            await initializeUserProfile();
+          } catch (profileError) {
+            console.warn('Could not refresh user profile on startup. App will use cached data:', profileError);
+          }
+        }
+
       } else {
         setUser(null);
         clearUserPlan();
         await AsyncStorage.removeItem(USER_CACHE_KEY);
       }
+
       setLoading(false);
     };
 
     initializeAuth();
   }, [isReady, jwt]);
 
-  const signInWithGoogle = async (accessToken: string) => {
+    const signInWithGoogle = async (accessToken: string) => {
     setLoading(true);
+
     try {
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
       const completeUserInfo = {
         uid: user_info?.uid,
         name: user_info?.name || '',
+        fullname: user_info?.name || '',
         displayName: user_info?.name || '',
         email: user_info?.email || '',
         gender: user_info?.gender || null,
         birthDate: user_info?.birthDate || null,
+        plan: user_info?.plan || 'free',
+        provider: 'google',
+        isAnonymous: false
       };
       setUser(completeUserInfo);
       await setJwt(access_token);
@@ -132,18 +148,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      await initializeUserProfile();
+
+      const now = Date.now();
+      if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
+        lastProfileRefresh = now;
+        await initializeUserProfile();
+      }
+
+      setLoading(false);
       return completeUserInfo;
     } catch (error) {
+      setLoading(false);
       console.error('❌ GOOGLE SIGN-IN ERROR:', error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const signInWithApple = async (credential: any) => {
     setLoading(true);
+
     try {
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
@@ -152,69 +175,115 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await axios.post(`${API_URL}/auth/apple`, {
         identity_token: credential.identityToken,
         authorization_code: credential.authorizationCode,
-        user_info: { name: nameForBackend, email: credential.email }
+        user_info: {
+          name: nameForBackend,
+          email: credential.email
+        }
       }, { timeout: 30000 });
 
       const { access_token, user_info } = response.data;
-      if (!user_info) throw new Error("User info was not returned from the server.");
+
+      if (!user_info) {
+        throw new Error("User info was not returned from the server.");
+      }
 
       await setJwt(access_token);
-      const finalName = user_info.name || nameForBackend;
+
+      const finalName = user_info.fullname || user_info.name || nameForBackend;
       const finalEmail = user_info.email || credential.email || '';
 
       const completeUserInfo = {
         uid: user_info.uid,
         name: finalName,
+        fullname: finalName,
         displayName: finalName,
         email: finalEmail,
         gender: user_info.gender || null,
         birthDate: user_info.birthDate || null,
+        plan: user_info.plan || 'free',
+        provider: 'apple',
+        isAnonymous: false
       };
+
       setUser(completeUserInfo);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
+
       if (user_info.uid) {
         await Purchases.logIn(user_info.uid);
       }
-      await initializeUserProfile();
+
+      const now = Date.now();
+      if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
+        lastProfileRefresh = now;
+        await initializeUserProfile();
+      }
+
+      setLoading(false);
       return completeUserInfo;
+
     } catch (error) {
+      setLoading(false);
       console.error('❌ APPLE SIGN-IN ERROR:', error);
       throw error;
-    } finally {
-      setLoading(false);
     }
   };
 
   const updateUserInfo = async (info: { name: string; gender: string; birthDate: string }) => {
-    const token = useApiAuthStore.getState().jwt;
-    await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
-    const updatedUser = { ...user, name: info.name, displayName: info.name, gender: info.gender, birthDate: info.birthDate };
-    setUser(updatedUser);
-    await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
-    await refreshUserProfile();
+    try {
+      const token = useApiAuthStore.getState().jwt;
+      await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
+      const updatedUser = { ...user, name: info.name, fullname: info.name, displayName: info.name, gender: info.gender, birthDate: info.birthDate };
+      setUser(updatedUser);
+      await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
+      const now = Date.now();
+      if (now - lastProfileRefresh > PROFILE_REFRESH_THROTTLE) {
+        lastProfileRefresh = now;
+        await refreshUserProfile();
+      }
+    } catch (error) {
+      console.error('Update user info error:', error);
+      throw error;
+    }
   };
 
   const logout = async () => {
-    console.log('🚪 Starting logout process...');
-    setUser(null);
-    clearUserPlan();
-    await clearJwt();
-    await AsyncStorage.removeItem(USER_CACHE_KEY);
-    authInitialized = false;
     try {
-      await Purchases.logOut();
-      console.log('✅ RevenueCat logout successful');
-    } catch (revenueCatError) {
-      console.warn('⚠️ RevenueCat logout error (can be ignored):', revenueCatError);
+      console.log('🚪 Starting logout process...');
+      const inAuthGroup = segments[0] === '(auth)';
+
+      setUser(null);
+      clearUserPlan();
+      await clearJwt();
+      await AsyncStorage.removeItem(USER_CACHE_KEY);
+
+      authInitialized = false;
+      lastProfileRefresh = 0;
+
+      try {
+        await Purchases.logOut();
+        console.log('✅ RevenueCat logout successful');
+      } catch (revenueCatError) {
+        console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
+      }
+
+      router.replace('/(auth)');
+
+    } catch (error) {
+      console.error("🚨 Logout Error:", error);
+      setUser(null);
+      clearUserPlan();
+      await AsyncStorage.removeItem(USER_CACHE_KEY);
+      router.replace('/(auth)');
     }
-    router.replace('/(auth)');
   };
 
   const refreshUserProfile = async () => {
     const now = Date.now();
     if (now - lastProfileRefresh < PROFILE_REFRESH_THROTTLE) {
+      console.log('🚫 Profile refresh throttled');
       return;
     }
+
     if (user) {
       try {
         lastProfileRefresh = now;
@@ -227,7 +296,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   React.useEffect(() => {
     if (!navigationState?.key || loading || isAuthFlowActive) return;
+
     const inAuthGroup = segments[0] === '(auth)';
+
     if (user && jwt) {
       const profileComplete = user.gender && user.birthDate;
       if (!profileComplete && segments[1] !== 'complete-profile') {

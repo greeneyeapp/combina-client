@@ -82,24 +82,11 @@ export default function StorageManagementScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeOperations, setActiveOperations] = useState<Set<string>>(new Set());
-  
-  const [pendingOperation, setPendingOperation] = useState<{ type: string; operation: () => Promise<any> } | null>(null);
 
 
   useEffect(() => {
     loadStorageStats();
   }, []);
-  
-  useEffect(() => {
-    const executeOperation = async () => {
-      if (pendingOperation) {
-        await performOperation(pendingOperation.type, pendingOperation.operation);
-        setPendingOperation(null);
-      }
-    };
-
-    executeOperation();
-  }, [pendingOperation]); 
 
   const loadStorageStats = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) {
@@ -210,17 +197,14 @@ export default function StorageManagementScreen() {
         {
           text: t('common.continue'),
           onPress: () => {
-            setPendingOperation({
-              type: 'maintenance',
-              operation: () => performFileSystemMaintenance(t)
-            });
+            performOperation('maintenance', () => performFileSystemMaintenance(t));
           },
-          variant: 'primary'
-        }
-      ]
+          variant: 'primary',
+        },
+      ],
     });
   };
-  
+
   const getHealthColor = (score: number, isHealthy: boolean) => {
     if (!isHealthy || score < 50) return theme.colors.error;
     if (score < 80) return theme.colors.warning;
@@ -329,7 +313,7 @@ export default function StorageManagementScreen() {
             {renderStatCard(
               t('storage.fileCount'),
               `${storageStats?.fileSystem.fileCount || 0}`,
-              undefined, 
+              undefined,
               <FileText color={theme.colors.secondary} size={20} />
             )}
             {renderStatCard(

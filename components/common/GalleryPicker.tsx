@@ -1,4 +1,4 @@
-// components/common/GalleryPicker.tsx - YENİ YAPI: Geçici dosya sistemini kullanır ve onay barı geri getirildi
+// components/common/GalleryPicker.tsx - Kamera kırpma sorunu düzeltildi
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
@@ -106,12 +106,14 @@ export default function GalleryPicker({
         console.error('Camera permission denied');
         return;
       }
+
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
+        // allowsEditing: true, // DEĞİŞİKLİK: Kırpmayı zorunlu kılan satır kaldırıldı.
+        // aspect: [4, 3],      // DEĞİŞİKLİK: Kırpma oranı artık gereksiz.
         quality: 0.8,
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
       });
+
       if (!result.canceled) {
         const tempUri = await saveImageToTemp(result.assets[0].uri);
         onSelectImage(tempUri);
@@ -223,13 +225,11 @@ export default function GalleryPicker({
             <X color={theme.colors.text} size={24} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('wardrobe.selectPhoto')}</Text>
-          {/* Header'daki onay butonu, footer varken kafa karıştırabilir diye kaldırıldı. */}
           <View style={{ width: 40 }} />
         </View>
         
         {renderContent()}
 
-        {/* --- İSTEĞİNİZ ÜZERİNE GERİ GETİRİLEN BÖLÜM --- */}
         {selectedAsset && !isProcessing && (
           <View style={[styles.selectionFooter, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
             <Image
@@ -253,7 +253,6 @@ export default function GalleryPicker({
             </TouchableOpacity>
           </View>
         )}
-        {/* --- BİTİŞ --- */}
 
         {isProcessing && (
           <View style={styles.processingOverlay}>
@@ -289,7 +288,6 @@ const styles = StyleSheet.create({
   processingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', zIndex: 1000 },
   processingContainer: { padding: 32, borderRadius: 16, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 },
   processingText: { fontSize: 16, fontFamily: 'Montserrat-Medium', marginTop: 16 },
-  // --- YENİ EKLENEN VEYA GÜNCELLENEN STİLLER ---
   selectionFooter: { flexDirection: 'row', alignItems: 'center', padding: 16, borderTopWidth: 1, minHeight: 80 },
   selectedPreview: { width: 50, height: 50, borderRadius: 8, marginRight: 12 },
   selectionInfo: { flex: 1 },

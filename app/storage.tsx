@@ -75,13 +75,11 @@ export default function StorageManagementScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const { show: showAlert } = useAlertStore();
-  const { validateClothingImages, cleanupOrphanedFiles } = useClothingStore();
 
   const [storageStats, setStorageStats] = useState<StorageStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeOperations, setActiveOperations] = useState<Set<string>>(new Set());
-  const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
     loadStorageStats();
@@ -192,12 +190,15 @@ export default function StorageManagementScreen() {
       title: t('storage.performMaintenance'),
       message: t('storage.maintenanceWarning'),
       buttons: [
-        { text: t('common.cancel'), variant: 'outline', onPress: () => {} },
+        { text: t('common.cancel'), variant: 'outline', onPress: () => { } },
         {
           text: t('common.continue'),
-          onPress: async () => {
-            await new Promise(resolve => setTimeout(resolve, 50));
-            performOperation('maintenance', () => performFileSystemMaintenance(t));
+          // 'async' ve 'await' kaldırıldı
+          onPress: () => {
+            // İşlemi doğrudan çağırmak yerine bir setTimeout içine alın
+            setTimeout(() => {
+              performOperation('maintenance', () => performFileSystemMaintenance(t));
+            }, 50); // 50ms gecikme, UI'ın akıcı kalmasına yardımcı olur
           },
           variant: 'primary'
         }
@@ -319,7 +320,7 @@ export default function StorageManagementScreen() {
             {renderStatCard(
               t('storage.totalItems'),
               `${storageStats?.usage.totalItems || 0}`,
-              `${storageStats?.usage.itemsWithImages || 0} ${t('storage.itemsWithImages')}`,
+              undefined, // Alt başlık kaldırıldı
               <Database color={theme.colors.accent} size={20} />
             )}
             {renderStatCard(

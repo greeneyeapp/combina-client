@@ -1,4 +1,4 @@
-// app/storage.tsx - Async pop-up onayı sorunu düzeltildi
+// app/storage.tsx - useEffect ile en güvenli hale getirilmiş async işlem yönetimi
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -51,6 +51,7 @@ import { useClothingStore } from '@/store/clothingStore';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
 
+// ... (interface StorageStats tanımı burada)
 interface StorageStats {
   fileSystem: {
     totalSizeMB: number;
@@ -71,6 +72,7 @@ interface StorageStats {
   };
 }
 
+
 export default function StorageManagementScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -80,10 +82,24 @@ export default function StorageManagementScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeOperations, setActiveOperations] = useState<Set<string>>(new Set());
+  
+  const [pendingOperation, setPendingOperation] = useState<{ type: string; operation: () => Promise<any> } | null>(null);
+
 
   useEffect(() => {
     loadStorageStats();
   }, []);
+  
+  useEffect(() => {
+    const executeOperation = async () => {
+      if (pendingOperation) {
+        await performOperation(pendingOperation.type, pendingOperation.operation);
+        setPendingOperation(null);
+      }
+    };
+
+    executeOperation();
+  }, [pendingOperation]); 
 
   const loadStorageStats = async (showRefreshIndicator = false) => {
     if (showRefreshIndicator) {
@@ -130,7 +146,7 @@ export default function StorageManagementScreen() {
   };
 
   const performOperation = async (operationType: string, operation: () => Promise<any>) => {
-    setActiveOperations(prev => new Set([...prev, operationType]));
+    setActiveOperations(prev => new Set(prev).add(operationType));
 
     try {
       const result = await operation();
@@ -185,7 +201,6 @@ export default function StorageManagementScreen() {
     }
   };
 
-  // --- IŞTE DÜZELTME BURADA ---
   const handlePerformMaintenance = () => {
     showAlert({
       title: t('storage.performMaintenance'),
@@ -194,17 +209,18 @@ export default function StorageManagementScreen() {
         { text: t('common.cancel'), variant: 'outline' },
         {
           text: t('common.continue'),
-          // onPress fonksiyonunu 'async' olarak işaretleyip,
-          // işlemi 'await' ile bekleyerek kararlı hale getiriyoruz.
-          onPress: async () => {
-            await performOperation('maintenance', () => performFileSystemMaintenance(t));
+          onPress: () => {
+            setPendingOperation({
+              type: 'maintenance',
+              operation: () => performFileSystemMaintenance(t)
+            });
           },
           variant: 'primary'
         }
       ]
     });
   };
-
+  
   const getHealthColor = (score: number, isHealthy: boolean) => {
     if (!isHealthy || score < 50) return theme.colors.error;
     if (score < 80) return theme.colors.warning;

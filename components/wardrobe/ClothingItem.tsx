@@ -86,10 +86,6 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
               </View>
             )}
           </View>
-          {/* Çok renkli itemlerde toplam renk sayısını göster */}
-          <Text style={[styles.multiColorText, { color: theme.colors.textLight }]} numberOfLines={1}>
-            {itemColors.length} {t('wardrobe.color')}
-          </Text>
         </View>
       );
     }

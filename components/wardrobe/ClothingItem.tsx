@@ -1,4 +1,4 @@
-// components/wardrobe/ClothingItem.tsx - Pattern desteği ile güncellenmiş
+// components/wardrobe/ClothingItem.tsx - Görsel optimizasyonu
 
 import React, { useState, useEffect, memo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
@@ -21,6 +21,7 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
   const { theme } = useTheme();
 
   const [imageError, setImageError] = useState(false);
+  const [imageAspectRatio, setImageAspectRatio] = useState<number>(1);
 
   useEffect(() => {
     setImageError(false);
@@ -35,9 +36,13 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
 
   const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
 
-  // ClothingItem.tsx - Pattern gösterimi için layout düzenlemesi
-
-  // renderColorIndicators fonksiyonunu şu şekilde değiştirin:
+  // Resim yüklendiğinde aspect ratio'yu hesapla
+  const handleImageLoad = (event: any) => {
+    const { width, height } = event.nativeEvent.source;
+    if (width && height) {
+      setImageAspectRatio(width / height);
+    }
+  };
 
   const renderColorIndicators = () => {
     const displayColors = itemColors.slice(0, 3);
@@ -50,9 +55,9 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
         <View style={styles.singleColorContainer}>
           <ColorPatternDisplay
             color={colorData}
-            size={14} // 12'den 14'e çıkardık
+            size={14}
             theme={theme}
-            style={{ marginRight: 8 }} // 6'dan 8'e çıkardık
+            style={{ marginRight: 8 }}
           />
           <Text style={[styles.colorText, { color: theme.colors.textLight }]} numberOfLines={2}>
             {t(`colors.${displayColors[0]}`)}
@@ -71,10 +76,10 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
                 <ColorPatternDisplay
                   key={colorName}
                   color={colorData}
-                  size={14} // 12'den 14'e çıkardık
+                  size={14}
                   theme={theme}
                   style={{
-                    marginLeft: index > 0 ? -2 : 0, // -4'ten -2'ye değiştirdik (daha az overlap)
+                    marginLeft: index > 0 ? -2 : 0,
                     zIndex: displayColors.length - index
                   }}
                 />
@@ -100,11 +105,29 @@ const ClothingItem = memo(({ item, onPress, onEdit }: ClothingItemProps) => {
       );
     }
 
+    // SEÇENEK 1: Dinamik yükseklik
+    /* 
+    const maxAspectRatio = 1.5;
+    const minAspectRatio = 0.7; 
+    const clampedAspectRatio = Math.max(minAspectRatio, Math.min(maxAspectRatio, imageAspectRatio));
+    return (
+      <Image
+        source={{ uri: thumbnailUri }}
+        style={[styles.image, { aspectRatio: clampedAspectRatio }]}
+        resizeMode="contain"
+        onLoad={handleImageLoad}
+        onError={() => setImageError(true)}
+      />
+    );
+    */
+
+    // SEÇENEK 2: Kare format ama doğru orantıda
     return (
       <Image
         source={{ uri: thumbnailUri }}
         style={styles.image}
-        resizeMode="cover"
+        resizeMode="contain" // Görüntüyü kırpmadan sığdır
+        onLoad={handleImageLoad}
         onError={() => setImageError(true)}
       />
     );
@@ -156,8 +179,12 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: '100%',
-    aspectRatio: 1,
+    aspectRatio: 1, // Kare format için geri ekle
     position: 'relative',
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden', // Bu önemli - taşan kısımları gizle
   },
   image: {
     width: '100%',
@@ -165,7 +192,7 @@ const styles = StyleSheet.create({
   },
   placeholderContainer: {
     width: '100%',
-    height: '100%',
+    height: 120,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -189,55 +216,41 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: 'Montserrat-Regular',
   },
-
   infoContainer: {
-    padding: 12, // 10'dan 12'ye çıkardık
+    padding: 12,
     gap: 6,
-    minHeight: 70, // Minimum yükseklik ekledik
+    minHeight: 70,
   },
-
   singleColorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Esneklik ekledik
-    minHeight: 20, // Minimum yükseklik
+    flex: 1,
+    minHeight: 20,
   },
-
   colorText: {
     fontSize: 11,
     fontFamily: 'Montserrat-Regular',
     flex: 1,
-    lineHeight: 13, // Satır yüksekliği ekledik
+    lineHeight: 13,
   },
-
   multiColorContainer: {
-    minHeight: 20, // Minimum yükseklik
+    minHeight: 20,
   },
-
   colorCirclesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2, // Alt boşluk ekledik
+    marginBottom: 2,
   },
-
   moreColorsIndicator: {
-    width: 14, // 12'den 14'e çıkardık
+    width: 14,
     height: 14,
     borderRadius: 7,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: -2, // -4'ten -2'ye değiştirdik
+    marginLeft: -2,
   },
-
-  // YENİ STIL - çok renkli itemler için
-  multiColorText: {
-    fontSize: 10,
-    fontFamily: 'Montserrat-Regular',
-    textAlign: 'center',
-  },
-
   moreColorsText: {
-    fontSize: 9, // 8'den 9'a çıkardık
+    fontSize: 9,
     fontFamily: 'Montserrat-Bold',
     color: '#FFFFFF',
   },

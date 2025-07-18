@@ -1,4 +1,4 @@
-// app/storage.tsx - useEffect ile en güvenli hale getirilmiş async işlem yönetimi
+// app/storage.tsx - Modal sorunu düzeltilmiş versiyon
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -8,7 +8,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -51,7 +50,6 @@ import { useClothingStore } from '@/store/clothingStore';
 import useAlertStore from '@/store/alertStore';
 import Toast from 'react-native-toast-message';
 
-// ... (interface StorageStats tanımı burada)
 interface StorageStats {
   fileSystem: {
     totalSizeMB: number;
@@ -72,7 +70,6 @@ interface StorageStats {
   };
 }
 
-
 export default function StorageManagementScreen() {
   const { t } = useTranslation();
   const { theme } = useTheme();
@@ -82,7 +79,6 @@ export default function StorageManagementScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [activeOperations, setActiveOperations] = useState<Set<string>>(new Set());
-
 
   useEffect(() => {
     loadStorageStats();
@@ -124,7 +120,7 @@ export default function StorageManagementScreen() {
       showAlert({
         title: t('common.error'),
         message: t('storage.failedToLoad'),
-        buttons: [{ text: t('common.ok') }]
+        buttons: [{ text: t('common.ok'), onPress: () => {} }]
       });
     } finally {
       setIsLoading(false);
@@ -177,7 +173,7 @@ export default function StorageManagementScreen() {
       showAlert({
         title: t('common.error'),
         message: t('storage.operationFailed'),
-        buttons: [{ text: t('common.ok') }]
+        buttons: [{ text: t('common.ok'), onPress: () => {} }]
       });
     } finally {
       setActiveOperations(prev => {
@@ -188,21 +184,61 @@ export default function StorageManagementScreen() {
     }
   };
 
+  // ✅ ÖNEMLİ DÜZELTME: Modal sorunu burada - showAlert callback'inde router.back() kullanımı
   const handlePerformMaintenance = () => {
     showAlert({
       title: t('storage.performMaintenance'),
       message: t('storage.maintenanceWarning'),
       buttons: [
-        { text: t('common.cancel'), variant: 'outline' },
+        { 
+          text: t('common.cancel'), 
+          variant: 'outline',
+          onPress: () => {
+            // Burada hiçbir şey yapmıyoruz, sadece modal'ı kapatıyoruz
+            console.log('Maintenance cancelled');
+          }
+        },
         {
           text: t('common.continue'),
           onPress: () => {
+            // ✅ DÜZELTME: Doğrudan performOperation çağırıyoruz
             performOperation('maintenance', () => performFileSystemMaintenance(t));
           },
           variant: 'primary',
         },
       ],
     });
+  };
+
+  // ✅ DÜZELTME: Router.back() çağrısını optimize etme
+  const handleBackPress = () => {
+    // Eğer bir işlem devam ediyorsa, kullanıcıyı uyar
+    if (activeOperations.size > 0) {
+      showAlert({
+        title: t('common.error'),
+        message: t('storage.operationFailed'),
+        buttons: [
+          { 
+            text: t('common.cancel'), 
+            onPress: () => {},
+            variant: 'outline'
+          },
+          { 
+            text: t('common.continue'), 
+            onPress: () => {
+              // Force exit - operations'ları temizle ve çık
+              setActiveOperations(new Set());
+              router.back();
+            },
+            variant: 'destructive'
+          }
+        ]
+      });
+      return;
+    }
+    
+    // Normal çıkış
+    router.back();
   };
 
   const getHealthColor = (score: number, isHealthy: boolean) => {
@@ -240,7 +276,7 @@ export default function StorageManagementScreen() {
         <HeaderBar
           title={t('storage.title')}
           leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-          onLeftPress={() => router.back()}
+          onLeftPress={handleBackPress}
         />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -257,7 +293,7 @@ export default function StorageManagementScreen() {
       <HeaderBar
         title={t('storage.title')}
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-        onLeftPress={() => router.back()}
+        onLeftPress={handleBackPress}
       />
 
       <ScrollView
@@ -488,47 +524,5 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     marginBottom: 8,
-  },
-  detailsToggle: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  detailsCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  detailLabel: {
-    fontSize: 14,
-    fontFamily: 'Montserrat-Medium',
-  },
-  detailValue: {
-    fontSize: 14,
-    fontFamily: 'Montserrat-SemiBold',
-  },
-  divider: {
-    height: 1,
-    marginVertical: 12,
-  },
-  issuesTitle: {
-    fontSize: 14,
-    fontFamily: 'Montserrat-SemiBold',
-    marginBottom: 8,
-  },
-  issueText: {
-    fontSize: 13,
-    fontFamily: 'Montserrat-Regular',
-    marginLeft: 8,
-    marginBottom: 4,
-  },
-  emergencyButton: {
-    marginTop: 8,
   },
 });

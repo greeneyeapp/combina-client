@@ -1,4 +1,4 @@
-// context/RevenueCatContext.tsx - Duplicate initialization sorunu düzeltilmiş
+// context/RevenueCatContext.tsx - Duplicate initialization ve gereksiz fetch'ler düzeltilmiş
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import Purchases, { CustomerInfo, PurchasesEntitlementInfo } from 'react-native-purchases';
@@ -21,7 +21,9 @@ let globalRevenueCatState = {
   isInitialized: false,
   isInitializing: false,
   initPromise: null as Promise<void> | null,
-  readyCheckCompleted: false
+  readyCheckCompleted: false,
+  lastUserId: null as string | null, // DÜZELTME: User değişim takibi
+  lastFetchTime: 0, // DÜZELTME: Fetch throttling
 };
 
 // RevenueCat hazır olana kadar bekleyen utility
@@ -30,17 +32,14 @@ const waitForRevenueCatReady = async (maxWaitMs: number = 3000): Promise<boolean
   
   while (Date.now() - startTime < maxWaitMs) {
     try {
-      // RevenueCat'in hazır olup olmadığını test et
       await Purchases.getCustomerInfo();
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '';
       if (errorMessage.includes('singleton instance')) {
-        // Henüz hazır değil, biraz bekle
         await new Promise(resolve => setTimeout(resolve, 100));
         continue;
       } else {
-        // Başka bir hata, muhtemelen auth sorunu
         console.log('RevenueCat ready but user not authenticated yet');
         return true;
       }
@@ -65,27 +64,49 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     return 'premium';
   };
 
-  // ÖNCE USER KONTROLÜ - RevenueCat sadece kullanıcı varsa initialize olsun
+  // DÜZELTME: User kontrolü ve gereksiz re-initialization önleme
   useEffect(() => {
-    if (!user) {
-      // User yoksa state'i temizle
+    const currentUserId = user?.uid || null;
+    
+    if (!user || !currentUserId) {
+      // User yoksa state'i temizle ve global state'i reset et
       setCustomerInfo(null);
       setCurrentPlan('free');
       setIsLoading(false);
       
-      // Global state'i de sıfırla
+      // DÜZELTME: Sadece user değiştiyse reset et
+      if (globalRevenueCatState.lastUserId !== null) {
+        console.log('🧹 RevenueCat state cleared for user logout/change');
+        globalRevenueCatState.isInitialized = false;
+        globalRevenueCatState.isInitializing = false;
+        globalRevenueCatState.initPromise = null;
+        globalRevenueCatState.readyCheckCompleted = false;
+        globalRevenueCatState.lastUserId = null;
+        globalRevenueCatState.lastFetchTime = 0;
+      }
+      return;
+    }
+
+    // DÜZELTME: Aynı user için tekrar initialize etme
+    if (globalRevenueCatState.lastUserId === currentUserId && globalRevenueCatState.isInitialized) {
+      console.log('📋 RevenueCat already initialized for this user, fetching data...');
+      fetchCustomerInfoSafely();
+      return;
+    }
+
+    // DÜZELTME: User değişti, yeni initialization gerekli
+    if (globalRevenueCatState.lastUserId !== currentUserId) {
+      console.log('👤 User changed, reinitializing RevenueCat...');
       globalRevenueCatState.isInitialized = false;
       globalRevenueCatState.isInitializing = false;
       globalRevenueCatState.initPromise = null;
       globalRevenueCatState.readyCheckCompleted = false;
-      
-      console.log('🧹 RevenueCat state cleared for logout');
-      return;
+      globalRevenueCatState.lastFetchTime = 0;
     }
 
-    // User var, RevenueCat'i initialize et
+    globalRevenueCatState.lastUserId = currentUserId;
     initializeRevenueCatOnce();
-  }, [user]);
+  }, [user?.uid]); // DÜZELTME: Sadece user ID değişikliğinde tetikle
 
   // SINGLETON INITIALIZATION
   const initializeRevenueCatOnce = async () => {
@@ -114,7 +135,6 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       await fetchCustomerInfoSafely();
     } catch (error) {
       console.error('❌ RevenueCat initialization failed:', error);
-      // Fallback: Backend plan'i kullan
       await fallbackToBackendPlan();
     } finally {
       globalRevenueCatState.isInitializing = false;
@@ -135,9 +155,16 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     globalRevenueCatState.readyCheckCompleted = true;
   };
 
-  // SAFE CUSTOMER INFO FETCH
+  // SAFE CUSTOMER INFO FETCH - DÜZELTME: Throttling eklendi
   const fetchCustomerInfoSafely = async () => {
     if (!user || !globalRevenueCatState.readyCheckCompleted) {
+      return;
+    }
+
+    // DÜZELTME: Throttling - 30 saniyede bir fetch
+    const now = Date.now();
+    if (now - globalRevenueCatState.lastFetchTime < 30000) {
+      console.log('📋 RevenueCat fetch throttled (< 30s since last fetch)');
       return;
     }
 
@@ -150,13 +177,16 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       
       setCustomerInfo(info);
       setCurrentPlan(plan);
+      globalRevenueCatState.lastFetchTime = now; // DÜZELTME: Fetch time'ı kaydet
 
-      // Backend ile senkronizasyon
+      // Backend ile senkronizasyon - DÜZELTME: Sadece plan farklıysa sync et
       try {
         const profile = await getUserProfile();
         if (profile.plan !== plan) {
           await updateUserPlan(plan);
           console.log(`✅ Plan synchronized: ${plan}`);
+        } else {
+          console.log('📋 Plan already in sync with backend');
         }
       } catch (profileError) {
         console.warn('⚠️ Could not sync with backend:', profileError);
@@ -185,7 +215,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   };
 
-  // LISTENER - Sadece initialize olduktan sonra ekle
+  // LISTENER - DÜZELTME: Sadece initialize olduktan sonra ekle ve duplicate listener önle
   useEffect(() => {
     if (!user || !globalRevenueCatState.isInitialized || !globalRevenueCatState.readyCheckCompleted) {
       return;
@@ -195,6 +225,7 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       const newPlan = mapEntitlementsToPlan(info.entitlements.active);
       setCustomerInfo(info);
       setCurrentPlan(newPlan);
+      globalRevenueCatState.lastFetchTime = Date.now(); // DÜZELTME: Listener'dan gelen veri için de time güncelle
       console.log('🔄 RevenueCat listener updated plan:', newPlan);
     };
 
@@ -203,21 +234,35 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       console.log('✅ RevenueCat listener added');
 
       return () => {
-        Purchases.removeCustomerInfoUpdateListener(listener);
-        console.log('🧹 RevenueCat listener removed');
+        try {
+          Purchases.removeCustomerInfoUpdateListener(listener);
+          console.log('🧹 RevenueCat listener removed');
+        } catch (error) {
+          console.warn('⚠️ Error removing RevenueCat listener:', error);
+        }
       };
     } catch (error) {
       console.warn('⚠️ Could not add RevenueCat listener:', error);
     }
-  }, [user, globalRevenueCatState.isInitialized]);
+  }, [user?.uid, globalRevenueCatState.isInitialized]); // DÜZELTME: user.uid dependency
 
+  // DÜZELTME: Refresh function optimize edildi
   const refreshCustomerInfo = useCallback(async () => {
+    if (!user) {
+      console.log('📋 No user available for refresh');
+      return;
+    }
+
+    // DÜZELTME: Force refresh için throttling'i bypass et
     if (globalRevenueCatState.isInitialized) {
+      console.log('🔄 Force refreshing customer info...');
+      globalRevenueCatState.lastFetchTime = 0; // Reset throttling
       await fetchCustomerInfoSafely();
     } else {
+      console.log('🔄 Initializing RevenueCat for refresh...');
       await initializeRevenueCatOnce();
     }
-  }, [user]);
+  }, [user?.uid]);
 
   const value = {
     customerInfo,
@@ -241,3 +286,27 @@ export const useRevenueCat = () => {
   }
   return context;
 };
+
+// DÜZELTME: Development utilities
+if (__DEV__) {
+  (global as any).debugRevenueCat = () => {
+    console.log('🔧 RevenueCat Debug State:', {
+      isInitialized: globalRevenueCatState.isInitialized,
+      isInitializing: globalRevenueCatState.isInitializing,
+      readyCheckCompleted: globalRevenueCatState.readyCheckCompleted,
+      lastUserId: globalRevenueCatState.lastUserId,
+      lastFetchTime: new Date(globalRevenueCatState.lastFetchTime).toISOString(),
+      timeSinceLastFetch: Date.now() - globalRevenueCatState.lastFetchTime
+    });
+  };
+
+  (global as any).resetRevenueCat = () => {
+    globalRevenueCatState.isInitialized = false;
+    globalRevenueCatState.isInitializing = false;
+    globalRevenueCatState.initPromise = null;
+    globalRevenueCatState.readyCheckCompleted = false;
+    globalRevenueCatState.lastUserId = null;
+    globalRevenueCatState.lastFetchTime = 0;
+    console.log('🔄 RevenueCat state reset');
+  };
+}

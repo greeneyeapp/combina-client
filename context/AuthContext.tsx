@@ -1,4 +1,4 @@
-// context/AuthContext.tsx - Login persist sorunu düzeltilmiş versiyon
+// context/AuthContext.tsx - Final optimized and bug-free version
 
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
@@ -34,13 +34,12 @@ export function useAuth() {
   return context;
 }
 
-// DÜZELTME: Global state'i component içine taşıdık
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isAuthFlowActive, setAuthFlowActive] = React.useState(false);
   
-  // DÜZELTME: Component-level initialization tracking
+  // Component-level initialization tracking
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [lastProfileRefresh, setLastProfileRefresh] = React.useState(0);
   
@@ -66,15 +65,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // DÜZELTME: Ana initialization effect'i sadece bir kez çalışacak şekilde düzenledik
+  // Ana initialization effect'i
   React.useEffect(() => {
-    // DÜZELTME: Sadece isReady true olduğunda ve henüz initialize olmadığında çalıştır
     if (!isReady || isInitialized) return;
 
     const initializeAuth = async () => {
       console.log('🔐 Initializing auth...', { jwt: !!jwt });
       
-      setIsInitialized(true); // DÜZELTME: Hemen başta set et
+      setIsInitialized(true);
 
       if (jwt) {
         let finalUser = null;
@@ -105,13 +103,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               await Purchases.logIn(finalUser.uid);
             } catch (revenueCatError) {
               console.warn('RevenueCat login failed:', revenueCatError);
-              // RevenueCat hatası fatal değil, devam et
             }
           }
 
         } catch (error) {
           console.error('🚨 Critical auth validation failed:', error);
-          // DÜZELTME: Kritik hata durumunda temizlik yap ama loading'i false yap
           await clearJwt();
           clearUserPlan();
           setUser(null);
@@ -120,14 +116,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
         
-        // Background'da profile refresh (hata olsa bile devam et)
+        // Background'da profile refresh
         if (finalUser && finalUser.uid) {
           try {
             console.log('🔄 Refreshing user profile in background...');
             await initializeUserProfile();
           } catch (profileError) {
             console.warn('Could not refresh user profile on startup:', profileError);
-            // Profile refresh hatası kritik değil, cached data ile devam et
           }
         }
 
@@ -142,7 +137,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initializeAuth();
-  }, [isReady]); // DÜZELTME: Sadece isReady bağımlılığı
+  }, [isReady]);
 
   const signInWithGoogle = async (accessToken: string) => {
     setLoading(true);
@@ -151,8 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
       
-      // DÜZELTME: Backend response'unu log'la
-      console.log('🔍 Backend response user_info:', JSON.stringify(user_info, null, 2));
+      console.log('🔍 Google Backend response user_info:', JSON.stringify(user_info, null, 2));
       
       const completeUserInfo = {
         uid: user_info?.uid,
@@ -167,66 +161,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAnonymous: false
       };
 
-      console.log('🔍 Created user object:', JSON.stringify(completeUserInfo, null, 2));
+      console.log('🔍 Google Created user object:', JSON.stringify(completeUserInfo, null, 2));
 
-      // DÜZELTME: Önce JWT'yi set et, sonra user'ı set et
       await setJwt(access_token);
       console.log('✅ JWT token set successfully');
       
-      // DÜZELTME: Cache'e kaydet
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       console.log('✅ User data cached successfully');
       
-      // DÜZELTME: Son olarak user state'i set et (navigation trigger'ı)
       setUser(completeUserInfo);
       console.log('✅ User state set successfully');
-      
+
       // RevenueCat login (non-blocking)
       if (user_info?.uid) {
         try {
           await Purchases.logIn(user_info.uid);
-          console.log('✅ RevenueCat login successful');
+          console.log('✅ Google RevenueCat login successful');
         } catch (revenueCatError) {
-          console.warn('⚠️ RevenueCat login failed:', revenueCatError);
+          console.warn('⚠️ Google RevenueCat login failed:', revenueCatError);
         }
       }
 
-      // Profile refresh (throttled)
+      // Profile refresh optimize edildi - sadece eksik data varsa
       const now = Date.now();
-      if (now - lastProfileRefresh > 60000) { // 1 dakika throttle
+      if (now - lastProfileRefresh > 60000 && (!user_info?.gender || !user_info?.birthDate)) {
         setLastProfileRefresh(now);
         try {
-          // DÜZELTME: Direkt fetchUserProfile kullan ve user state'i güncelle
-          console.log('🔄 Fetching user profile to complete user data...');
+          console.log('🔄 Google: Fetching additional profile data...');
           
-          // Import gerekli: import { fetchUserProfile } from '@/services/userService';
           const { fetchUserProfile } = await import('@/services/userService');
           const profileData = await fetchUserProfile();
           
-          if (profileData) {
+          if (profileData && (profileData.gender || profileData.fullname)) {
             const updatedUserInfo = {
               ...completeUserInfo,
               gender: profileData.gender || completeUserInfo.gender,
-              // DÜZELTME: created_at değil, orijinal birthDate'i koru
-              birthDate: completeUserInfo.birthDate, // Backend'den ilk gelen doğru
               fullname: profileData.fullname || completeUserInfo.fullname,
             };
             
-            console.log('🔄 Updating user state with profile data:', {
-              gender: updatedUserInfo.gender,
-              birthDate: updatedUserInfo.birthDate,
-              originalBirthDate: completeUserInfo.birthDate,
-              profileDataKeys: Object.keys(profileData)
-            });
-            
-            // DÜZELTME: User state'i güncelle ve navigation'ı tetikle
+            console.log('🔄 Google: Profile enhanced with additional data');
             setUser(updatedUserInfo);
             await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUserInfo));
           }
         } catch (profileError) {
-          console.warn('⚠️ Profile refresh failed during sign in:', profileError);
-          // Profile fetch hata verirse de navigation çalışsın
+          console.warn('⚠️ Google: Profile enhancement failed:', profileError);
         }
+      } else {
+        console.log('📋 Google: Profile refresh skipped - recent or complete data available');
       }
 
       setLoading(false);
@@ -263,6 +244,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error("User info was not returned from the server.");
       }
 
+      console.log('🔍 Apple Backend response user_info:', JSON.stringify(user_info, null, 2));
+
       await setJwt(access_token);
 
       const finalName = user_info.fullname || user_info.name || nameForBackend;
@@ -281,29 +264,51 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAnonymous: false
       };
 
-      setUser(completeUserInfo);
-      await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
+      console.log('🔍 Apple Created user object:', JSON.stringify(completeUserInfo, null, 2));
 
+      await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
+      setUser(completeUserInfo);
+
+      // RevenueCat login (non-blocking)
       if (user_info.uid) {
         try {
           await Purchases.logIn(user_info.uid);
+          console.log('✅ Apple RevenueCat login successful');
         } catch (revenueCatError) {
-          console.warn('RevenueCat login failed during Apple sign in:', revenueCatError);
+          console.warn('⚠️ Apple RevenueCat login failed:', revenueCatError);
         }
       }
 
-      // Profile refresh (throttled)
+      // Profile refresh optimize edildi - Google ile aynı logic
       const now = Date.now();
-      if (now - lastProfileRefresh > 60000) { // 1 dakika throttle
+      if (now - lastProfileRefresh > 60000 && (!user_info?.gender || !user_info?.birthDate)) {
         setLastProfileRefresh(now);
         try {
-          await initializeUserProfile();
+          console.log('🔄 Apple: Fetching additional profile data...');
+          
+          const { fetchUserProfile } = await import('@/services/userService');
+          const profileData = await fetchUserProfile();
+          
+          if (profileData && (profileData.gender || profileData.fullname)) {
+            const updatedUserInfo = {
+              ...completeUserInfo,
+              gender: profileData.gender || completeUserInfo.gender,
+              fullname: profileData.fullname || completeUserInfo.fullname,
+            };
+            
+            console.log('🔄 Apple: Profile enhanced with additional data');
+            setUser(updatedUserInfo);
+            await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUserInfo));
+          }
         } catch (profileError) {
-          console.warn('Profile refresh failed during Apple sign in:', profileError);
+          console.warn('⚠️ Apple: Profile enhancement failed:', profileError);
         }
+      } else {
+        console.log('📋 Apple: Profile refresh skipped - recent or complete data available');
       }
 
       setLoading(false);
+      console.log('✅ Apple sign-in completed successfully');
       return completeUserInfo;
 
     } catch (error) {
@@ -346,12 +351,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('🚪 Starting logout process...');
 
+      // Logout işlemi başladığında navigation'ı durdur
+      setAuthFlowActive(true);
+
       setUser(null);
       clearUserPlan();
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
 
-      // DÜZELTME: Local state'i de sıfırla
       setIsInitialized(false);
       setLastProfileRefresh(0);
 
@@ -362,7 +369,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
       }
 
+      // Tek navigation ile auth'a yönlendir
+      console.log('🔐 Logout: Redirecting to auth...');
       router.replace('/(auth)');
+      
+      // Navigation tamamlandıktan sonra flag'i temizle
+      setTimeout(() => {
+        setAuthFlowActive(false);
+        console.log('✅ Logout process completed');
+      }, 1000);
 
     } catch (error) {
       console.error("🚨 Logout Error:", error);
@@ -371,13 +386,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.removeItem(USER_CACHE_KEY);
       setIsInitialized(false);
       setLastProfileRefresh(0);
+      setAuthFlowActive(false);
       router.replace('/(auth)');
     }
   };
 
   const refreshUserProfile = async () => {
     const now = Date.now();
-    if (now - lastProfileRefresh < 60000) { // 1 dakika throttle
+    if (now - lastProfileRefresh < 60000) {
       console.log('🚫 Profile refresh throttled');
       return;
     }
@@ -392,57 +408,122 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Navigation logic - DÜZELTME: Sıralama ve delay eklendi
+  // Navigation logic - Logout ve duplicate navigation fix
   React.useEffect(() => {
-    if (!navigationState?.key || loading || isAuthFlowActive) return;
+    if (!navigationState?.key || loading || isAuthFlowActive) {
+      // isAuthFlowActive true ise (logout süreci) navigation yapma
+      if (isAuthFlowActive && !user && !jwt) {
+        console.log('⏸️ Navigation suspended during logout process');
+      }
+      return;
+    }
 
-    // DÜZELTME: JWT ve user state'in sync olmasını bekle
     const handleNavigation = () => {
       const inAuthGroup = segments[0] === '(auth)';
+      const currentPath = segments.join('/');
+      const isNotFoundPage = segments.includes('+not-found');
+      const isInTabs = segments[0] === '(tabs)';
+      const isLogoutScenario = !user && !jwt && isInTabs;
 
-      console.log('🔍 Navigation Debug:', {
-        user: !!user,
-        jwt: !!jwt,
-        userGender: user?.gender,
-        userBirthDate: user?.birthDate,
-        segments: segments,
-        inAuthGroup: inAuthGroup
-      });
+      const shouldLog = isNotFoundPage || inAuthGroup || !isInTabs || isLogoutScenario;
+      
+      if (shouldLog || __DEV__) {
+        console.log('🔍 Navigation Debug:', {
+          user: !!user,
+          jwt: !!jwt,
+          userGender: user?.gender,
+          userBirthDate: user?.birthDate,
+          segments: segments,
+          currentPath: currentPath,
+          inAuthGroup: inAuthGroup,
+          isNotFoundPage: isNotFoundPage,
+          isInTabs: isInTabs,
+          isLogoutScenario: isLogoutScenario
+        });
+      }
 
       if (user && jwt) {
-        console.log('🚀 Navigation: User and JWT available, checking profile completion...');
         const profileComplete = user.gender && user.birthDate;
         
-        console.log('🔍 Profile completeness check:', {
-          gender: user.gender,
-          birthDate: user.birthDate,
-          profileComplete: profileComplete
-        });
-        
-        if (!profileComplete && segments[1] !== 'complete-profile') {
-          console.log('📝 Navigation: Profile incomplete, redirecting to complete-profile');
-          router.replace('/(auth)/complete-profile');
-        } else if (profileComplete && inAuthGroup) {
-          console.log('🏠 Navigation: Profile complete, redirecting to home');
-          router.replace('/(tabs)/home');
-        } else if (profileComplete && !inAuthGroup) {
-          console.log('✅ Navigation: Already in correct location (home)');
-        } else {
-          console.log('🔄 Navigation: Waiting for profile completion flow');
+        if (shouldLog || __DEV__) {
+          console.log('🚀 Navigation: User and JWT available, checking profile completion...');
+          console.log('🔍 Profile completeness check:', {
+            gender: user.gender,
+            birthDate: user.birthDate,
+            profileComplete: profileComplete
+          });
         }
-      } else if (!user && !jwt && !inAuthGroup) {
-        console.log('🔐 Navigation: No user/JWT, redirecting to auth');
-        router.replace('/(auth)');
-      } else {
-        console.log('⏳ Navigation: Waiting for user/JWT to be available');
+        
+        if (!profileComplete) {
+          if (segments[1] !== 'complete-profile') {
+            console.log('📝 Navigation: Profile incomplete, redirecting to complete-profile');
+            router.replace('/(auth)/complete-profile');
+            return;
+          }
+          return;
+        }
+        
+        if (profileComplete) {
+          if (inAuthGroup || isNotFoundPage || currentPath === '' || currentPath === '+not-found') {
+            console.log('🏠 Navigation: Profile complete, redirecting to home from:', currentPath);
+            router.replace('/(tabs)/home');
+            return;
+          }
+          
+          if (isInTabs) {
+            if (__DEV__ && shouldLog) {
+              console.log('✅ Navigation: Already in tabs area');
+            }
+            return;
+          }
+          
+          console.log('🔄 Navigation: Profile complete, ensuring user is in tabs area');
+          router.replace('/(tabs)/home');
+          return;
+        }
+      } else if (!user && !jwt) {
+        if (!inAuthGroup) {
+          // Sadece logout değil ise log
+          if (!isLogoutScenario) {
+            console.log('🔐 Navigation: No user/JWT, redirecting to auth');
+          }
+          router.replace('/(auth)');
+          return;
+        }
+        return;
       }
     };
 
-    // DÜZELTME: Biraz delay ekle ki JWT set olabilsin
-    const timer = setTimeout(handleNavigation, 100);
+    const timer = setTimeout(handleNavigation, 250);
     return () => clearTimeout(timer);
     
   }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key]);
+
+  // Development debug helpers
+  if (__DEV__) {
+    React.useEffect(() => {
+      (global as any).forceNavigateHome = () => {
+        console.log('🔧 DEBUG: Force navigating to home');
+        router.replace('/(tabs)/home');
+      };
+      
+      (global as any).debugAuthState = () => {
+        console.log('🔧 DEBUG Auth State:', {
+          user: !!user,
+          jwt: !!jwt,
+          loading,
+          isAuthFlowActive,
+          segments,
+          userComplete: !!(user?.gender && user?.birthDate)
+        });
+      };
+
+      (global as any).testLogout = () => {
+        console.log('🔧 DEBUG: Testing logout');
+        logout();
+      };
+    }, [user, jwt, loading, isAuthFlowActive, segments]);
+  }
 
   const value = { 
     user, 

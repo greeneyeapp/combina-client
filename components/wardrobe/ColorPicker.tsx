@@ -271,8 +271,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     // Ana değişiklik: Sabit yükseklik yerine maksimum yükseklik kullan
-    maxHeight: '70%',
-    minHeight: '50%', 
+    maxHeight: '85%',
+    minHeight: '75%', 
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 16,

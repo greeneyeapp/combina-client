@@ -1,7 +1,7 @@
-// app/_layout.tsx - Son düzeltilmiş versiyon - tüm tekrarları önler
+// app/_layout.tsx - Yönlendirme mantığı kaldırılmış, merkezi hale getirilmiş versiyon
 
 import React, { useEffect } from 'react';
-import { Stack, router, useRootNavigationState, useSegments } from 'expo-router';
+import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -9,7 +9,7 @@ import { StyleSheet, Platform } from 'react-native';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/locales/i18n';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { AuthProvider } from '@/context/AuthContext';
 import CustomAlert from '@/components/common/CustomAlert';
 import Toast, { BaseToastProps } from 'react-native-toast-message';
 import CustomToast from '@/components/common/CustomToast';
@@ -27,50 +27,7 @@ SplashScreen.preventAutoHideAsync();
 let layoutInitialized = false;
 let layoutInitializationPromise: Promise<void> | null = null;
 
-function useProtectedRouter() {
-  const { user, loading: authLoading, isAuthFlowActive } = useAuth();
-  const segments = useSegments();
-  const navigationState = useRootNavigationState();
-
-  useEffect(() => {
-    if (!navigationState?.key) return;
-
-    const isNotFound = segments.includes('+not-found');
-
-    if (isNotFound) {
-      const timer = setTimeout(() => {
-        if (user) {
-          const profileComplete = user.gender && user.birthDate;
-          if (profileComplete) {
-            router.replace('/(tabs)/home');
-          } else {
-            router.replace('/(auth)/complete-profile');
-          }
-        } else {
-          router.replace('/(auth)');
-        }
-      }, 150);
-      return () => clearTimeout(timer);
-    }
-
-    if (authLoading || isAuthFlowActive) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (user) {
-      const profileComplete = user.gender && user.birthDate;
-      if (!profileComplete && segments[1] !== 'complete-profile') {
-        router.replace('/(auth)/complete-profile');
-      } else if (profileComplete && inAuthGroup) {
-        router.replace('/(tabs)/home');
-      }
-    } else {
-      if (!inAuthGroup) {
-        router.replace('/(auth)');
-      }
-    }
-  }, [navigationState?.key, user, segments, authLoading, isAuthFlowActive]);
-}
+// --- useProtectedRouter FONKSİYONU BURADAN TAMAMEN SİLİNDİ ---
 
 function RootLayoutNav(): React.JSX.Element | null {
   const [fontsLoaded, fontError] = useFonts({
@@ -81,7 +38,7 @@ function RootLayoutNav(): React.JSX.Element | null {
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
   });
 
-  useProtectedRouter();
+  // --- useProtectedRouter() ÇAĞRISI DA BURADAN KALDIRILDI ---
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

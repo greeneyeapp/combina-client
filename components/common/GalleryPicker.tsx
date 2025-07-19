@@ -87,8 +87,19 @@ export default function GalleryPicker({
         sortBy: [MediaLibrary.SortBy.creationTime],
         after: reset ? undefined : endCursor,
       });
-      setAssets(prev => reset ? result.assets : [...prev, ...result.assets]);
-      setHasNextPage(result.hasNextPage);
+      setAssets(prev => {
+        if (reset) {
+          return result.assets; // Eğer reset ise, direkt yeni veriyi ata.
+        }
+
+        // Yeni gelen asset'lerden, mevcut listede olmayanları filtrele.
+        const newUniqueAssets = result.assets.filter(
+          newItem => !prev.some(prevItem => prevItem.id === newItem.id)
+        );
+
+        // Sadece benzersiz olan yeni asset'leri mevcut listeye ekle.
+        return [...prev, ...newUniqueAssets];
+      }); setHasNextPage(result.hasNextPage);
       setEndCursor(result.endCursor);
     } catch (error) {
       console.error('Error loading gallery assets:', error);
@@ -179,7 +190,7 @@ export default function GalleryPicker({
       </TouchableOpacity>
     );
   };
-  
+
   const renderHeader = () => (
     <View style={styles.headerContainer}>
       {renderCameraItem()}
@@ -227,7 +238,7 @@ export default function GalleryPicker({
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>{t('wardrobe.selectPhoto')}</Text>
           <View style={{ width: 40 }} />
         </View>
-        
+
         {renderContent()}
 
         {selectedAsset && !isProcessing && (

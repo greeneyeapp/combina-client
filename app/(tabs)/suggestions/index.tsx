@@ -82,15 +82,32 @@ export default function SuggestionsScreen() {
     [suggestion, outfits]
   );
 
-  const showAdIcon = useMemo(() => {
+  // ✅ DÜZELTME: useMemo kaldırıp direkt function yaptık
+  const getShowAdIcon = () => {
+    console.log('🔍 getShowAdIcon called');
+    console.log('🔍 userPlan:', userPlan);
+
     if (userPlan?.plan === 'premium') {
+      console.log('🔍 Premium user, returning false');
       return false;
     }
-    if (userPlan && userPlan.usage.remaining <= 0) {
-      return true;
+    if (userPlan && userPlan.usage) {
+      const { daily_limit, current_usage } = userPlan.usage;
+      const hasUsedDailyLimit = current_usage >= daily_limit;
+
+      console.log('🔍 getShowAdIcon calculation:', {
+        daily_limit,
+        current_usage,
+        hasUsedDailyLimit,
+        shouldShowFilm: hasUsedDailyLimit,
+        rawUsage: userPlan.usage
+      });
+
+      return hasUsedDailyLimit;
     }
+    console.log('🔍 No userPlan or usage, returning false');
     return false;
-  }, [userPlan]);
+  };
 
   useEffect(() => {
     if (!weather && !weatherLoading) fetchWeather();
@@ -203,12 +220,24 @@ export default function SuggestionsScreen() {
       });
       return;
     }
-    
-    // --- 2. DEĞİŞİKLİK BURADA: Premium kontrolü eklendi ---
-    // Eğer kullanıcı premium değilse ve limit kontrolünü atlamıyorsa reklam mantığını çalıştır
+
+    // ✅ DEBUG: Premium kontrol ve usage check
+    console.log('🔍 handleGenerateSuggestion - Premium check:', {
+      plan: userPlan?.plan,
+      bypassLimitCheck,
+      shouldCheckUsage: userPlan?.plan !== 'premium' && !bypassLimitCheck
+    });
+
     if (userPlan?.plan !== 'premium' && !bypassLimitCheck) {
+      console.log('🔍 About to call canGetSuggestion...');
+
       const usageCheck = await canGetSuggestion();
+
+      console.log('🔍 canGetSuggestion result:', usageCheck);
+
       if (!usageCheck.canSuggest) {
+        console.log('✅ User cannot suggest - showing ad popup');
+
         showAlert({
           title: t('suggestions.rewardedAd.title'),
           message: t('suggestions.rewardedAd.message'),
@@ -217,6 +246,7 @@ export default function SuggestionsScreen() {
             {
               text: t('suggestions.rewardedAd.watchAdButton'),
               onPress: () => {
+                console.log('🔍 Watch ad button pressed, rewardedAd.isLoaded:', rewardedAd.isLoaded);
                 if (rewardedAd.isLoaded) {
                   rewardedAd.show();
                 } else {
@@ -233,8 +263,14 @@ export default function SuggestionsScreen() {
           ]
         });
         return;
+      } else {
+        console.log('✅ User can suggest - proceeding to AI request');
       }
+    } else {
+      console.log('✅ Premium user or bypass - skipping usage check');
     }
+
+    console.log('🚀 Starting AI suggestion request...');
 
     setSuggestionLayoutY(0);
     setGenerating(true);
@@ -309,7 +345,12 @@ export default function SuggestionsScreen() {
     const { daily_limit, current_usage, rewarded_count = 0, percentage_used } = userPlan.usage;
     const isUnlimited = userPlan.plan === 'premium';
 
-    const effective_limit = daily_limit + rewarded_count;
+    // ✅ Free kullanıcılar için her zaman max daily_limit göster
+    const displayUsage = Math.min(current_usage, daily_limit);
+    const displayTotal = daily_limit;
+
+    // ✅ Progress bar için de aynı mantığı uygula
+    const displayPercentage = (displayUsage / displayTotal) * 100;
 
     return (
       <LinearGradient
@@ -321,7 +362,7 @@ export default function SuggestionsScreen() {
             {isUnlimited ? t('suggestions.unlimitedAccess') : t('suggestions.dailyUsage')}
           </Text>
           {userPlan.plan !== 'premium' && (
-            <TouchableOpacity onPress={() => router.push('/profile/subscription' as any)}>
+            <TouchableOpacity onPress={() => router.push('/subscription')}>
               <Text style={[styles.upgradeLink, { color: theme.colors.primary }]}>{t('profile.upgrade')} ✨</Text>
             </TouchableOpacity>
           )}
@@ -340,14 +381,14 @@ export default function SuggestionsScreen() {
           <>
             <Text style={[styles.usageText, { color: theme.colors.text }]}>
               {t('suggestions.usageLimitInfo', {
-                used: current_usage,
-                total: effective_limit
+                used: displayUsage,
+                total: displayTotal
               })}
             </Text>
             <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
               <View style={[styles.progressFill, {
-                backgroundColor: percentage_used > 80 ? theme.colors.warning : theme.colors.primary,
-                width: `${Math.min(100, percentage_used)}%`
+                backgroundColor: displayPercentage > 80 ? theme.colors.warning : theme.colors.primary,
+                width: `${Math.min(100, displayPercentage)}%`
               }]} />
             </View>
           </>
@@ -465,12 +506,37 @@ export default function SuggestionsScreen() {
 
         <Button
           label={generating ? t('suggestions.generating') : t('suggestions.generateOutfit')}
-          onPress={() => handleGenerateSuggestion()}
+          onPress={() => {
+            console.log('🔍 BUTTON PRESSED!');
+            handleGenerateSuggestion();
+          }}
           variant="primary"
           loading={generating}
           style={styles.generateButton}
-          disabled={generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading}
-          icon={showAdIcon ? <Film color={theme.colors.white} size={18} /> : <Wand2 color={theme.colors.white} size={18} />}
+          disabled={(() => {
+            const isDisabled = generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading;
+            console.log('🔍 Button disabled check:', {
+              generating,
+              hasEnoughWardrobe: wardrobeStatus.hasEnough,
+              hasWeather: !!weather,
+              hasSelectedOccasion: !!selectedOccasion,
+              isLimitLoading,
+              finalDisabled: isDisabled
+            });
+            return isDisabled;
+          })()}
+          icon={(() => {
+            const showAdIcon = getShowAdIcon();
+            console.log('🔍 Button render - showAdIcon:', showAdIcon);
+            console.log('🔍 Button render - userPlan.plan:', userPlan?.plan);
+            console.log('🔍 Button render - current_usage:', userPlan?.usage?.current_usage);
+            console.log('🔍 Button render - daily_limit:', userPlan?.usage?.daily_limit);
+
+            const iconToShow = showAdIcon ? <Film color={theme.colors.white} size={18} /> : <Wand2 color={theme.colors.white} size={18} />;
+            console.log('🔍 Button render - showing icon:', showAdIcon ? 'Film' : 'Wand2');
+
+            return iconToShow;
+          })()}
         />
 
         {!!error && (

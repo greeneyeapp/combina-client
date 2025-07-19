@@ -40,7 +40,7 @@ const getAuthToken = async (): Promise<string> => {
 // Optimized fetch user profile
 export const fetchUserProfile = async (): Promise<UserProfileResponse> => {
   const cacheKey = 'user_profile';
-  
+
   return apiDeduplicator.deduplicate(
     cacheKey,
     async () => {
@@ -73,13 +73,13 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   // Aggressive caching - önce store'dan kontrol et
   if (!forceRefresh && userPlan && lastFetched) {
     const timeSinceLastFetch = Date.now() - new Date(lastFetched).getTime();
-    
+
     // Eğer son 30 saniye içinde fetch edildiyse, store'daki veriyi kullan
     if (timeSinceLastFetch < MIN_FETCH_INTERVAL) {
       console.log('📋 Using very recent cached profile (< 30s)');
       return userPlan;
     }
-    
+
     // Eğer son 5 dakika içinde fetch edildiyse ve force refresh değilse, store'u kullan
     if (timeSinceLastFetch < PROFILE_CACHE_TTL) {
       console.log('📋 Using cached profile (< 5min)');
@@ -142,12 +142,12 @@ export const initializeUserProfile = async (): Promise<void> => {
     }
 
     isInitializing = true;
-    
+
     // Sadece cache yoksa veya çok eskiyse fetch et
     const { userPlan, lastFetched } = useUserPlanStore.getState();
-    const shouldFetch = !userPlan || 
-                       !lastFetched || 
-                       (Date.now() - new Date(lastFetched).getTime()) > PROFILE_CACHE_TTL;
+    const shouldFetch = !userPlan ||
+      !lastFetched ||
+      (Date.now() - new Date(lastFetched).getTime()) > PROFILE_CACHE_TTL;
 
     if (shouldFetch) {
       console.log('🔄 Initializing user profile...');
@@ -218,7 +218,26 @@ export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?
   try {
     const profile = await getUserProfile();
 
-    if (profile.usage.remaining > 0) {
+    console.log('🔍 canGetSuggestion - Profile:', {
+      plan: profile.plan,
+      usage: profile.usage,
+      remaining: profile.usage.remaining,
+      current_usage: profile.usage.current_usage,
+      daily_limit: profile.usage.daily_limit,
+      rewarded_count: profile.usage.rewarded_count
+    });
+
+    // ✅ DÜZELTME: Sadece daily_limit'e göre kontrol et (UI ile tutarlı)
+    const canSuggest = profile.usage.current_usage < profile.usage.daily_limit;
+
+    console.log('🔍 canGetSuggestion - Calculation (FIXED):', {
+      current_usage: profile.usage.current_usage,
+      daily_limit: profile.usage.daily_limit,
+      canSuggest,
+      oldLogic: profile.usage.current_usage < (profile.usage.daily_limit + (profile.usage.rewarded_count || 0))
+    });
+
+    if (canSuggest) {
       return { canSuggest: true };
     }
 
@@ -228,7 +247,7 @@ export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?
     };
 
   } catch (error) {
-    console.error('Error checking suggestion limit:', error);
+    console.error('❌ Error checking suggestion limit:', error);
     return { canSuggest: false, reason: i18n.t('suggestions.usageCheckFailed') };
   }
 };
@@ -265,7 +284,7 @@ if (__DEV__) {
     apiDeduplicator.clearCache('user_profile');
     console.log('🔄 Profile cache cleared');
   };
-  
+
   (global as any).getProfileCacheInfo = () => {
     console.log('📊 Profile cache info:', {
       lastProfileFetch: new Date(lastProfileFetch).toISOString(),

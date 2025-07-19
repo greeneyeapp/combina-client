@@ -1,4 +1,4 @@
-// context/AuthContext.tsx - Final optimized and bug-free version
+// context/AuthContext.tsx - Splash screen koordinasyonu ile geliştirilmiş
 
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
@@ -16,6 +16,7 @@ interface AuthContextType {
   user: any | null;
   loading: boolean;
   isAuthFlowActive: boolean;
+  isInitialized: boolean; // Yeni: splash screen kontrolü için
   setAuthFlowActive: (isActive: boolean) => void;
   signInWithGoogle: (accessToken: string) => Promise<any>;
   signInWithApple: (credential: any) => Promise<any>;
@@ -38,9 +39,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isAuthFlowActive, setAuthFlowActive] = React.useState(false);
+  const [isInitialized, setIsInitialized] = React.useState(false); // Yeni state
 
   // Component-level initialization tracking
-  const [isInitialized, setIsInitialized] = React.useState(false);
   const [lastProfileRefresh, setLastProfileRefresh] = React.useState(0);
 
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
@@ -65,75 +66,80 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Ana initialization effect'i
+  // Ana initialization effect'i - Splash screen koordinasyonu ile
   React.useEffect(() => {
     if (!isReady || isInitialized) return;
 
     const initializeAuth = async () => {
       console.log('🔐 Initializing auth...', { jwt: !!jwt });
 
-      setIsInitialized(true);
-
-      if (jwt) {
-        let finalUser = null;
-        try {
-          // Token'dan user bilgisi çıkar
-          const userInfo = await getUserFromToken(jwt);
-          if (!userInfo) {
-            throw new Error("Invalid token could not be decoded.");
-          }
-
-          // Cache'den ek bilgileri yükle
-          let cachedData = {};
+      try {
+        if (jwt) {
+          let finalUser = null;
           try {
-            const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
-            if (cachedUser) {
-              cachedData = JSON.parse(cachedUser);
+            // Token'dan user bilgisi çıkar
+            const userInfo = await getUserFromToken(jwt);
+            if (!userInfo) {
+              throw new Error("Invalid token could not be decoded.");
             }
-          } catch (e) {
-            console.warn('Could not load cached user data:', e);
-          }
 
-          finalUser = { ...userInfo, ...cachedData };
-          setUser(finalUser);
-
-          // RevenueCat login
-          if (finalUser?.uid) {
+            // Cache'den ek bilgileri yükle
+            let cachedData = {};
             try {
-              await Purchases.logIn(finalUser.uid);
-            } catch (revenueCatError) {
-              console.warn('RevenueCat login failed:', revenueCatError);
+              const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
+              if (cachedUser) {
+                cachedData = JSON.parse(cachedUser);
+              }
+            } catch (e) {
+              console.warn('Could not load cached user data:', e);
+            }
+
+            finalUser = { ...userInfo, ...cachedData };
+            setUser(finalUser);
+
+            // RevenueCat login
+            if (finalUser?.uid) {
+              try {
+                await Purchases.logIn(finalUser.uid);
+              } catch (revenueCatError) {
+                console.warn('RevenueCat login failed:', revenueCatError);
+              }
+            }
+
+          } catch (error) {
+            console.error('🚨 Critical auth validation failed:', error);
+            await clearJwt();
+            clearUserPlan();
+            setUser(null);
+            await AsyncStorage.removeItem(USER_CACHE_KEY);
+          }
+
+          // Background'da profile refresh
+          if (finalUser && finalUser.uid) {
+            try {
+              console.log('🔄 Refreshing user profile in background...');
+              await initializeUserProfile();
+            } catch (profileError) {
+              console.warn('Could not refresh user profile on startup:', profileError);
             }
           }
 
-        } catch (error) {
-          console.error('🚨 Critical auth validation failed:', error);
-          await clearJwt();
-          clearUserPlan();
+        } else {
+          // JWT yok, temizlik yap
           setUser(null);
+          clearUserPlan();
           await AsyncStorage.removeItem(USER_CACHE_KEY);
-          setLoading(false);
-          return;
         }
 
-        // Background'da profile refresh
-        if (finalUser && finalUser.uid) {
-          try {
-            console.log('🔄 Refreshing user profile in background...');
-            await initializeUserProfile();
-          } catch (profileError) {
-            console.warn('Could not refresh user profile on startup:', profileError);
-          }
-        }
-
-      } else {
-        // JWT yok, temizlik yap
+      } catch (error) {
+        console.error('❌ Auth initialization failed:', error);
         setUser(null);
         clearUserPlan();
-        await AsyncStorage.removeItem(USER_CACHE_KEY);
+      } finally {
+        setLoading(false);
+        setIsInitialized(true); // ✅ Initialization tamamlandı
+        console.log('✅ Auth initialization completed');
       }
-
-      setLoading(false);
     };
 
     initializeAuth();
@@ -359,7 +365,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
 
-      setIsInitialized(false);
+      setIsInitialized(false); // ✅ Logout'ta initialization'ı reset et
       setLastProfileRefresh(0);
 
       try {
@@ -410,8 +416,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Navigation logic - Logout ve duplicate navigation fix
   React.useEffect(() => {
-    if (!navigationState?.key || loading || isAuthFlowActive) {
-      return;
+    if (!navigationState?.key || loading || isAuthFlowActive || !isInitialized) {
+      return; // ✅ isInitialized kontrolü eklendi
     }
 
     const handleNavigation = () => {
@@ -421,7 +427,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const isInTabs = segments[0] === '(tabs)';
       const isLogoutScenario = !user && !jwt && isInTabs;
 
-      // YENİ: Modal route'larını kontrol et
+      // Modal route'larını kontrol et
       const isModalRoute = segments.includes('subscription') || segments.includes('storage');
 
       // Modal açıkken navigation yapma
@@ -444,7 +450,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           isNotFoundPage: isNotFoundPage,
           isInTabs: isInTabs,
           isLogoutScenario: isLogoutScenario,
-          isModalRoute: isModalRoute // Debug için ekleyin
+          isModalRoute: isModalRoute,
+          isInitialized: isInitialized
         });
       }
 
@@ -502,7 +509,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const timer = setTimeout(handleNavigation, 250);
     return () => clearTimeout(timer);
 
-  }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key]);
+  }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key, isInitialized]);
 
   // Development debug helpers
   if (__DEV__) {
@@ -518,6 +525,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           jwt: !!jwt,
           loading,
           isAuthFlowActive,
+          isInitialized,
           segments,
           userComplete: !!(user?.gender && user?.birthDate)
         });
@@ -527,13 +535,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('🔧 DEBUG: Testing logout');
         logout();
       };
-    }, [user, jwt, loading, isAuthFlowActive, segments]);
+    }, [user, jwt, loading, isAuthFlowActive, segments, isInitialized]);
   }
 
   const value = {
     user,
     loading,
     isAuthFlowActive,
+    isInitialized, // ✅ Yeni değer eklendi
     setAuthFlowActive,
     signInWithGoogle,
     signInWithApple,

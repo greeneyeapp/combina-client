@@ -1,6 +1,6 @@
-// app/_layout.tsx - Yönlendirme mantığı kaldırılmış, merkezi hale getirilmiş versiyon
+// app/_layout.tsx - Splash screen manuel kontrolü ile geliştirilmiş
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -21,15 +21,68 @@ import { initializeApp, resetInitializationState } from '@/utils/appInitializati
 import { initializeCaches, validateAndCleanCaches, resetCacheManager } from '@/utils/cacheManager';
 import { RevenueCatProvider } from '@/context/RevenueCatContext';
 
+// Splash screen'i açık tut
 SplashScreen.preventAutoHideAsync();
 
-// Singleton initialization state
+// Global state tracking
 let layoutInitialized = false;
 let layoutInitializationPromise: Promise<void> | null = null;
 
-// --- useProtectedRouter FONKSİYONU BURADAN TAMAMEN SİLİNDİ ---
+// Splash screen'i gizleme kontrolü için
+const MINIMUM_SPLASH_TIME = 2000; // En az 2 saniye göster
+const MAXIMUM_SPLASH_TIME = 8000; // En fazla 8 saniye göster
+
+interface SplashControllerProps {
+  onInitializationComplete: () => void;
+}
+
+// Splash controller component'i
+function SplashController({ onInitializationComplete }: SplashControllerProps) {
+  const [initStartTime] = useState(Date.now());
+  
+  useEffect(() => {
+    const handleInitialization = async () => {
+      try {
+        // App servislerini initialize et
+        await initializeAppServicesOnce();
+        
+        // Minimum splash time'ı bekle
+        const elapsedTime = Date.now() - initStartTime;
+        const remainingTime = Math.max(0, MINIMUM_SPLASH_TIME - elapsedTime);
+        
+        if (remainingTime > 0) {
+          console.log(`⏳ Waiting additional ${remainingTime}ms for minimum splash time...`);
+          await new Promise(resolve => setTimeout(resolve, remainingTime));
+        }
+        
+        // Maximum time protection
+        setTimeout(() => {
+          console.log('🚨 Maximum splash time reached, forcing hide...');
+          SplashScreen.hideAsync();
+        }, MAXIMUM_SPLASH_TIME);
+        
+        // Auth initialization'ın tamamlanmasını bekle
+        onInitializationComplete();
+        
+      } catch (error) {
+        console.error('❌ Initialization failed:', error);
+        // Hata durumunda da splash'i gizle
+        setTimeout(() => {
+          SplashScreen.hideAsync();
+        }, 1000);
+      }
+    };
+    
+    handleInitialization();
+  }, [initStartTime, onInitializationComplete]);
+  
+  return null;
+}
 
 function RootLayoutNav(): React.JSX.Element | null {
+  const [isReady, setIsReady] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  
   const [fontsLoaded, fontError] = useFonts({
     'Montserrat-Regular': require('../assets/fonts/Montserrat-Regular.ttf'),
     'Montserrat-Medium': require('../assets/fonts/Montserrat-Medium.ttf'),
@@ -38,20 +91,37 @@ function RootLayoutNav(): React.JSX.Element | null {
     'PlayfairDisplay-Bold': require('../assets/fonts/PlayfairDisplay-Bold.ttf'),
   });
 
-  // --- useProtectedRouter() ÇAĞRISI DA BURADAN KALDIRILDI ---
-
+  // Font yükleme tamamlandığında
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      setIsReady(true);
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) {
+  // Auth initialization callback
+  const handleAuthInitComplete = () => {
+    console.log('✅ Auth initialization completed, preparing to hide splash...');
+    setAuthReady(true);
+  };
+
+  // Hem fontlar hem de auth hazır olduğunda splash'i gizle
+  useEffect(() => {
+    if (isReady && authReady) {
+      console.log('✅ All initialization complete, hiding splash screen...');
+      // Kısa bir delay ile splash'i gizle (animation için)
+      setTimeout(() => {
+        SplashScreen.hideAsync();
+      }, 300);
+    }
+  }, [isReady, authReady]);
+
+  if (!isReady) {
     return null;
   }
 
   return (
     <>
+      <SplashController onInitializationComplete={handleAuthInitComplete} />
       <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -186,7 +256,49 @@ const performLayoutInitialization = async (): Promise<void> => {
   }
 };
 
+// AuthContext wrapper component - splash kontrolü için
+function AuthProviderWithSplashControl({ 
+  children, 
+  onAuthReady 
+}: { 
+  children: React.ReactNode; 
+  onAuthReady?: () => void; 
+}) {
+  return (
+    <AuthProvider>
+      <AuthReadyDetector onReady={onAuthReady} />
+      {children}
+    </AuthProvider>
+  );
+}
+
+// Auth hazır olduğunu detect eden component
+function AuthReadyDetector({ onReady }: { onReady?: () => void }) {
+  const [hasDetected, setHasDetected] = useState(false);
+  
+  useEffect(() => {
+    // Auth context'in loading state'ini monitor et
+    const checkAuthReady = () => {
+      if (!hasDetected) {
+        // Auth context hazır olana kadar bekle, sonra callback çağır
+        setTimeout(() => {
+          if (!hasDetected) {
+            setHasDetected(true);
+            onReady?.();
+          }
+        }, 1500); // Auth context'in initialize olması için kısa süre bekle
+      }
+    };
+    
+    checkAuthReady();
+  }, [hasDetected, onReady]);
+  
+  return null;
+}
+
 export default function RootLayout(): React.JSX.Element {
+  const [authInitComplete, setAuthInitComplete] = useState(false);
+  
   const toastConfig: Record<string, (props: BaseToastProps) => React.JSX.Element> = {
     success: (props) => <CustomToast {...props} type="success" />,
     info: (props) => <CustomToast {...props} type="info" />,
@@ -208,13 +320,18 @@ export default function RootLayout(): React.JSX.Element {
     <GestureHandlerRootView style={styles.container}>
       <I18nextProvider i18n={i18n}>
         <ThemeProvider>
-          <AuthProvider>
+          <AuthProviderWithSplashControl 
+            onAuthReady={() => {
+              console.log('🔑 Auth context ready, notifying splash controller...');
+              setAuthInitComplete(true);
+            }}
+          >
             <RevenueCatProvider>
               <RootLayoutNav />
               <CustomAlert />
               <Toast config={toastConfig} />
             </RevenueCatProvider>
-          </AuthProvider>
+          </AuthProviderWithSplashControl>
         </ThemeProvider>
       </I18nextProvider>
     </GestureHandlerRootView>
@@ -235,5 +352,10 @@ if (__DEV__) {
     resetInitializationState();
     resetCacheManager();
     console.log('🔄 All initialization state reset');
+  };
+
+  (global as any).forceSplashHide = () => {
+    SplashScreen.hideAsync();
+    console.log('🚨 Splash screen force hidden');
   };
 }

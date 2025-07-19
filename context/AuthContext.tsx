@@ -38,11 +38,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isAuthFlowActive, setAuthFlowActive] = React.useState(false);
-  
+
   // Component-level initialization tracking
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [lastProfileRefresh, setLastProfileRefresh] = React.useState(0);
-  
+
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
   const segments = useSegments();
@@ -71,7 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const initializeAuth = async () => {
       console.log('🔐 Initializing auth...', { jwt: !!jwt });
-      
+
       setIsInitialized(true);
 
       if (jwt) {
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           finalUser = { ...userInfo, ...cachedData };
           setUser(finalUser);
-          
+
           // RevenueCat login
           if (finalUser?.uid) {
             try {
@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setLoading(false);
           return;
         }
-        
+
         // Background'da profile refresh
         if (finalUser && finalUser.uid) {
           try {
@@ -145,9 +145,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
-      
+
       console.log('🔍 Google Backend response user_info:', JSON.stringify(user_info, null, 2));
-      
+
       const completeUserInfo = {
         uid: user_info?.uid,
         name: user_info?.name || '',
@@ -165,10 +165,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       await setJwt(access_token);
       console.log('✅ JWT token set successfully');
-      
+
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       console.log('✅ User data cached successfully');
-      
+
       setUser(completeUserInfo);
       console.log('✅ User state set successfully');
 
@@ -188,17 +188,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLastProfileRefresh(now);
         try {
           console.log('🔄 Google: Fetching additional profile data...');
-          
+
           const { fetchUserProfile } = await import('@/services/userService');
           const profileData = await fetchUserProfile();
-          
+
           if (profileData && (profileData.gender || profileData.fullname)) {
             const updatedUserInfo = {
               ...completeUserInfo,
               gender: profileData.gender || completeUserInfo.gender,
               fullname: profileData.fullname || completeUserInfo.fullname,
             };
-            
+
             console.log('🔄 Google: Profile enhanced with additional data');
             setUser(updatedUserInfo);
             await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUserInfo));
@@ -213,7 +213,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(false);
       console.log('✅ Google sign-in completed successfully');
       return completeUserInfo;
-      
+
     } catch (error) {
       setLoading(false);
       console.error('❌ GOOGLE SIGN-IN ERROR:', error);
@@ -285,17 +285,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setLastProfileRefresh(now);
         try {
           console.log('🔄 Apple: Fetching additional profile data...');
-          
+
           const { fetchUserProfile } = await import('@/services/userService');
           const profileData = await fetchUserProfile();
-          
+
           if (profileData && (profileData.gender || profileData.fullname)) {
             const updatedUserInfo = {
               ...completeUserInfo,
               gender: profileData.gender || completeUserInfo.gender,
               fullname: profileData.fullname || completeUserInfo.fullname,
             };
-            
+
             console.log('🔄 Apple: Profile enhanced with additional data');
             setUser(updatedUserInfo);
             await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUserInfo));
@@ -322,19 +322,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const token = useApiAuthStore.getState().jwt;
       await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
-      
-      const updatedUser = { 
-        ...user, 
-        name: info.name, 
-        fullname: info.name, 
-        displayName: info.name, 
-        gender: info.gender, 
-        birthDate: info.birthDate 
+
+      const updatedUser = {
+        ...user,
+        name: info.name,
+        fullname: info.name,
+        displayName: info.name,
+        gender: info.gender,
+        birthDate: info.birthDate
       };
-      
+
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
-      
+
       // Profile refresh (throttled)
       const now = Date.now();
       if (now - lastProfileRefresh > 60000) {
@@ -372,7 +372,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Tek navigation ile auth'a yönlendir
       console.log('🔐 Logout: Redirecting to auth...');
       router.replace('/(auth)');
-      
+
       // Navigation tamamlandıktan sonra flag'i temizle
       setTimeout(() => {
         setAuthFlowActive(false);
@@ -411,10 +411,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Navigation logic - Logout ve duplicate navigation fix
   React.useEffect(() => {
     if (!navigationState?.key || loading || isAuthFlowActive) {
-      // isAuthFlowActive true ise (logout süreci) navigation yapma
-      if (isAuthFlowActive && !user && !jwt) {
-        console.log('⏸️ Navigation suspended during logout process');
-      }
       return;
     }
 
@@ -425,8 +421,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const isInTabs = segments[0] === '(tabs)';
       const isLogoutScenario = !user && !jwt && isInTabs;
 
+      // YENİ: Modal route'larını kontrol et
+      const isModalRoute = segments.includes('subscription') || segments.includes('storage');
+
+      // Modal açıkken navigation yapma
+      if (isModalRoute) {
+        console.log('🚫 Navigation suspended: Modal route detected');
+        return;
+      }
+
       const shouldLog = isNotFoundPage || inAuthGroup || !isInTabs || isLogoutScenario;
-      
+
       if (shouldLog || __DEV__) {
         console.log('🔍 Navigation Debug:', {
           user: !!user,
@@ -438,13 +443,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           inAuthGroup: inAuthGroup,
           isNotFoundPage: isNotFoundPage,
           isInTabs: isInTabs,
-          isLogoutScenario: isLogoutScenario
+          isLogoutScenario: isLogoutScenario,
+          isModalRoute: isModalRoute // Debug için ekleyin
         });
       }
 
       if (user && jwt) {
         const profileComplete = user.gender && user.birthDate;
-        
+
         if (shouldLog || __DEV__) {
           console.log('🚀 Navigation: User and JWT available, checking profile completion...');
           console.log('🔍 Profile completeness check:', {
@@ -453,7 +459,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             profileComplete: profileComplete
           });
         }
-        
+
         if (!profileComplete) {
           if (segments[1] !== 'complete-profile') {
             console.log('📝 Navigation: Profile incomplete, redirecting to complete-profile');
@@ -462,28 +468,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
           return;
         }
-        
+
         if (profileComplete) {
           if (inAuthGroup || isNotFoundPage || currentPath === '' || currentPath === '+not-found') {
             console.log('🏠 Navigation: Profile complete, redirecting to home from:', currentPath);
             router.replace('/(tabs)/home');
             return;
           }
-          
+
           if (isInTabs) {
             if (__DEV__ && shouldLog) {
               console.log('✅ Navigation: Already in tabs area');
             }
             return;
           }
-          
+
           console.log('🔄 Navigation: Profile complete, ensuring user is in tabs area');
           router.replace('/(tabs)/home');
           return;
         }
       } else if (!user && !jwt) {
         if (!inAuthGroup) {
-          // Sadece logout değil ise log
           if (!isLogoutScenario) {
             console.log('🔐 Navigation: No user/JWT, redirecting to auth');
           }
@@ -496,7 +501,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const timer = setTimeout(handleNavigation, 250);
     return () => clearTimeout(timer);
-    
+
   }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key]);
 
   // Development debug helpers
@@ -506,7 +511,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('🔧 DEBUG: Force navigating to home');
         router.replace('/(tabs)/home');
       };
-      
+
       (global as any).debugAuthState = () => {
         console.log('🔧 DEBUG Auth State:', {
           user: !!user,
@@ -525,16 +530,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [user, jwt, loading, isAuthFlowActive, segments]);
   }
 
-  const value = { 
-    user, 
-    loading, 
-    isAuthFlowActive, 
-    setAuthFlowActive, 
-    signInWithGoogle, 
-    signInWithApple, 
-    updateUserInfo, 
-    logout, 
-    refreshUserProfile 
+  const value = {
+    user,
+    loading,
+    isAuthFlowActive,
+    setAuthFlowActive,
+    signInWithGoogle,
+    signInWithApple,
+    updateUserInfo,
+    logout,
+    refreshUserProfile
   };
 
   return (

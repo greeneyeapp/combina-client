@@ -483,6 +483,11 @@
       "adNotReady": "Werbung noch nicht bereit. Bitte versuche es in einem Moment erneut.",
       "rewardGranted": "Belohnung erhalten!",
       "extraSuggestionInfo": "Du hast einen zusätzlichen Outfit-Vorschlag."
+    },
+    "wardrobeError": {
+      "title": "Ungenügende Garderobe",
+      "defaultMessage": "In Ihrer Garderobe wurden keine passenden Artikel für den ausgewählten Anlass gefunden. Bitte überprüfen Sie Ihre Garderobe.",
+      "specificMessage": "Sie haben keine passenden Artikel für {{occasion}}. Bitte fügen Sie Artikel hinzu wie: {{categories}}."
     }
   },
   "categories": {

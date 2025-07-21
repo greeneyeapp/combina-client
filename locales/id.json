@@ -483,6 +483,11 @@
       "adNotReady": "Iklan belum siap. Silakan coba lagi sebentar.",
       "rewardGranted": "Hadiah Diberikan!",
       "extraSuggestionInfo": "Anda memiliki satu saran pakaian ekstra."
+    },
+    "wardrobeError": {
+      "title": "Lemari Pakaian Tidak Cukup",
+      "defaultMessage": "Tidak ada item yang cocok ditemukan di lemari pakaian Anda untuk acara yang dipilih. Silakan periksa lemari pakaian Anda.",
+      "specificMessage": "Anda tidak memiliki item yang cocok untuk {{occasion}}. Silakan tambahkan item seperti: {{categories}}."
     }
   },
   "categories": {

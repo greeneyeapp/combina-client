@@ -1,4 +1,4 @@
-// store/clothingStore.ts - Tekrarları önlenmiş file system based image storage
+// store/clothingStore.ts - Dosya sistemi tabanlı görüntü depolama ve yetim dosya temizleme
 
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -16,7 +16,7 @@ export type ClothingItem = {
   notes: string;
   createdAt: string;
 
-  // File system based image storage
+  // Dosya sistemi tabanlı görüntü depolama
   originalImagePath: string;    // "item_123456.jpg"
   thumbnailImagePath: string;   // "item_123456_thumb.jpg"
   
@@ -26,7 +26,7 @@ export type ClothingItem = {
     fileSize?: number;
   };
 
-  // HATA İÇİN EKLENEN SATIR
+  // Görüntü dosyası eksikse işaretlemek için
   isImageMissing?: boolean;
 };
 
@@ -43,14 +43,15 @@ interface ClothingState {
   validateClothingImages: () => Promise<{ updatedCount: number; removedCount: number }>;
   setValidated: (validated: boolean) => void;
   setValidating: (validating: boolean) => void;
+  // Yetim kalmış dosyaları temizleme fonksiyonu
   cleanupOrphanedFiles: () => Promise<{ removedCount: number; freedSpace: number }>;
 }
 
-// Global validation flag to prevent multiple simultaneous validations
+// Birden fazla eşzamanlı doğrulamayı önlemek için genel bayraklar
 let isGlobalValidationRunning = false;
 let validationExecuted = false;
 
-// File system validation function
+// Dosya sistemi varlıklarını doğrulayan yardımcı fonksiyon
 const validateFileSystemAssets = async (): Promise<{ 
   validCount: number; 
   removedCount: number; 
@@ -61,36 +62,38 @@ const validateFileSystemAssets = async (): Promise<{
   let removedCount = 0;
   let updatedCount = 0;
 
-  console.log('🔍 Validating file system assets...');
+  console.log('🔍 Dosya sistemi varlıkları doğrulanıyor...');
 
   for (const item of clothing) {
+    // Eğer ürünün görsel yolları eksikse, ürünü kaldır
     if (!item.originalImagePath || !item.thumbnailImagePath) {
       await removeClothing(item.id);
       removedCount++;
-      console.log(`🗑️ Removed item ${item.name} - missing image paths`);
+      console.log(`🗑️ Ürün kaldırıldı: ${item.name} - eksik görsel yolları`);
       continue;
     }
 
     try {
-      // Check if both original and thumbnail exist
+      // Hem orijinal hem de thumbnail dosyasının var olup olmadığını kontrol et
       const originalExists = await checkImageExists(item.originalImagePath, false);
       const thumbnailExists = await checkImageExists(item.thumbnailImagePath, true);
       
       if (originalExists && thumbnailExists) {
         validCount++;
       } else {
+        // Eğer dosyalardan biri bile yoksa, ürünü kaldır
         await removeClothing(item.id);
         removedCount++;
-        console.log(`🗑️ Removed item ${item.name} - image files missing`);
+        console.log(`🗑️ Ürün kaldırıldı: ${item.name} - görsel dosyaları eksik`);
       }
     } catch (error) {
-      console.error(`Error validating files for item ${item.id}:`, error);
+      console.error(`Ürün ${item.id} için dosyaları doğrularken hata:`, error);
       await removeClothing(item.id);
       removedCount++;
     }
   }
 
-  console.log(`📊 File system validation completed: ${validCount} valid, ${updatedCount} updated, ${removedCount} removed`);
+  console.log(`📊 Dosya sistemi doğrulaması tamamlandı: ${validCount} geçerli, ${updatedCount} güncellendi, ${removedCount} kaldırıldı`);
   return { validCount, removedCount, updatedCount };
 };
 
@@ -113,7 +116,7 @@ export const useClothingStore = create<ClothingState>()(
           clothing: [...state.clothing, processedItem],
         }));
 
-        console.log('✅ Added clothing item with file system storage:', {
+        console.log('✅ Dosya sistemi depolaması ile giysi eklendi:', {
           id: item.id,
           originalImage: item.originalImagePath,
           thumbnailImage: item.thumbnailImagePath
@@ -126,10 +129,10 @@ export const useClothingStore = create<ClothingState>()(
         
         if (itemToRemove && itemToRemove.originalImagePath && itemToRemove.thumbnailImagePath) {
           try {
+            // İlgili görsel dosyalarını sil
             await deleteImage(itemToRemove.originalImagePath, itemToRemove.thumbnailImagePath);
           } catch (error) {
-            console.error('Failed to delete image files:', error);
-            // Continue with removal even if file deletion fails
+            console.error('Görsel dosyaları silinemedi:', error);
           }
         }
 
@@ -158,7 +161,7 @@ export const useClothingStore = create<ClothingState>()(
           ),
         });
 
-        console.log('✅ Updated clothing item:', {
+        console.log('✅ Giysi güncellendi:', {
           id,
           originalImage: updated.originalImagePath,
           thumbnailImage: updated.thumbnailImagePath
@@ -168,13 +171,13 @@ export const useClothingStore = create<ClothingState>()(
       clearAllClothing: async () => {
         const { clothing } = get();
         
-        // Delete all image files
+        // Tüm görsel dosyalarını sil
         for (const item of clothing) {
           if (item.originalImagePath && item.thumbnailImagePath) {
             try {
               await deleteImage(item.originalImagePath, item.thumbnailImagePath);
             } catch (error) {
-              console.error('Failed to delete image files for item:', item.id, error);
+              console.error('Ürün için görsel dosyaları silinemedi:', item.id, error);
             }
           }
         }
@@ -184,7 +187,6 @@ export const useClothingStore = create<ClothingState>()(
           isValidated: false
         });
 
-        // Reset global validation flags
         isGlobalValidationRunning = false;
         validationExecuted = false;
       },
@@ -195,13 +197,12 @@ export const useClothingStore = create<ClothingState>()(
       validateClothingImages: async () => {
         const { isValidated, isValidating } = get();
         
-        // Multiple prevention checks
         if (isValidated || isValidating || isGlobalValidationRunning || validationExecuted) {
-          console.log('📋 File system validation already completed or in progress, skipping...');
+          console.log('📋 Dosya sistemi doğrulaması zaten tamamlandı veya devam ediyor, atlanıyor...');
           return { updatedCount: 0, removedCount: 0 };
         }
 
-        console.log('🔄 Starting file system validation...');
+        console.log('🔄 Dosya sistemi doğrulaması başlatılıyor...');
         isGlobalValidationRunning = true;
         validationExecuted = true;
         set({ isValidating: true });
@@ -211,7 +212,7 @@ export const useClothingStore = create<ClothingState>()(
           set({ isValidated: true, isValidating: false });
           return { updatedCount: result.updatedCount, removedCount: result.removedCount };
         } catch (error) {
-          console.error('❌ Error validating images:', error);
+          console.error('❌ Görselleri doğrularken hata:', error);
           set({ isValidating: false });
           return { updatedCount: 0, removedCount: 0 };
         } finally {
@@ -222,7 +223,7 @@ export const useClothingStore = create<ClothingState>()(
       cleanupOrphanedFiles: async () => {
         const { clothing } = get();
         
-        // Get all used file names
+        // Gardıroptaki tüm ürünlere ait kullanılan görsel dosyalarının adlarını bir sete topla
         const usedFileNames = new Set<string>();
         clothing.forEach(item => {
           if (item.originalImagePath) usedFileNames.add(item.originalImagePath);
@@ -230,9 +231,10 @@ export const useClothingStore = create<ClothingState>()(
         });
 
         try {
+          // fileSystemImageManager'daki ana temizleme fonksiyonunu çağır
           return await cleanupOrphanedImages(Array.from(usedFileNames));
         } catch (error) {
-          console.error('❌ Error cleaning up orphaned files:', error);
+          console.error('❌ clothingStore: Yetim dosyaları temizlerken hata oluştu:', error);
           return { removedCount: 0, freedSpace: 0 };
         }
       }
@@ -242,23 +244,21 @@ export const useClothingStore = create<ClothingState>()(
       storage: createJSONStorage(() => simpleStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // Reset validation state on rehydration
+          // Yeniden yüklemede doğrulama durumunu sıfırla
           state.isValidated = false;
           state.isValidating = false;
 
-          // Single validation with multiple safety checks
           if (!validationExecuted && !isGlobalValidationRunning) {
-            console.log('📋 Scheduling file system validation after rehydration...');
+            console.log('📋 Yeniden yükleme sonrası dosya sistemi doğrulaması planlanıyor...');
             
             setTimeout(() => {
-              // Final safety check before validation
               if (!validationExecuted && !isGlobalValidationRunning && !state.isValidated && !state.isValidating) {
-                console.log('🔄 Executing scheduled file system validation...');
+                console.log('🔄 Planlanmış dosya sistemi doğrulaması çalıştırılıyor...');
                 state.validateClothingImages();
               } else {
-                console.log('📋 File system validation already handled, skipping scheduled validation');
+                console.log('📋 Dosya sistemi doğrulaması zaten işlendi, planlanmış doğrulama atlanıyor');
               }
-            }, 2000); // 2 second delay to ensure everything is loaded
+            }, 2000); // Her şeyin yüklendiğinden emin olmak için 2 saniye gecikme
           }
         }
       }
@@ -266,7 +266,7 @@ export const useClothingStore = create<ClothingState>()(
   )
 );
 
-// Development utility to reset validation state
+// Geliştirme için doğrulama durumunu sıfırlama aracı
 if (__DEV__) {
   (global as any).resetClothingValidation = () => {
     const store = useClothingStore.getState();
@@ -274,6 +274,6 @@ if (__DEV__) {
     store.setValidating(false);
     isGlobalValidationRunning = false;
     validationExecuted = false;
-    console.log('🔄 Clothing validation state reset');
+    console.log('🔄 Giysi doğrulama durumu sıfırlandı');
   };
 }

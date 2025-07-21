@@ -1,28 +1,33 @@
-// utils/appInitialization.ts - YENİ YAPI: Geçici dosyaları otomatik temizler
+// utils/appInitialization.ts - Yetim dosyaları otomatik temizleyen yapı
 
 import { useClothingStore } from '@/store/clothingStore';
-// DEĞİŞTİ: clearTempDirectory fonksiyonunu import et
 import { initializeFileSystem, getFileSystemHealth, clearTempDirectory } from '@/utils/fileSystemImageManager';
 
-// Global singleton state
+// Tekrarlanan başlatmayı önlemek için genel durum (singleton)
 let isInitializing = false;
 let isInitialized = false;
 let initializationPromise: Promise<any> | null = null;
 
+/**
+ * Uygulamayı başlatan ana fonksiyon.
+ * Dosya sistemini kurar, geçici dosyaları ve yetim görselleri temizler.
+ */
 export const initializeApp = async () => {
-  // Prevent duplicate initialization
+  // Eğer zaten başlatılmışsa tekrar başlatma
   if (isInitialized) {
-    console.log('📋 App already initialized, skipping...');
+    console.log('📋 Uygulama zaten başlatılmış, atlanıyor...');
     return { success: true, system: 'file_system_storage', cached: true };
   }
 
+  // Eğer başlatma işlemi devam ediyorsa, bitmesini bekle
   if (isInitializing) {
-    console.log('⏳ App initialization in progress, waiting...');
+    console.log('⏳ Uygulama başlatılıyor, bekleniyor...');
     return await initializationPromise;
   }
 
   isInitializing = true;
   
+  // Asıl başlatma işlemini gerçekleştir ve promise'i sakla
   initializationPromise = performInitialization();
   
   try {
@@ -30,21 +35,37 @@ export const initializeApp = async () => {
     isInitialized = true;
     return result;
   } catch (error) {
-    console.error('❌ App initialization failed:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    console.error('❌ Uygulama başlatma başarısız:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Bilinmeyen hata' };
   } finally {
     isInitializing = false;
     initializationPromise = null;
   }
 };
 
+/**
+ * Başlatma adımlarını yürüten iç fonksiyon.
+ */
 const performInitialization = async () => {
   try {
-    // 1. File system'i initialize et
+    // 1. Dosya sistemini (gerekli klasörleri) initialize et
     await initializeFileSystem();
 
-    // 2. YENİ: Uygulama başlarken geçici klasörü temizle
+    // 2. Uygulama başlarken geçici klasörü (varsa kalıntıları) temizle
     await clearTempDirectory();
+
+    // 3. Gardıropla eşleşmeyen "yetim" görselleri temizle
+    // Bu çağrı, clothingStore verileri yüklendikten sonra çalışacaktır.
+    console.log('🧹 Yetim görsel temizleme işlemi başlatılıyor...');
+    const cleanupResult = await useClothingStore.getState().cleanupOrphanedFiles();
+    if (cleanupResult.removedCount > 0) {
+      console.log(
+        `✅ Yetim görsel temizliği tamamlandı: ${cleanupResult.removedCount} dosya silindi, ` +
+        `${Math.round(cleanupResult.freedSpace / 1024)} KB alan boşaltıldı.`
+      );
+    } else {
+      console.log('✅ Yetim görsel bulunamadı, temizliğe gerek yok.');
+    }
 
     return {
       success: true,
@@ -53,12 +74,14 @@ const performInitialization = async () => {
     };
     
   } catch (error) {
-    console.error('❌ App initialization failed:', error);
+    console.error('❌ Uygulama başlangıç hatası:', error);
     throw error;
   }
 };
 
-// File system health diagnostics (storage.tsx ekranı için kalabilir)
+/**
+ * Dosya sistemi sağlık durumunu teşhis eder (Depolama Yönetimi ekranı için).
+ */
 export const diagnoseFileSystemHealth = async (t?: (key: string, options?: any) => string): Promise<{
   totalItems: number;
   withValidPaths: number;
@@ -96,7 +119,7 @@ export const diagnoseFileSystemHealth = async (t?: (key: string, options?: any) 
     };
     
   } catch (error) {
-    console.error('❌ File system diagnosis failed:', error);
+    console.error('❌ Dosya sistemi teşhisi başarısız:', error);
     return {
       totalItems: 0,
       withValidPaths: 0,
@@ -111,13 +134,17 @@ export const diagnoseFileSystemHealth = async (t?: (key: string, options?: any) 
   }
 };
 
-// Reset initialization state (for development/testing)
+/**
+ * Başlatma durumunu sıfırlar (geliştirme/test için).
+ */
 export const resetInitializationState = () => {
   isInitializing = false;
   isInitialized = false;
   initializationPromise = null;
-  console.log('🔄 Initialization state reset');
+  console.log('🔄 Başlatma durumu sıfırlandı');
 };
 
-// Check if app is initialized
+/**
+ * Uygulamanın başlatılıp başlatılmadığını kontrol eder.
+ */
 export const isAppInitialized = () => isInitialized;

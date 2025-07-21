@@ -483,6 +483,11 @@
       "adNotReady": "Reklam henüz hazır değil. Lütfen birazdan tekrar deneyin.",
       "rewardGranted": "Ödül Kazanıldı!",
       "extraSuggestionInfo": "Bir ekstra kombin öneri hakkı kazandınız."
+    },
+    "wardrobeError": {
+      "title": "Gardırop Yetersiz",
+      "defaultMessage": "Seçtiğin etkinlik için gardırobunda uygun kıyafet bulunamadı. Lütfen gardırobunu kontrol et.",
+      "specificMessage": "{{occasion}} etkinliği için uygun kıyafetin yok. Lütfen şu türlerden ekle: {{categories}}."
     }
   },
   "categories": {

@@ -220,7 +220,7 @@ export default function EditClothingScreen() {
       <HeaderBar
         title={t('wardrobe.editItem')}
         leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
-        onLeftPress={() => router.back()} />
+        onLeftPress={() => router.replace('/(tabs)/wardrobe')} />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

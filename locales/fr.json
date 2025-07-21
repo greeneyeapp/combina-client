@@ -483,6 +483,11 @@
       "adNotReady": "Publicité pas encore prête. Veuillez réessayer dans un instant.",
       "rewardGranted": "Récompense accordée !",
       "extraSuggestionInfo": "Vous avez une suggestion de tenue supplémentaire."
+    },
+    "wardrobeError": {
+      "title": "Garde-robe insuffisante",
+      "defaultMessage": "Aucun article approprié n'a été trouvé dans votre garde-robe pour l'occasion sélectionnée. Veuillez vérifier votre garde-robe.",
+      "specificMessage": "Vous n'avez pas d'articles appropriés pour {{occasion}}. Veuillez ajouter des articles comme : {{categories}}."
     }
   },
   "categories": {

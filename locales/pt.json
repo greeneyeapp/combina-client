@@ -483,6 +483,11 @@
       "adNotReady": "Anúncio ainda não está pronto. Por favor, tente novamente em um momento.",
       "rewardGranted": "Recompensa Concedida!",
       "extraSuggestionInfo": "Você tem uma sugestão de look extra."
+    },
+    "wardrobeError": {
+      "title": "Guarda-roupa insuficiente",
+      "defaultMessage": "Nenhum item adequado foi encontrado no seu guarda-roupa para a ocasião selecionada. Por favor, verifique seu guarda-roupa.",
+      "specificMessage": "Você não tem itens adequados para {{occasion}}. Por favor, adicione itens como: {{categories}}."
     }
   },
   "categories": {

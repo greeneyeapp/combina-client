@@ -50,12 +50,12 @@ interface OptimizedOutfit {
 const optimizeClothingItem = (item: ClothingItem): OptimizedClothingItem => {
   // Çoklu renk desteği
   const itemColors = item.colors && item.colors.length > 0 ? item.colors : [item.color];
-  
+
   // Style array'e dönüştür
-  const styleArray = typeof item.style === 'string' 
+  const styleArray = typeof item.style === 'string'
     ? item.style.split(',').map(s => s.trim()).filter(s => s.length > 0)
-    : Array.isArray(item.style) 
-      ? item.style 
+    : Array.isArray(item.style)
+      ? item.style
       : ['casual'];
 
   return {
@@ -89,39 +89,39 @@ const intelligentWardrobeFilter = (
   occasion: string,
   plan: 'free' | 'premium'
 ): ClothingItem[] => {
-  
+
   // Temel filtreleme
   const validItems = wardrobe.filter(item => !item.isImageMissing);
-  
+
   // Plan bazlı ön filtreleme
   const preFilterLimit = plan === 'premium' ? 400 : 300;
-  
+
   if (validItems.length <= preFilterLimit) {
     return validItems; // Zaten küçükse tamamını gönder
   }
-  
+
   // Skorlama sistemi
   const scoredItems = validItems.map(item => {
     let score = 1;
-    
+
     // Mevsim uygunluğu
     const seasonScore = calculateSeasonScore(item, weatherCondition);
-    
+
     // Stil uygunluğu
     const styleScore = calculateStyleScore(item, occasion);
-    
+
     // Temel önem (t-shirt, jeans vs. özel parçalar)
     const importanceScore = calculateImportanceScore(item);
-    
+
     // Renk çeşitliliği
     const colorScore = calculateColorDiversityScore(item);
-    
+
     return {
       item,
       score: score + seasonScore + styleScore + importanceScore + colorScore
     };
   });
-  
+
   // Skor bazlı sıralama ve kategori dengeleme
   return balancedSelection(scoredItems, preFilterLimit);
 };
@@ -136,10 +136,10 @@ const calculateSeasonScore = (item: ClothingItem, weather: string): number => {
     'cool': ['fall', 'spring'],
     'cold': ['winter', 'fall']
   };
-  
+
   const appropriateSeasons = seasonMap[weather] || ['spring', 'summer', 'fall', 'winter'];
   const matchingSeasons = item.season.filter(s => appropriateSeasons.includes(s));
-  
+
   return matchingSeasons.length > 0 ? 2 : 0;
 };
 
@@ -147,31 +147,31 @@ const calculateSeasonScore = (item: ClothingItem, weather: string): number => {
  * Stil uygunluk skoru
  */
 const calculateStyleScore = (item: ClothingItem, occasion: string): number => {
-  const styles = typeof item.style === 'string' 
-    ? item.style.split(',').map(s => s.trim()) 
+  const styles = typeof item.style === 'string'
+    ? item.style.split(',').map(s => s.trim())
     : Array.isArray(item.style) ? item.style : ['casual'];
-  
+
   // Durum bazlı stil eşleştirmesi - gerçek stil listesine göre
   if (occasion.includes('business') || occasion.includes('formal') || occasion.includes('office')) {
     return styles.some(s => ['classic', 'smart_casual', 'minimalist'].includes(s.toLowerCase())) ? 3 : 0;
   }
-  
+
   if (occasion.includes('party') || occasion.includes('night') || occasion.includes('celebration')) {
     return styles.some(s => ['party', 'vintage', 'gothic'].includes(s.toLowerCase())) ? 3 : 1;
   }
-  
+
   if (occasion.includes('sport') || occasion.includes('gym') || occasion.includes('yoga')) {
     return styles.some(s => ['sportswear', 'casual'].includes(s.toLowerCase())) ? 3 : 0;
   }
-  
+
   if (occasion.includes('date') || occasion.includes('dinner')) {
     return styles.some(s => ['smart_casual', 'classic', 'vintage', 'party'].includes(s.toLowerCase())) ? 3 : 1;
   }
-  
+
   if (occasion.includes('weekend') || occasion.includes('brunch') || occasion.includes('coffee')) {
     return styles.some(s => ['casual', 'bohemian', 'minimalist'].includes(s.toLowerCase())) ? 3 : 1;
   }
-  
+
   // Default casual durumlar için
   return styles.some(s => ['casual', 'smart_casual'].includes(s.toLowerCase())) ? 2 : 1;
 };
@@ -181,10 +181,10 @@ const calculateStyleScore = (item: ClothingItem, occasion: string): number => {
  */
 const calculateImportanceScore = (item: ClothingItem): number => {
   const essentialCategories = [
-    't-shirt', 'shirt', 'jeans', 'trousers', 'sneakers', 
+    't-shirt', 'shirt', 'jeans', 'trousers', 'sneakers',
     'dress', 'blouse', 'jacket', 'boots', 'flats'
   ];
-  
+
   return essentialCategories.includes(item.category.toLowerCase()) ? 1 : 0;
 };
 
@@ -193,10 +193,10 @@ const calculateImportanceScore = (item: ClothingItem): number => {
  */
 const calculateColorDiversityScore = (item: ClothingItem): number => {
   const colors = item.colors || [item.color];
-  const hasNeutral = colors.some(c => 
+  const hasNeutral = colors.some(c =>
     ['black', 'white', 'gray', 'navy', 'beige', 'cream'].includes(c || '')
   );
-  
+
   return hasNeutral ? 1 : 0.5;
 };
 
@@ -204,27 +204,27 @@ const calculateColorDiversityScore = (item: ClothingItem): number => {
  * Dengeli seçim - kategori çeşitliliğini korur
  */
 const balancedSelection = (
-  scoredItems: Array<{item: ClothingItem, score: number}>, 
+  scoredItems: Array<{ item: ClothingItem, score: number }>,
   limit: number
 ): ClothingItem[] => {
   const sorted = scoredItems.sort((a, b) => b.score - a.score);
-  
+
   const selected: ClothingItem[] = [];
   const categoryCount: Record<string, number> = {};
   const maxPerCategory = Math.max(3, Math.floor(limit / 15)); // Kategori başına limit
-  
-  for (const {item, score} of sorted) {
+
+  for (const { item, score } of sorted) {
     if (selected.length >= limit) break;
-    
+
     const category = item.category.toLowerCase();
     const currentCount = categoryCount[category] || 0;
-    
+
     if (currentCount < maxPerCategory) {
       selected.push(item);
       categoryCount[category] = currentCount + 1;
     }
   }
-  
+
   return selected;
 };
 
@@ -246,12 +246,12 @@ export async function getOutfitSuggestion(
 
     // Akıllı filtreleme uygula
     const filteredWardrobe = intelligentWardrobeFilter(
-      wardrobe, 
-      weatherCondition, 
-      occasion, 
+      wardrobe,
+      weatherCondition,
+      occasion,
       plan
     );
-    
+
     // Optimize et
     const optimizedWardrobe = filteredWardrobe.map(optimizeClothingItem);
     const optimizedHistory = last5Outfits.slice(0, 5).map(optimizeOutfit);
@@ -293,50 +293,84 @@ export async function getOutfitSuggestion(
         timeout: 35000 // 35 saniye
       }
     );
-    
+
     console.log('✅ AI suggestion received successfully');
     return response.data;
-    
+
   } catch (error: any) {
     const { show: showAlert } = useAlertStore.getState();
     const t = i18n.t;
 
     console.error('❌ AI service error:', {
       status: error.response?.status,
-      message: error.response?.data?.message || error.message,
+      data: error.response?.data,
+      message: error.message,
       url: error.config?.url
     });
 
-    // Hata durumlarına göre özel mesajlar
-    if (error.response?.status === 429) {
+    // --- YÖNLENDİRMESİZ, SADECE BİLGİLENDİRME YAPAN HATA YAKALAMA MANTIĞI ---
+
+    if (error.response?.status === 422) {
+      const detail = error.response.data.detail || '';
+      const occasionMatch = detail.match(/'([^']+)'/);
+      const categoriesMatch = detail.match(/like: (.*)\./);
+
+      let title = t('suggestions.wardrobeError.title');
+      let message = t('suggestions.wardrobeError.defaultMessage');
+
+      if (occasionMatch && categoriesMatch) {
+        const occasionKey = occasionMatch[1];
+        const categoryKeys = categoriesMatch[1].split(', ').map(k => k.trim());
+
+        const localizedOccasion = t(`occasions.${occasionKey}`, occasionKey);
+        const localizedCategories = categoryKeys.map(key => t(`categories.${key}`, key)).join(', ');
+
+        message = t('suggestions.wardrobeError.specificMessage', {
+          occasion: localizedOccasion,
+          categories: localizedCategories
+        });
+      }
+
+      showAlert({
+        title: title,
+        message: message,
+        // Yönlendirme butonu kaldırıldı, sadece "Tamam" butonu kaldı.
+        buttons: [
+          { text: t('common.ok'), onPress: () => { }, variant: 'primary' },
+        ]
+      });
+
+    } else if (error.response?.status === 429) {
       showAlert({
         title: t('suggestions.limitExceededTitle'),
         message: t('suggestions.limitExceededMessage'),
-        buttons: [{ text: t('common.ok'), onPress: () => {} }]
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
       });
     } else if (error.response?.status === 413) {
+      // ... diğer hata durumları aynı kalıyor ...
       showAlert({
         title: t('common.error'),
         message: t('suggestions.tooManyItemsError', 'Wardrobe too large. Please try again.'),
-        buttons: [{ text: t('common.ok'), onPress: () => {} }]
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
       });
     } else if (error.code === 'ECONNABORTED') {
       showAlert({
         title: t('common.error'),
         message: t('suggestions.timeoutError', 'Request timed out. Please try again.'),
-        buttons: [{ text: t('common.ok'), onPress: () => {} }]
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
       });
     } else if (error.response?.status === 500) {
       showAlert({
         title: t('common.error'),
         message: t('suggestions.aiServiceError', 'AI service temporarily unavailable. Please try again.'),
-        buttons: [{ text: t('common.ok'), onPress: () => {} }]
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
       });
     } else {
+      const genericMessage = error.response?.data?.detail || t('suggestions.genericError');
       showAlert({
         title: t('common.error'),
-        message: t('suggestions.genericError'),
-        buttons: [{ text: t('common.ok'), onPress: () => {} }]
+        message: genericMessage,
+        buttons: [{ text: t('common.ok'), onPress: () => { } }]
       });
     }
     return null;
@@ -348,19 +382,19 @@ export async function getOutfitSuggestion(
  */
 export const getWardrobeStats = (wardrobe: ClothingItem[]) => {
   const validItems = wardrobe.filter(item => !item.isImageMissing);
-  
+
   const categoryCount = validItems.reduce((acc, item) => {
     acc[item.category] = (acc[item.category] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
-  
+
   const seasonCount = validItems.reduce((acc, item) => {
     item.season.forEach(season => {
       acc[season] = (acc[season] || 0) + 1;
     });
     return acc;
   }, {} as Record<string, number>);
-  
+
   const colorCount = validItems.reduce((acc, item) => {
     const colors = item.colors || [item.color];
     colors.forEach(color => {
@@ -368,7 +402,7 @@ export const getWardrobeStats = (wardrobe: ClothingItem[]) => {
     });
     return acc;
   }, {} as Record<string, number>);
-  
+
   return {
     totalItems: validItems.length,
     categoryBreakdown: categoryCount,
@@ -384,11 +418,11 @@ export const getWardrobeStats = (wardrobe: ClothingItem[]) => {
  */
 const calculateOptimizationScore = (wardrobe: ClothingItem[]): number => {
   if (wardrobe.length === 0) return 0;
-  
+
   // Kategori çeşitliliği
   const categories = new Set(wardrobe.map(item => item.category));
   const categoryScore = Math.min(categories.size / 10, 1) * 0.3;
-  
+
   // Renk çeşitliliği
   const colors = new Set();
   wardrobe.forEach(item => {
@@ -396,20 +430,20 @@ const calculateOptimizationScore = (wardrobe: ClothingItem[]): number => {
     itemColors.forEach(color => color && colors.add(color));
   });
   const colorScore = Math.min(colors.size / 15, 1) * 0.3;
-  
+
   // Mevsim dengesi
   const seasons = ['spring', 'summer', 'fall', 'winter'];
-  const seasonCoverage = seasons.filter(season => 
+  const seasonCoverage = seasons.filter(season =>
     wardrobe.some(item => item.season.includes(season))
   ).length;
   const seasonScore = (seasonCoverage / 4) * 0.2;
-  
+
   // Stil çeşitliliği - gerçek stil listesine göre
   const availableStyles = ['classic', 'smart_casual', 'casual', 'bohemian', 'minimalist', 'vintage', 'gothic', 'party', 'sportswear'];
   const styles = new Set();
   wardrobe.forEach(item => {
-    const itemStyles = typeof item.style === 'string' 
-      ? item.style.split(',').map(s => s.trim()) 
+    const itemStyles = typeof item.style === 'string'
+      ? item.style.split(',').map(s => s.trim())
       : Array.isArray(item.style) ? item.style : ['casual'];
     itemStyles.forEach(style => {
       if (availableStyles.includes(style)) {
@@ -418,7 +452,7 @@ const calculateOptimizationScore = (wardrobe: ClothingItem[]): number => {
     });
   });
   const styleScore = Math.min(styles.size / availableStyles.length, 1) * 0.2;
-  
+
   return Math.round((categoryScore + colorScore + seasonScore + styleScore) * 100);
 };
 
@@ -428,7 +462,7 @@ const calculateOptimizationScore = (wardrobe: ClothingItem[]): number => {
 export const calculatePayloadSize = (data: any): string => {
   const jsonString = JSON.stringify(data);
   const sizeInBytes = new Blob([jsonString]).size;
-  
+
   if (sizeInBytes < 1024) {
     return `${sizeInBytes} bytes`;
   } else if (sizeInBytes < 1024 * 1024) {

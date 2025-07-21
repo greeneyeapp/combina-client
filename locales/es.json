@@ -483,6 +483,11 @@
       "adNotReady": "Anuncio aún no listo. Por favor, inténtalo de nuevo en un momento.",
       "rewardGranted": "¡Recompensa concedida!",
       "extraSuggestionInfo": "Tienes una sugerencia de atuendo extra."
+    },
+    "wardrobeError": {
+      "title": "Armario insuficiente",
+      "defaultMessage": "No se encontraron artículos adecuados en tu armario para la ocasión seleccionada. Por favor, revisa tu armario.",
+      "specificMessage": "No tienes artículos adecuados para {{occasion}}. Por favor, añade artículos como: {{categories}}."
     }
   },
   "categories": {

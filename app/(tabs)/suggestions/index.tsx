@@ -37,6 +37,7 @@ import useAlertStore from '@/store/alertStore';
 import { useWardrobeLimit } from '@/hooks/useWardrobeLimit';
 import { CustomBannerAd } from '@/components/ads/BannerAd';
 import { useRewardedAd } from '@/hooks/useRewardedAd';
+import { useRevenueCat } from '@/context/RevenueCatContext';
 
 interface PinterestLink {
   title: string;
@@ -63,6 +64,7 @@ export default function SuggestionsScreen() {
   const [pinterestLinks, setPinterestLinks] = useState<PinterestLink[]>([]);
   const [isLiked, setIsLiked] = useState(false);
   const [showLoadingAnimation, setShowLoadingAnimation] = useState(false);
+  const { currentPlan, isLoading: isRevenueCatLoading } = useRevenueCat();
 
   const rewardedAd = useRewardedAd();
   const [isRetryingAfterAd, setIsRetryingAfterAd] = useState(false);
@@ -82,30 +84,25 @@ export default function SuggestionsScreen() {
     [suggestion, outfits]
   );
 
-  // ✅ DÜZELTME: useMemo kaldırıp direkt function yaptık
   const getShowAdIcon = () => {
-    console.log('🔍 getShowAdIcon called');
-    console.log('🔍 userPlan:', userPlan);
-
-    if (userPlan?.plan === 'premium') {
-      console.log('🔍 Premium user, returning false');
-      return false;
+    if (currentPlan === 'premium') {
+      return false; // Premium kullanıcılar asla reklam ikonunu görmez.
     }
+
+    // 2. Kullanım detayları için backend'den gelen veriyi kullan.
     if (userPlan && userPlan.usage) {
-      const { daily_limit, current_usage } = userPlan.usage;
-      const hasUsedDailyLimit = current_usage >= daily_limit;
+      const { daily_limit, current_usage, rewarded_count = 0 } = userPlan.usage;
 
-      console.log('🔍 getShowAdIcon calculation:', {
-        daily_limit,
-        current_usage,
-        hasUsedDailyLimit,
-        shouldShowFilm: hasUsedDailyLimit,
-        rawUsage: userPlan.usage
-      });
+      // 3. Doğru Mantık: Toplam hak, günlük limit ve ödüllü hakların toplamıdır.
+      const totalAvailable = daily_limit + rewarded_count;
 
-      return hasUsedDailyLimit;
+      // Reklam ikonunu SADECE tüm haklar (ödüllü dahil) bittiğinde göster.
+      const shouldShowAdIcon = current_usage >= totalAvailable;
+
+      return shouldShowAdIcon;
     }
-    console.log('🔍 No userPlan or usage, returning false');
+
+    // Herhangi bir veri yoksa, varsayılan olarak normal ikonu göster.
     return false;
   };
 
@@ -221,23 +218,12 @@ export default function SuggestionsScreen() {
       return;
     }
 
-    // ✅ DEBUG: Premium kontrol ve usage check
-    console.log('🔍 handleGenerateSuggestion - Premium check:', {
-      plan: userPlan?.plan,
-      bypassLimitCheck,
-      shouldCheckUsage: userPlan?.plan !== 'premium' && !bypassLimitCheck
-    });
+    if (currentPlan !== 'premium' && !bypassLimitCheck) {
+      const { daily_limit, current_usage, rewarded_count = 0 } = userPlan.usage;
+      const totalAvailable = daily_limit + rewarded_count;
 
-    if (userPlan?.plan !== 'premium' && !bypassLimitCheck) {
-      console.log('🔍 About to call canGetSuggestion...');
-
-      const usageCheck = await canGetSuggestion();
-
-      console.log('🔍 canGetSuggestion result:', usageCheck);
-
-      if (!usageCheck.canSuggest) {
-        console.log('✅ User cannot suggest - showing ad popup');
-
+      // Eğer kullanılan hak, toplam hakkı doldurduysa reklam göster
+      if (current_usage >= totalAvailable) {
         showAlert({
           title: t('suggestions.rewardedAd.title'),
           message: t('suggestions.rewardedAd.message'),
@@ -246,28 +232,18 @@ export default function SuggestionsScreen() {
             {
               text: t('suggestions.rewardedAd.watchAdButton'),
               onPress: () => {
-                console.log('🔍 Watch ad button pressed, rewardedAd.isLoaded:', rewardedAd.isLoaded);
                 if (rewardedAd.isLoaded) {
                   rewardedAd.show();
                 } else {
-                  Toast.show({
-                    type: 'info',
-                    text1: t('suggestions.rewardedAd.adLoading'),
-                    text2: t('suggestions.rewardedAd.adNotReady'),
-                    position: 'top',
-                  });
+                  Toast.show({ type: 'info', text1: t('suggestions.rewardedAd.adLoading') });
                 }
               },
-              variant: 'primary'
-            }
-          ]
+              variant: 'primary',
+            },
+          ],
         });
-        return;
-      } else {
-        console.log('✅ User can suggest - proceeding to AI request');
+        return; // Fonksiyonu durdur
       }
-    } else {
-      console.log('✅ Premium user or bypass - skipping usage check');
     }
 
     console.log('🚀 Starting AI suggestion request...');
@@ -294,14 +270,18 @@ export default function SuggestionsScreen() {
 
       if (result) {
         setSuggestion(result);
-        if (!isRetryingAfterAd) {
-          await getUserProfile(true);
-        }
+        // --- NİHAİ DÜZELTME BURADA ---
+        // Başarılı bir öneriden sonra, reklamla veya normal yolla alınmış olmasına bakmaksızın,
+        // KULLANICI PROFİLİNİ HER ZAMAN YENİLE.
+        // Bu, ekrandaki 'usage' bilgisinin anında güncellenmesini sağlar.
+        await getUserProfile(true);
+        // --- DÜZELTME SONU ---
       } else {
         setError(t('suggestions.genericError'));
+        console.log('Suggestion failed, error handled by aiService.');
       }
     } catch (err) {
-      console.error(err);
+      console.error("Critical error in suggestion screen:", err);
       setError(t('suggestions.genericError'));
     } finally {
       setGenerating(false);
@@ -334,7 +314,7 @@ export default function SuggestionsScreen() {
   };
 
   const renderUsageInfo = () => {
-    if (!userPlan || !userPlan.usage) {
+    if (isRevenueCatLoading || !userPlan || !userPlan.usage) {
       return (
         <View style={[styles.usageContainer, { justifyContent: 'center', alignItems: 'center' }]}>
           <ActivityIndicator color={theme.colors.primary} />
@@ -342,15 +322,8 @@ export default function SuggestionsScreen() {
       );
     }
 
-    const { daily_limit, current_usage, rewarded_count = 0, percentage_used } = userPlan.usage;
-    const isUnlimited = userPlan.plan === 'premium';
-
-    // ✅ Free kullanıcılar için her zaman max daily_limit göster
-    const displayUsage = Math.min(current_usage, daily_limit);
-    const displayTotal = daily_limit;
-
-    // ✅ Progress bar için de aynı mantığı uygula
-    const displayPercentage = (displayUsage / displayTotal) * 100;
+    // Plan bilgisini her zaman RevenueCat'ten al (veya test modundan)
+    const isUnlimited = currentPlan === 'premium';
 
     return (
       <LinearGradient
@@ -361,8 +334,8 @@ export default function SuggestionsScreen() {
           <Text style={[styles.usageTitle, { color: theme.colors.text }]}>
             {isUnlimited ? t('suggestions.unlimitedAccess') : t('suggestions.dailyUsage')}
           </Text>
-          {userPlan.plan !== 'premium' && (
-            <TouchableOpacity onPress={() => router.push('/subscription')}>
+          {!isUnlimited && (
+            <TouchableOpacity onPress={() => router.push('/subscription' as any)}>
               <Text style={[styles.upgradeLink, { color: theme.colors.primary }]}>{t('profile.upgrade')} ✨</Text>
             </TouchableOpacity>
           )}
@@ -378,20 +351,37 @@ export default function SuggestionsScreen() {
             </View>
           </View>
         ) : (
-          <>
-            <Text style={[styles.usageText, { color: theme.colors.text }]}>
-              {t('suggestions.usageLimitInfo', {
-                used: displayUsage,
-                total: displayTotal
-              })}
-            </Text>
-            <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
-              <View style={[styles.progressFill, {
-                backgroundColor: displayPercentage > 80 ? theme.colors.warning : theme.colors.primary,
-                width: `${Math.min(100, displayPercentage)}%`
-              }]} />
-            </View>
-          </>
+          (() => {
+            const { daily_limit, current_usage, rewarded_count = 0 } = userPlan.usage;
+
+            // --- NİHAİ DÜZELTME BURADA ---
+            // Backend'den 'unlimited' metni gelse bile, bunu sayısal bir değere dönüştür.
+            // Free plan limiti varsayılan olarak 2'dir.
+            const numericDailyLimit = typeof daily_limit === 'number' ? daily_limit : 2;
+            // --- DÜZELTME SONU ---
+
+            const totalAvailable = numericDailyLimit + rewarded_count;
+            const usedAmount = current_usage;
+            const percentage = totalAvailable > 0 ? (usedAmount / totalAvailable) * 100 : 0;
+
+            return (
+              <>
+                <Text style={[styles.usageText, { color: theme.colors.text }]}>
+                  {t('suggestions.usageLimitInfo', {
+                    used: usedAmount,
+                    total: totalAvailable,
+                  })}
+                  {rewarded_count > 0 && ` (+${rewarded_count} ${t('suggestions.rewarded', 'rewarded')})`}
+                </Text>
+                <View style={[styles.progressBar, { backgroundColor: theme.colors.border }]}>
+                  <View style={[styles.progressFill, {
+                    backgroundColor: percentage > 80 ? theme.colors.warning : theme.colors.primary,
+                    width: `${Math.min(100, percentage)}%`,
+                  }]} />
+                </View>
+              </>
+            );
+          })()
         )}
       </LinearGradient>
     );
@@ -515,25 +505,12 @@ export default function SuggestionsScreen() {
           style={styles.generateButton}
           disabled={(() => {
             const isDisabled = generating || !wardrobeStatus.hasEnough || !weather || !selectedOccasion || isLimitLoading;
-            console.log('🔍 Button disabled check:', {
-              generating,
-              hasEnoughWardrobe: wardrobeStatus.hasEnough,
-              hasWeather: !!weather,
-              hasSelectedOccasion: !!selectedOccasion,
-              isLimitLoading,
-              finalDisabled: isDisabled
-            });
             return isDisabled;
           })()}
           icon={(() => {
             const showAdIcon = getShowAdIcon();
-            console.log('🔍 Button render - showAdIcon:', showAdIcon);
-            console.log('🔍 Button render - userPlan.plan:', userPlan?.plan);
-            console.log('🔍 Button render - current_usage:', userPlan?.usage?.current_usage);
-            console.log('🔍 Button render - daily_limit:', userPlan?.usage?.daily_limit);
 
             const iconToShow = showAdIcon ? <Film color={theme.colors.white} size={18} /> : <Wand2 color={theme.colors.white} size={18} />;
-            console.log('🔍 Button render - showing icon:', showAdIcon ? 'Film' : 'Wand2');
 
             return iconToShow;
           })()}

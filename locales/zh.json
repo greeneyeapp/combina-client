@@ -483,6 +483,11 @@
       "adNotReady": "广告尚未准备好。请稍后重试。",
       "rewardGranted": "奖励已授予！",
       "extraSuggestionInfo": "您有一个额外的穿搭建议。"
+    },
+    "wardrobeError": {
+      "title": "衣橱不足",
+      "defaultMessage": "您的衣橱中没有找到适合所选场合的物品。请检查您的衣橱。",
+      "specificMessage": "您没有适合 {{occasion}} 的物品。请添加如下物品：{{categories}}。"
     }
   },
   "categories": {

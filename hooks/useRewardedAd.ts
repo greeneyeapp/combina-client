@@ -1,4 +1,4 @@
-// kodlar/hooks/useRewardedAd.ts - Reklamın yeniden yüklenmesi sorunu düzeltildi
+// hooks/useRewardedAd.ts - Premium kullanıcılar için reklam yüklemeyi durduracak şekilde güncellendi.
 
 import { useEffect, useState, useRef } from 'react';
 import {
@@ -8,26 +8,52 @@ import {
   AdLoadError,
 } from 'react-native-google-mobile-ads';
 import { admobConfig } from '@/utils/admobUtils';
+import { useRevenueCat } from '@/context/RevenueCatContext'; // 1. RevenueCat hook'unu import et
 
 const rewardedAdUnitId = admobConfig.rewarded as string;
 
 export const useRewardedAd = () => {
-  // Reklam nesnesini useRef ile saklayarak component re-render'larından etkilenmemesini sağlıyoruz.
+  // 2. Kullanıcının güncel planını RevenueCat'ten al
+  const { currentPlan } = useRevenueCat(); 
+
   const adRef = useRef<RewardedAd | null>(null);
   
   const [isLoaded, setIsLoaded] = useState(false);
   const [isEarned, setIsEarned] = useState(false);
-  const [isClosed, setIsClosed] = useState(false); // Bu state, reklamın kapandığını UI'a bildirmek için kalabilir.
+  const [isClosed, setIsClosed] = useState(false);
   const [error, setError] = useState<AdLoadError | null>(null);
 
+  // 3. Reklam yükleme fonksiyonu artık planı kontrol ediyor
   const loadAd = () => {
+    // Premium kullanıcılar için reklam yükleme
+    if (currentPlan === 'premium') {
+      console.log('👑 Premium user, skipping rewarded ad load.');
+      // Eğer bir reklam nesnesi varsa ve yüklenmişse, onu temizle
+      if (adRef.current && isLoaded) {
+        setIsLoaded(false);
+      }
+      return;
+    }
+    
     if (adRef.current) {
       console.log('🔄 Requesting new rewarded ad...');
       adRef.current.load();
     }
   };
   
+  // 4. Ana useEffect artık plan değişikliklerine de duyarlı
   useEffect(() => {
+    // Eğer kullanıcı premium ise, hiçbir şey yapma.
+    if (currentPlan === 'premium') {
+      console.log('👑 Premium plan active, rewarded ad hook is disabled.');
+      // Mevcut reklam state'ini temizle
+      setIsLoaded(false);
+      adRef.current = null;
+      return; // Fonksiyondan çık, listener'ları kurma.
+    }
+
+    console.log('🚀 Initializing rewarded ad for free user...');
+    
     // Component ilk yüklendiğinde reklam nesnesini oluştur.
     const rewardedAd = RewardedAd.createForAdRequest(rewardedAdUnitId, {
       requestNonPersonalizedAdsOnly: true,
@@ -56,11 +82,10 @@ export const useRewardedAd = () => {
 
     const adClosedListener = rewardedAd.addAdEventListener(AdEventType.CLOSED, () => {
       console.log('🚪 Rewarded Ad Closed. Requesting next ad...');
-      // State'leri sıfırla ve YENİ BİR REKLAM İSTE.
       setIsLoaded(false);
-      setIsEarned(false); // Ödül state'ini bir sonraki reklam için sıfırla
-      setIsClosed(true); // UI'ın bilmesi için
-      loadAd(); // Mevcut reklam nesnesi üzerinden yeni bir reklam yükle
+      setIsEarned(false);
+      setIsClosed(true); 
+      loadAd(); // Yeni reklam iste
     });
 
     // İlk reklamı yükle
@@ -68,13 +93,14 @@ export const useRewardedAd = () => {
 
     // Cleanup fonksiyonu
     return () => {
-      adLoadedListener();
-      adErrorListener();
-      rewardListener();
-      adClosedListener();
-      adRef.current = null; // Bellek sızıntılarını önlemek için referansı temizle
+      // Listener'ları güvenli bir şekilde kaldır
+      adLoadedListener?.();
+      adErrorListener?.();
+      rewardListener?.();
+      adClosedListener?.();
+      adRef.current = null;
     };
-  }, []); // Bu useEffect sadece bir kez çalışır.
+  }, [currentPlan]); // Dependency array'e 'currentPlan' eklendi.
 
   const show = () => {
     if (adRef.current && isLoaded) {

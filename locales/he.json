@@ -483,6 +483,11 @@
       "adNotReady": "המודעה עדיין לא מוכנה. אנא נסה שוב בעוד רגע.",
       "rewardGranted": "הפרס הוענק!",
       "extraSuggestionInfo": "יש לך הצעה נוספת לתלבושת."
+    },
+    "wardrobeError": {
+      "title": "מלתחה לא מספקת",
+      "defaultMessage": "לא נמצאו פריטים מתאימים במלתחה שלך לאירוע שנבחר. אנא בדוק את המלתחה שלך.",
+      "specificMessage": "אין לך פריטים מתאימים עבור {{occasion}}. אנא הוסף פריטים כמו: {{categories}}."
     }
   },
   "categories": {

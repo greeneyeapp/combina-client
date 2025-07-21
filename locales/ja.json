@@ -483,6 +483,11 @@
       "adNotReady": "広告はまだ準備ができていません。しばらくしてからもう一度お試しください。",
       "rewardGranted": "報酬が付与されました！",
       "extraSuggestionInfo": "追加のコーディネート提案が1つあります。"
+    },
+    "wardrobeError": {
+      "title": "ワードローブが不十分です",
+      "defaultMessage": "選択された機会に適したアイテムがワードローブに見つかりませんでした。ワードローブを確認してください。",
+      "specificMessage": "{{occasion}} に適したアイテムがありません。次のようなアイテムを追加してください: {{categories}}。"
     }
   },
   "categories": {

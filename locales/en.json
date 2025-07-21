@@ -483,6 +483,11 @@
       "adNotReady": "Ad not ready yet. Please try again in a moment.",
       "rewardGranted": "Reward Granted!",
       "extraSuggestionInfo": "You have one extra outfit suggestion."
+    },
+    "wardrobeError": {
+      "title": "Insufficient Wardrobe",
+      "defaultMessage": "No suitable items were found in your wardrobe for the selected occasion. Please check your wardrobe.",
+      "specificMessage": "You don't have suitable items for {{occasion}}. Please add items like: {{categories}}."
     }
   },
   "categories": {

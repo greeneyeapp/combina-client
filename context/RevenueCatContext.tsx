@@ -29,7 +29,7 @@ let globalRevenueCatState = {
 // RevenueCat hazır olana kadar bekleyen utility
 const waitForRevenueCatReady = async (maxWaitMs: number = 3000): Promise<boolean> => {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < maxWaitMs) {
     try {
       await Purchases.getCustomerInfo();
@@ -45,7 +45,7 @@ const waitForRevenueCatReady = async (maxWaitMs: number = 3000): Promise<boolean
       }
     }
   }
-  
+
   console.warn('⚠️ RevenueCat not ready after waiting');
   return false;
 };
@@ -67,13 +67,13 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   // DÜZELTME: User kontrolü ve gereksiz re-initialization önleme
   useEffect(() => {
     const currentUserId = user?.uid || null;
-    
+
     if (!user || !currentUserId) {
       // User yoksa state'i temizle ve global state'i reset et
       setCustomerInfo(null);
       setCurrentPlan('free');
       setIsLoading(false);
-      
+
       // DÜZELTME: Sadece user değiştiyse reset et
       if (globalRevenueCatState.lastUserId !== null) {
         console.log('🧹 RevenueCat state cleared for user logout/change');
@@ -145,12 +145,12 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
   // GERÇEK INITIALIZATION İŞLEMİ
   const performRevenueCatInitialization = async (): Promise<void> => {
     console.log('🔍 Checking RevenueCat readiness...');
-    
+
     const isReady = await waitForRevenueCatReady(5000);
     if (!isReady) {
       throw new Error('RevenueCat not ready after timeout');
     }
-    
+
     console.log('✅ RevenueCat is ready');
     globalRevenueCatState.readyCheckCompleted = true;
   };
@@ -170,11 +170,11 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     console.log('💰 Fetching RevenueCat customer info...');
-    
+
     try {
       const info = await Purchases.getCustomerInfo();
       const plan = mapEntitlementsToPlan(info.entitlements.active);
-      
+
       setCustomerInfo(info);
       setCurrentPlan(plan);
       globalRevenueCatState.lastFetchTime = now; // DÜZELTME: Fetch time'ı kaydet
@@ -191,9 +191,9 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
       } catch (profileError) {
         console.warn('⚠️ Could not sync with backend:', profileError);
       }
-      
+
       console.log('✅ RevenueCat data fetched successfully. Plan:', plan);
-      
+
     } catch (e) {
       console.error("RevenueCat: Error fetching customer info:", e);
       await fallbackToBackendPlan();
@@ -264,10 +264,12 @@ export function RevenueCatProvider({ children }: { children: ReactNode }) {
     }
   }, [user?.uid]);
 
+
+
   const value = {
     customerInfo,
     isLoading,
-    currentPlan,
+    currentPlan: currentPlan,
     refreshCustomerInfo,
   };
 

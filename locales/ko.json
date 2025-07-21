@@ -488,7 +488,8 @@
       "title": "옷장 부족",
       "defaultMessage": "선택한 상황에 맞는 아이템을 옷장에서 찾을 수 없습니다. 옷장을 확인해 주세요.",
       "specificMessage": "{{occasion}}에 적합한 아이템이 없습니다. 다음과 같은 아이템을 추가해 주세요: {{categories}}."
-    }
+    },
+    "rewarded": "보상"
   },
   "categories": {
     "top": "상의",

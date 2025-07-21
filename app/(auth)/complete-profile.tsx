@@ -21,6 +21,8 @@ import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
 import { useOnboardingStore } from '@/store/onboardingStore';
 import Input from '@/components/common/Input';
+// ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
+import Toast from 'react-native-toast-message';
 
 export default function CompleteProfileScreen() {
     const { t } = useTranslation();
@@ -148,29 +150,31 @@ export default function CompleteProfileScreen() {
                 birthDate: formData.birthDate.toISOString()
             });
 
-            showAlert({
-                title: t('common.success'),
-                message: t('authFlow.completeProfile.success'),
-                buttons: [{
-                    text: t('authFlow.completeProfile.continueButton'),
-                    onPress: async () => {
-                        // ANA DEĞİŞİKLİK: Ana sayfaya yönlendir
-                        router.replace('/(tabs)/home');
-
-                        setTimeout(async () => {
-                            try {
-                                const isCompleted = await checkIfOnboardingCompleted();
-                                if (!isCompleted) {
-                                    console.log('🎯 Starting onboarding after profile completion');
-                                    startOnboarding();
-                                }
-                            } catch (error) {
-                                console.error('Error checking onboarding:', error);
-                            }
-                        }, 500);
-                    }
-                }]
+            // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
+            // UI'ı kilitleyen `showAlert` yerine kullanıcı dostu `Toast` kullan.
+            Toast.show({
+                type: 'success',
+                text1: t('common.success'),
+                text2: t('authFlow.completeProfile.success'),
+                position: 'top'
             });
+
+            // Yönlendirmeyi doğrudan yap.
+            router.replace('/(tabs)/home');
+
+            // Onboarding kontrolünü gecikmeli olarak çalıştır (opsiyonel, iyi bir pratik).
+            setTimeout(async () => {
+                try {
+                    const isCompleted = await checkIfOnboardingCompleted();
+                    if (!isCompleted) {
+                        console.log('🎯 Starting onboarding after profile completion');
+                        startOnboarding();
+                    }
+                } catch (error) {
+                    console.error('Error checking onboarding:', error);
+                }
+            }, 500);
+
         } catch (error) {
             showAlert({
                 title: t('common.error'),

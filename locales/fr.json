@@ -488,7 +488,8 @@
       "title": "Garde-robe insuffisante",
       "defaultMessage": "Aucun article approprié n'a été trouvé dans votre garde-robe pour l'occasion sélectionnée. Veuillez vérifier votre garde-robe.",
       "specificMessage": "Vous n'avez pas d'articles appropriés pour {{occasion}}. Veuillez ajouter des articles comme : {{categories}}."
-    }
+    },
+    "rewarded": "récompensé"
   },
   "categories": {
     "top": "Hauts",

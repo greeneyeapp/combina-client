@@ -488,7 +488,8 @@
       "title": "Armario insuficiente",
       "defaultMessage": "No se encontraron artículos adecuados en tu armario para la ocasión seleccionada. Por favor, revisa tu armario.",
       "specificMessage": "No tienes artículos adecuados para {{occasion}}. Por favor, añade artículos como: {{categories}}."
-    }
+    },
+    "rewarded": "recompensado"
   },
   "categories": {
     "top": "Parte de arriba",

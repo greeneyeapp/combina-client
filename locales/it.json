@@ -488,7 +488,8 @@
       "title": "Guardaroba insufficiente",
       "defaultMessage": "Nessun articolo adatto è stato trovato nel tuo guardaroba per l'occasione selezionata. Per favore, controlla il tuo guardaroba.",
       "specificMessage": "Non hai articoli adatti per {{occasion}}. Per favore, aggiungi articoli come: {{categories}}."
-    }
+    },
+    "rewarded": "premiato"
   },
   "categories": {
     "top": "Soprabiti",

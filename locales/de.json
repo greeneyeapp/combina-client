@@ -488,7 +488,8 @@
       "title": "Ungenügende Garderobe",
       "defaultMessage": "In Ihrer Garderobe wurden keine passenden Artikel für den ausgewählten Anlass gefunden. Bitte überprüfen Sie Ihre Garderobe.",
       "specificMessage": "Sie haben keine passenden Artikel für {{occasion}}. Bitte fügen Sie Artikel hinzu wie: {{categories}}."
-    }
+    },
+    "rewarded": "belohnt"
   },
   "categories": {
     "top": "Oberteile",

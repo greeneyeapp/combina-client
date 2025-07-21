@@ -488,7 +488,8 @@
       "title": "Gardırop Yetersiz",
       "defaultMessage": "Seçtiğin etkinlik için gardırobunda uygun kıyafet bulunamadı. Lütfen gardırobunu kontrol et.",
       "specificMessage": "{{occasion}} etkinliği için uygun kıyafetin yok. Lütfen şu türlerden ekle: {{categories}}."
-    }
+    },
+    "rewarded": "ödüllü"
   },
   "categories": {
     "top": "Üst Giyim",

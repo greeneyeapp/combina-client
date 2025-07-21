@@ -488,7 +488,8 @@
       "title": "ワードローブが不十分です",
       "defaultMessage": "選択された機会に適したアイテムがワードローブに見つかりませんでした。ワードローブを確認してください。",
       "specificMessage": "{{occasion}} に適したアイテムがありません。次のようなアイテムを追加してください: {{categories}}。"
-    }
+    },
+    "rewarded": "特典"
   },
   "categories": {
     "top": "トップス",

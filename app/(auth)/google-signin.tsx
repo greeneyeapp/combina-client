@@ -11,7 +11,7 @@ import useAlertStore from '@/store/alertStore';
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
-import { router } from 'expo-router'; // Yönlendirme için router'ı import et
+import { router } from 'expo-router';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -42,8 +42,8 @@ export default function GoogleSignInScreen() {
             setAuthFlowActive(true);
             promptAsync().catch(error => {
                 console.error("promptAsync error:", error);
-                setAuthFlowActive(false); // Hata olursa akışı bitir
-                router.replace('/(auth)'); // Hata durumunda da geri dön
+                setAuthFlowActive(false);
+                router.replace('/(auth)');
             });
         }
     }, [request]);
@@ -56,19 +56,28 @@ export default function GoogleSignInScreen() {
             setIsProcessing(true);
             handleGoogleSignIn(response.authentication.accessToken);
         } else {
-            // ÇÖZÜM: İptal veya hata durumunda ana giriş ekranına geri dön.
             console.log('Google auth failed or cancelled:', response.type);
-            setAuthFlowActive(false); // Akışı sonlandır
-            router.replace('/(auth)'); // Ana giriş ekranına yönlendir
+            setAuthFlowActive(false);
+            router.replace('/(auth)');
         }
     }, [response]);
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-            await signInWithGoogle(accessToken);
-            console.log('✅ signInWithGoogle completed. RootLayout will handle navigation.');
-            // Başarılı olduğunda RootLayout yönlendireceği için burada yönlendirme yapmıyoruz.
+            
+            // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
+            // signInWithGoogle'dan kullanıcı bilgisini al.
+            const userInfo = await signInWithGoogle(accessToken);
+
+            // Gelen kullanıcı bilgisine göre yönlendirme yap.
+            if (userInfo && userInfo.gender && userInfo.birthDate) {
+                // Profili tam ise ana sayfaya yönlendir.
+                router.replace('/(tabs)/home');
+            } else {
+                // Profili eksikse tamamlama ekranına yönlendir.
+                router.replace('/(auth)/complete-profile');
+            }
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
@@ -79,11 +88,11 @@ export default function GoogleSignInScreen() {
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
-            // Hata durumunda da geri dön
+            // Hata durumunda ana giriş ekranına dön.
             router.replace('/(auth)');
         } finally {
-            // Başarılı veya başarısız, her durumda auth akışını bitiriyoruz.
-            // Başarı durumunda RootLayout yönlendirme yapana kadar bu ekran görünebilir.
+            // Başarılı yönlendirme sonrası bu ekran kapanacağı için auth akışını bitiriyoruz.
+            // Hata durumunda zaten yukarıda yönlendirme yapıldı.
             setAuthFlowActive(false);
         }
     };

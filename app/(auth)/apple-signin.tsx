@@ -41,9 +41,20 @@ export default function AppleSignInScreen() {
             });
 
             setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
-            await signInWithApple(credential);
+            
+            // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
+            // signInWithApple'dan kullanıcı bilgisini al.
+            const userInfo = await signInWithApple(credential);
             isSuccess = true; // İşlem başarılı
-            console.log('✅ Apple sign-in completed. RootLayout will handle navigation.');
+
+            // Gelen kullanıcı bilgisine göre yönlendirme yap.
+            if (userInfo && userInfo.gender && userInfo.birthDate) {
+                // Profili tam ise ana sayfaya yönlendir.
+                router.replace('/(tabs)/home');
+            } else {
+                // Profili eksikse tamamlama ekranına yönlendir.
+                router.replace('/(auth)/complete-profile');
+            }
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);
@@ -57,7 +68,7 @@ export default function AppleSignInScreen() {
         } finally {
             setIsProcessing(false);
             setAuthFlowActive(false);
-            // ÇÖZÜM: Eğer işlem başarılı değilse (iptal veya hata), ana giriş ekranına dön.
+            // Başarılı değilse (iptal veya hata), ana giriş ekranına dön.
             if (!isSuccess) {
                 router.replace('/(auth)');
             }

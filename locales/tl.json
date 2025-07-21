@@ -488,7 +488,8 @@
       "title": "Hindi Sapat ang Wardrobe",
       "defaultMessage": "Walang angkop na item na natagpuan sa iyong wardrobe para sa napiling okasyon. Pakisuri ang iyong wardrobe.",
       "specificMessage": "Wala kang mga angkop na item para sa {{occasion}}. Mangyaring magdagdag ng mga item tulad ng: {{categories}}."
-    }
+    },
+    "rewarded": "gantimpala"
   },
   "categories": {
     "top": "Pang-itaas",

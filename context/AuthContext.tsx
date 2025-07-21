@@ -218,6 +218,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setLoading(false);
       console.log('✅ Google sign-in completed successfully');
+      // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
+      // Başarılı giriş sonrası kullanıcı bilgisini döndürerek
+      // çağıran component'in yönlendirme yapmasını sağla.
       return completeUserInfo;
 
     } catch (error) {
@@ -315,6 +318,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setLoading(false);
       console.log('✅ Apple sign-in completed successfully');
+      // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
+      // Başarılı giriş sonrası kullanıcı bilgisini döndür.
       return completeUserInfo;
 
     } catch (error) {

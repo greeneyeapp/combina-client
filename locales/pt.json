@@ -488,7 +488,8 @@
       "title": "Guarda-roupa insuficiente",
       "defaultMessage": "Nenhum item adequado foi encontrado no seu guarda-roupa para a ocasião selecionada. Por favor, verifique seu guarda-roupa.",
       "specificMessage": "Você não tem itens adequados para {{occasion}}. Por favor, adicione itens como: {{categories}}."
-    }
+    },
+    "rewarded": "recompensado"
   },
   "categories": {
     "top": "Parte de Cima",

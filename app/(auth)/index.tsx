@@ -1,5 +1,8 @@
+// app/auth/index.tsx - iPad için büyütülmüş ve orantılı tasarım
+
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Platform } from 'react-native';
+// YENİ: Dimensions modülü eklendi
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +10,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 export default function AuthIndexScreen() {
   const { t } = useTranslation();
@@ -26,6 +33,7 @@ export default function AuthIndexScreen() {
                 ? require('@/assets/images/logo-dark.png')
                 : require('@/assets/images/logo-light.png')
             }
+            // DEĞİŞİKLİK: Stil artık StyleSheet'ten dinamik olarak geliyor
             style={styles.logo}
             resizeMode="contain"
           />
@@ -34,6 +42,7 @@ export default function AuthIndexScreen() {
           </Text>
         </View>
 
+        {/* DEĞİŞİKLİK: Buton konteyneri artık ortalanmış ve genişliği sınırlı */}
         <View style={styles.buttonContainer}>
           <Button
             label={t('auth.signInWithGoogle')}
@@ -42,6 +51,8 @@ export default function AuthIndexScreen() {
             style={styles.button}
             icon="google"
             disabled={isAuthFlowActive}
+            // YENİ: Buton boyutu tablet için büyütüldü
+            size={isTablet ? 'large' : 'medium'}
           />
           
           {Platform.OS === 'ios' && (
@@ -51,6 +62,8 @@ export default function AuthIndexScreen() {
               variant="primary"
               style={styles.button}
               disabled={isAuthFlowActive}
+              // YENİ: Buton boyutu tablet için büyütüldü
+              size={isTablet ? 'large' : 'medium'}
             />
           )}
         </View>
@@ -76,14 +89,44 @@ export default function AuthIndexScreen() {
   );
 }
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  container: { flex: 1, padding: 24, justifyContent: 'space-between' },
-  logoContainer: { alignItems: 'center', marginTop: 12 },
-  logo: { width: 220, height: 220 },
-  tagline: { fontFamily: 'Montserrat-Medium', fontSize: 16, marginTop: 8, textAlign: 'center' },
-  buttonContainer: { width: '100%', paddingHorizontal: 16 },
-  button: { marginBottom: 16 },
-  footer: { alignItems: 'center', marginBottom: 24 },
-  languageSelector: { fontFamily: 'Montserrat-Medium', fontSize: 16, textDecorationLine: 'underline' },
+  container: { 
+    flex: 1, 
+    padding: 24, 
+    justifyContent: 'space-around', // DEĞİŞİKLİK: Elemanları dikeyde daha iyi dağıtmak için
+  },
+  logoContainer: { 
+    alignItems: 'center', 
+    // marginTop: 12, // Dikey boşluk justifyContent ile yönetiliyor
+  },
+  logo: { 
+    width: isTablet ? 320 : 220, // Büyüdü
+    height: isTablet ? 320 : 220, // Büyüdü
+  },
+  tagline: { 
+    fontFamily: 'Montserrat-Medium', 
+    fontSize: isTablet ? 20 : 16, // Büyüdü
+    marginTop: 8, 
+    textAlign: 'center' 
+  },
+  buttonContainer: { 
+    width: '100%', 
+    // YENİ: Tablette genişliği sınırla ve ortala
+    maxWidth: isTablet ? 450 : undefined, 
+    alignSelf: 'center',
+  },
+  button: { 
+    marginBottom: 16 
+  },
+  footer: { 
+    alignItems: 'center', 
+    marginBottom: 24 
+  },
+  languageSelector: { 
+    fontFamily: 'Montserrat-Medium', 
+    fontSize: isTablet ? 18 : 16, // Büyüdü
+    textDecorationLine: 'underline' 
+  },
 });

@@ -1,11 +1,16 @@
-// components/suggestions/OccasionPicker.tsx - OCCASION_HIERARCHY ile güncellenmiş
+// components/suggestions/OccasionPicker.tsx - iPad için büyütülmüş ve orantılı tasarım
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, FlatList, SafeAreaView as ModalSafeArea } from 'react-native';
+// YENİ: Dimensions modülü eklendi
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, FlatList, SafeAreaView as ModalSafeArea, Dimensions } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, X } from 'lucide-react-native';
 import { OCCASION_HIERARCHY } from '@/utils/constants';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 interface OccasionPickerProps {
   selectedOccasion: string;
@@ -24,7 +29,6 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
 
   const getSelectedCategory = () => {
     if (!selectedOccasion) return null;
-
     for (const category in OCCASION_HIERARCHY) {
       if (OCCASION_HIERARCHY[category as keyof typeof OCCASION_HIERARCHY].includes(selectedOccasion)) {
         return category;
@@ -58,7 +62,7 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
                 {t(`occasions.categories.${currentCategory}`)}
               </Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <X size={24} color={theme.colors.textLight} />
+                <X size={isTablet ? 30 : 24} color={theme.colors.textLight} />
               </TouchableOpacity>
             </View>
             <FlatList
@@ -109,7 +113,7 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
               <Text style={[styles.categoryText, { color: isSelected ? theme.colors.white : theme.colors.text }]}>
                 {t(`occasions.categories.${category}`)}
               </Text>
-              <ChevronDown color={isSelected ? theme.colors.white : theme.colors.textLight} size={16} style={{ marginLeft: 8 }} />
+              <ChevronDown color={isSelected ? theme.colors.white : theme.colors.textLight} size={isTablet ? 20 : 16} style={{ marginLeft: 8 }} />
             </TouchableOpacity>
           );
         })}
@@ -119,6 +123,7 @@ const OccasionPicker: React.FC<OccasionPickerProps> = ({
   );
 };
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 8,
@@ -128,9 +133,9 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   categoryItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
+    paddingHorizontal: isTablet ? 24 : 16,
+    paddingVertical: isTablet ? 16 : 12,
+    borderRadius: 24, // Daha yuvarlak
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,7 +143,7 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
+    fontSize: isTablet ? 18 : 14, // Büyütüldü
   },
   modalOverlay: {
     flex: 1,
@@ -147,35 +152,35 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     height: '60%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: isTablet ? 24 : 16,
     paddingTop: 8,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: isTablet ? 20 : 16,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     marginBottom: 8,
   },
   modalTitle: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 18,
+    fontSize: isTablet ? 22 : 18, // Büyütüldü
   },
   flatListContent: {
     paddingBottom: 16,
   },
   subOccasionItem: {
-    padding: 16,
-    borderRadius: 8,
+    padding: isTablet ? 20 : 16, // İç boşluk artırıldı
+    borderRadius: 12,
     marginVertical: 4,
   },
   subOccasionText: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // Büyütüldü
     textAlign: 'center',
   },
 });

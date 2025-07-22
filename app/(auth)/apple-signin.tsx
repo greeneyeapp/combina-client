@@ -1,7 +1,8 @@
-// kodlar/app/(auth)/apple-signin.tsx
+// kodlar/app/(auth)/apple-signin.tsx - iPad için büyütülmüş ve orantılı tasarım
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+// YENİ: Dimensions modülü eklendi
+import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +11,10 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
 import * as AppleAuthentication from 'expo-apple-authentication';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 export default function AppleSignInScreen() {
     const { t } = useTranslation();
@@ -31,7 +36,7 @@ export default function AppleSignInScreen() {
 
     const handleAppleSignIn = async () => {
         setIsProcessing(true);
-        let isSuccess = false; // Başarı durumunu takip et
+        let isSuccess = false;
         try {
             const credential = await AppleAuthentication.signInAsync({
                 requestedScopes: [
@@ -41,20 +46,7 @@ export default function AppleSignInScreen() {
             });
 
             setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
-            
-            // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
-            // signInWithApple'dan kullanıcı bilgisini al.
-            const userInfo = await signInWithApple(credential);
-            isSuccess = true; // İşlem başarılı
-
-            // Gelen kullanıcı bilgisine göre yönlendirme yap.
-            if (userInfo && userInfo.gender && userInfo.birthDate) {
-                // Profili tam ise ana sayfaya yönlendir.
-                router.replace('/(tabs)/home');
-            } else {
-                // Profili eksikse tamamlama ekranına yönlendir.
-                router.replace('/(auth)/complete-profile');
-            }
+            await signInWithApple(credential);
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);
@@ -68,7 +60,6 @@ export default function AppleSignInScreen() {
         } finally {
             setIsProcessing(false);
             setAuthFlowActive(false);
-            // Başarılı değilse (iptal veya hata), ana giriş ekranına dön.
             if (!isSuccess) {
                 router.replace('/(auth)');
             }
@@ -98,12 +89,29 @@ export default function AppleSignInScreen() {
     );
 }
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
     gradient: { flex: 1 },
     container: { flex: 1 },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-    loadingContainer: { alignItems: 'center', gap: 20 },
-    iconContainer: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    mainStatus: { fontFamily: 'Montserrat-Bold', fontSize: 18, textAlign: 'center' },
-    stepText: { fontFamily: 'Montserrat-Regular', fontSize: 14, textAlign: 'center', fontStyle: 'italic' },
+    loadingContainer: { alignItems: 'center', gap: 24 },
+    iconContainer: { 
+        width: isTablet ? 120 : 80, // Büyüdü
+        height: isTablet ? 120 : 80, 
+        borderRadius: isTablet ? 60 : 40, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginBottom: 10 
+    },
+    mainStatus: { 
+        fontFamily: 'Montserrat-Bold', 
+        fontSize: isTablet ? 24 : 18, // Büyüdü
+        textAlign: 'center' 
+    },
+    stepText: { 
+        fontFamily: 'Montserrat-Regular', 
+        fontSize: isTablet ? 18 : 14, // Büyüdü
+        textAlign: 'center', 
+        fontStyle: 'italic' 
+    },
 });

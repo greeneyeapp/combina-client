@@ -1,7 +1,7 @@
-// app/subscription.tsx - Donma sorunları ve "Aboneliği Yönet" butonu düzeltilmiş kod
+// app/subscription.tsx - Orijinal yapı korunarak iPad için yeniden boyutlandırıldı
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Platform, Linking, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,10 @@ import Purchases, { PurchasesOffering, PurchasesPackage } from 'react-native-pur
 import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
 import { useRevenueCat } from '@/context/RevenueCatContext';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 const IconMap: { [key: string]: React.ElementType } = {
   Shirt, TrendingUp, Sparkles, Heart, ShieldX
@@ -153,11 +157,10 @@ export default function SubscriptionScreen() {
 
   const renderCurrentSubscriptionStatus = () => {
     if (currentPlanInfo.plan !== 'premium' || !customerInfo) return null;
-
     return (
       <View style={[styles.statusContainer, { backgroundColor: theme.colors.primaryLight, borderColor: theme.colors.primary }]}>
         <View style={styles.statusHeader}>
-          <Crown size={18} color={theme.colors.primary} />
+          <Crown size={isTablet ? 22 : 18} color={theme.colors.primary} />
           <Text style={[styles.statusText, { color: theme.colors.primary }]}>
             {t('subscription.activeSubscription', { type: t(`subscription.${currentPlanInfo.type}`) })}
           </Text>
@@ -177,20 +180,15 @@ export default function SubscriptionScreen() {
   const renderCurrentFreePlanInfo = () => {
     if (currentPlan !== 'free') return null;
     const freeFeatures = t('subscription.free.features', { returnObjects: true }) as string[];
-
     return (
       <View style={[styles.freePlanContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
         <View style={styles.freePlanHeader}>
-          <Zap size={18} color={theme.colors.textLight} />
-          <Text style={[styles.freePlanTitle, { color: theme.colors.text }]}>
-            {t('subscription.free.title')}
-          </Text>
+          <Zap size={isTablet ? 22 : 18} color={theme.colors.textLight} />
+          <Text style={[styles.freePlanTitle, { color: theme.colors.text }]}>{t('subscription.free.title')}</Text>
         </View>
         <View style={styles.freePlanFeatures}>
           {freeFeatures.map((feature, index) => (
-            <Text key={index} style={[styles.freePlanFeatureText, { color: theme.colors.textLight }]}>
-              • {feature}
-            </Text>
+            <Text key={index} style={[styles.freePlanFeatureText, { color: theme.colors.textLight }]}>• {feature}</Text>
           ))}
         </View>
       </View>
@@ -216,79 +214,54 @@ export default function SubscriptionScreen() {
     const packages = offerings.availablePackages.filter(p => getPackageIdentifier(p));
     if (packages.length < 2) return null;
     const savings = getYearlySavings();
-
     return (
       <View style={[styles.toggleContainer, { backgroundColor: theme.colors.card }]}>
-        <TouchableOpacity
-          style={[styles.toggleOption, !isYearly && { backgroundColor: theme.colors.primary }]}
-          onPress={() => setIsYearly(false)}
-        >
-          <Text style={[styles.toggleText, { color: !isYearly ? theme.colors.white : theme.colors.text }]}>
-            {t('subscription.monthly')}
-          </Text>
+        <TouchableOpacity style={[styles.toggleOption, !isYearly && { backgroundColor: theme.colors.primary }]} onPress={() => setIsYearly(false)}>
+          <Text style={[styles.toggleText, { color: !isYearly ? theme.colors.white : theme.colors.text }]}>{t('subscription.monthly')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleOption, isYearly && { backgroundColor: theme.colors.primary }]}
-          onPress={() => setIsYearly(true)}
-        >
-          <Text style={[styles.toggleText, { color: isYearly ? theme.colors.white : theme.colors.text }]}>
-            {t('subscription.yearly')}
-          </Text>
-          {savings > 0 && (
-            <View style={[styles.saveBadge, { backgroundColor: theme.colors.success }]}>
-              <Text style={styles.saveText}>{t('subscription.saveUpTo', { percent: savings })}</Text>
-            </View>
-          )}
+        <TouchableOpacity style={[styles.toggleOption, isYearly && { backgroundColor: theme.colors.primary }]} onPress={() => setIsYearly(true)}>
+          <Text style={[styles.toggleText, { color: isYearly ? theme.colors.white : theme.colors.text }]}>{t('subscription.yearly')}</Text>
+          {savings > 0 && (<View style={[styles.saveBadge, { backgroundColor: theme.colors.success }]}><Text style={styles.saveText}>{t('subscription.saveUpTo', { percent: savings })}</Text></View>)}
         </TouchableOpacity>
       </View>
     );
   };
-    const getButtonState = (packageType: 'monthly' | 'yearly') => {
+
+  const getButtonState = (packageType: 'monthly' | 'yearly') => {
     if (currentPlanInfo.plan === 'free') {
       return {
         label: t('subscription.startPlan', { plan: t(`subscription.${packageType}`) }),
-        variant: 'primary' as const,
-        disabled: false,
-        icon: null,
+        variant: 'primary' as const, disabled: false, icon: null,
         onPressAction: (pkg: PurchasesPackage) => handlePurchase(pkg),
       };
     }
-
     if (currentPlanInfo.type === packageType) {
       return {
         label: t('subscription.currentPlan'),
-        variant: 'outline' as const,
-        disabled: true,
+        variant: 'outline' as const, disabled: true,
         icon: <CheckCircle2 size={16} color={theme.colors.success} />,
         onPressAction: () => {},
       };
     }
-
     if (currentPlanInfo.type === 'monthly' && packageType === 'yearly') {
       return {
         label: t('subscription.upgradeToYearly'),
-        variant: 'primary' as const,
-        disabled: false,
+        variant: 'primary' as const, disabled: false,
         icon: <TrendingUp size={16} color="#FFFFFF" />,
         onPressAction: (pkg: PurchasesPackage) => handlePurchase(pkg),
       };
     }
-
     if (currentPlanInfo.type === 'yearly' && packageType === 'monthly') {
       return {
         label: t('subscription.manageInAppStore'),
-        variant: 'outline' as const,
-        disabled: false,
+        variant: 'outline' as const, disabled: false,
         icon: <ExternalLink size={16} color={theme.colors.primary} />,
         onPressAction: () => manageSubscriptionInStore(),
       };
     }
-
     return {
       label: t('subscription.selectPlan'),
-      variant: 'primary' as const,
-      disabled: false,
-      icon: null,
+      variant: 'primary' as const, disabled: false, icon: null,
       onPressAction: (pkg: PurchasesPackage) => handlePurchase(pkg),
     };
   };
@@ -308,9 +281,9 @@ export default function SubscriptionScreen() {
     const premiumFeatures = t('subscription.features', { returnObjects: true }) as { icon: string; text: string }[] || [];
 
     return (
-      <View style={[styles.planCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.primary }]}>
+      <View style={[styles.planCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.primary }]}>
         <LinearGradient colors={['#FFD700', '#FFA500']} style={styles.premiumBadge} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-          <Crown size={16} color="#FFFFFF" />
+          <Crown size={isTablet ? 20 : 16} color="#FFFFFF" />
           <Text style={styles.premiumBadgeText}>{t('subscription.premium')}</Text>
         </LinearGradient>
         <View style={styles.priceSection}>
@@ -327,7 +300,7 @@ export default function SubscriptionScreen() {
             const IconComponent = IconMap[feature.icon];
             return (
               <View key={index} style={styles.featureRow}>
-                {IconComponent ? <IconComponent size={18} color="#FFD700" /> : <View style={{ width: 18 }} />}
+                {IconComponent ? <IconComponent size={isTablet ? 22 : 18} color="#FFD700" /> : <View style={{ width: 18 }} />}
                 <Text style={[styles.featureText, { color: theme.colors.text }]}>{feature.text}</Text>
               </View>
             );
@@ -341,6 +314,7 @@ export default function SubscriptionScreen() {
           disabled={buttonState.disabled || isLoading}
           loading={isLoading}
           icon={buttonState.icon}
+          size={isTablet ? 'large' : 'medium'}
         />
       </View>
     );
@@ -363,16 +337,18 @@ export default function SubscriptionScreen() {
       );
     }
     return (
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {renderCurrentSubscriptionStatus()}
-        {renderCurrentFreePlanInfo()}
-        <View style={styles.heroSection}>
-          <Crown color="#FFD700" size={32} />
-          <Text style={[styles.heroTitle, { color: theme.colors.text }]}>{t('subscription.premiumHeroTitle')}</Text>
-          <Text style={[styles.heroSubtitle, { color: theme.colors.textLight }]}>{t('subscription.premiumHeroSubtitle')}</Text>
-        </View>
-        {renderPlanToggle()}
-        {renderSelectedPlan()}
+      <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.contentWrapper}>
+            {renderCurrentSubscriptionStatus()}
+            {renderCurrentFreePlanInfo()}
+            <View style={styles.heroSection}>
+              <Crown color="#FFD700" size={isTablet ? 48 : 32} />
+              <Text style={[styles.heroTitle, { color: theme.colors.text }]}>{t('subscription.premiumHeroTitle')}</Text>
+              <Text style={[styles.heroSubtitle, { color: theme.colors.textLight }]}>{t('subscription.premiumHeroSubtitle')}</Text>
+            </View>
+            {renderPlanToggle()}
+            {renderSelectedPlan()}
+          </View>
       </ScrollView>
     );
   };
@@ -381,10 +357,10 @@ export default function SubscriptionScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ArrowLeft color={theme.colors.text} size={24} />
+          <ArrowLeft color={theme.colors.text} size={isTablet ? 28 : 24} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.colors.text }]}>{t('subscription.title')}</Text>
-        <View style={{ width: 24 }} />
+        <View style={{ width: isTablet ? 28 : 24 }} />
       </View>
       {renderContent()}
     </SafeAreaView >
@@ -395,38 +371,47 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16 },
   backButton: { padding: 8 },
-  title: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 24 },
+  title: { fontFamily: 'PlayfairDisplay-Bold', fontSize: isTablet ? 30 : 24, flex: 1, textAlign: 'center' },
   content: { flex: 1 },
+  scrollContent: {
+    paddingBottom: 32,
+    alignItems: 'center',
+  },
+  contentWrapper: {
+    width: '100%',
+    maxWidth: isTablet ? 700 : undefined,
+    paddingHorizontal: 16,
+  },
   centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, padding: 24 },
-  messageText: { fontFamily: 'Montserrat-Medium', fontSize: 16 },
-  statusContainer: { marginHorizontal: 16, marginTop: 16, padding: 16, borderRadius: 12, borderWidth: 2 },
+  messageText: { fontFamily: 'Montserrat-Medium', fontSize: isTablet ? 18 : 16 },
+  statusContainer: { marginTop: 16, padding: isTablet ? 24: 16, borderRadius: 16, borderWidth: 2 },
   statusHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  statusText: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginLeft: 8 },
-  statusSubtext: { fontFamily: 'Montserrat-Regular', fontSize: 14, marginLeft: 26 },
-  freePlanContainer: { marginHorizontal: 16, marginTop: 16, padding: 16, borderRadius: 12, borderWidth: 1 },
+  statusText: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 18 : 16, marginLeft: 12 },
+  statusSubtext: { fontFamily: 'Montserrat-Regular', fontSize: isTablet ? 16 : 14, marginLeft: isTablet ? 40 : 26 },
+  freePlanContainer: { marginTop: 16, padding: isTablet ? 24 : 16, borderRadius: 16, borderWidth: 1 },
   freePlanHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  freePlanTitle: { fontFamily: 'Montserrat-Bold', fontSize: 14, marginLeft: 8 },
-  freePlanFeatures: { gap: 6, marginBottom: 16 },
-  freePlanFeatureText: { fontFamily: 'Montserrat-Regular', fontSize: 13, lineHeight: 18 },
-  heroSection: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 24, paddingTop: 32 },
-  heroTitle: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 28, textAlign: 'center', marginTop: 16, marginBottom: 8 },
-  heroSubtitle: { fontFamily: 'Montserrat-Regular', fontSize: 16, textAlign: 'center', lineHeight: 22 },
-  toggleContainer: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 24, padding: 4, borderRadius: 12 },
-  toggleOption: { flex: 1, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', position: 'relative', minHeight: 48 },
-  toggleText: { fontFamily: 'Montserrat-Bold', fontSize: 14 },
-  saveBadge: { position: 'absolute', top: -8, right: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
-  saveText: { fontSize: 10, fontFamily: 'Montserrat-Bold', color: '#FFFFFF' },
-  planCard: { marginHorizontal: 16, marginBottom: 32, padding: 24, borderRadius: 20, borderWidth: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8 },
-  premiumBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 20, marginBottom: 20 },
-  premiumBadgeText: { fontFamily: 'Montserrat-Bold', fontSize: 14, color: '#FFFFFF', marginLeft: 6 },
-  priceSection: { marginBottom: 24 },
+  freePlanTitle: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 18 : 14, marginLeft: 8 },
+  freePlanFeatures: { gap: 8, marginBottom: 16, paddingLeft: 8 },
+  freePlanFeatureText: { fontFamily: 'Montserrat-Regular', fontSize: isTablet ? 15 : 13, lineHeight: 22 },
+  heroSection: { alignItems: 'center', paddingVertical: isTablet ? 48 : 24, paddingHorizontal: 24, paddingTop: 32 },
+  heroTitle: { fontFamily: 'PlayfairDisplay-Bold', fontSize: isTablet ? 40 : 28, textAlign: 'center', marginTop: 16, marginBottom: 12 },
+  heroSubtitle: { fontFamily: 'Montserrat-Regular', fontSize: isTablet ? 18 : 16, textAlign: 'center', lineHeight: isTablet ? 28 : 22, maxWidth: 600 },
+  toggleContainer: { flexDirection: 'row', marginBottom: 24, padding: 6, borderRadius: 16 },
+  toggleOption: { flex: 1, paddingVertical: isTablet ? 16 : 12, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  toggleText: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 16 : 14 },
+  saveBadge: { position: 'absolute', top: -8, right: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+  saveText: { fontSize: isTablet ? 12 : 10, fontFamily: 'Montserrat-Bold', color: '#FFFFFF' },
+  planCard: { marginBottom: 32, padding: isTablet ? 32 : 24, borderRadius: 24, borderWidth: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 8 },
+  premiumBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, marginBottom: 24 },
+  premiumBadgeText: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 16 : 14, color: '#FFFFFF', marginLeft: 8 },
+  priceSection: { marginBottom: 32 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 },
-  price: { fontFamily: 'PlayfairDisplay-Bold', fontSize: 36 },
-  priceUnit: { fontFamily: 'Montserrat-Regular', fontSize: 16, marginLeft: 4 },
-  priceSubtext: { fontFamily: 'Montserrat-Medium', fontSize: 14 },
-  featuresContainer: { marginBottom: 24 },
-  featuresTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 16 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  featureText: { fontFamily: 'Montserrat-Medium', fontSize: 14, marginLeft: 12, flex: 1 },
+  price: { fontFamily: 'PlayfairDisplay-Bold', fontSize: isTablet ? 48 : 36 },
+  priceUnit: { fontFamily: 'Montserrat-Regular', fontSize: isTablet ? 20 : 16, marginLeft: 8 },
+  priceSubtext: { fontFamily: 'Montserrat-Medium', fontSize: isTablet ? 16 : 14 },
+  featuresContainer: { marginBottom: 32 },
+  featuresTitle: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 20 : 16, marginBottom: 24 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  featureText: { fontFamily: 'Montserrat-Medium', fontSize: isTablet ? 18 : 14, marginLeft: 16, flex: 1 },
   planButton: { marginTop: 8 },
 });

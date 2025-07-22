@@ -1,27 +1,17 @@
-// app/storage.tsx - İçerik ortalandı ve butonlar kaldırıldı
+// app/storage.tsx - iPad için ortalanmış ve orantılı tasarım
 
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  RefreshControl
+  View, Text, StyleSheet, ScrollView,
+  ActivityIndicator, RefreshControl, Dimensions // YENİ: Dimensions eklendi
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import {
-  ArrowLeft,
-  HardDrive,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  Database,
-  BarChart3,
+  ArrowLeft, HardDrive, FileText, CheckCircle,
+  AlertCircle, XCircle, Database, BarChart3,
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,6 +19,10 @@ import { getFileSystemHealth } from '@/utils/fileSystemImageManager';
 import { diagnoseFileSystemHealth } from '@/utils/appInitialization';
 import { getCacheAnalytics } from '@/utils/cacheManager';
 import useAlertStore from '@/store/alertStore';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 interface StorageStats {
   fileSystem: {
@@ -114,9 +108,10 @@ export default function StorageManagementScreen() {
   };
 
   const getHealthIcon = (score: number, isHealthy: boolean) => {
-    if (!isHealthy || score < 50) return <XCircle color={theme.colors.error} size={20} />;
-    if (score < 80) return <AlertCircle color={theme.colors.warning} size={20} />;
-    return <CheckCircle color={theme.colors.success || '#4CAF50'} size={20} />;
+      const iconSize = isTablet ? 28 : 20;
+    if (!isHealthy || score < 50) return <XCircle color={theme.colors.error} size={iconSize} />;
+    if (score < 80) return <AlertCircle color={theme.colors.warning} size={iconSize} />;
+    return <CheckCircle color={theme.colors.success || '#4CAF50'} size={iconSize} />;
   };
 
   const getHealthStatus = (score: number, isHealthy: boolean) => {
@@ -140,7 +135,7 @@ export default function StorageManagementScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <HeaderBar
           title={t('storage.title')}
-          leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
+          leftIcon={<ArrowLeft color={theme.colors.text} size={isTablet ? 28 : 24} />}
           onLeftPress={() => router.back()}
         />
         <View style={styles.loadingContainer}>
@@ -157,7 +152,7 @@ export default function StorageManagementScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar
         title={t('storage.title')}
-        leftIcon={<ArrowLeft color={theme.colors.text} size={24} />}
+        leftIcon={<ArrowLeft color={theme.colors.text} size={isTablet ? 28 : 24} />}
         onLeftPress={() => router.back()}
       />
 
@@ -173,83 +168,65 @@ export default function StorageManagementScreen() {
           />
         }
       >
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-            {t('storage.overview')}
-          </Text>
-
-          <LinearGradient
-            colors={theme.mode === 'dark'
-              ? [theme.colors.card, theme.colors.background]
-              : [theme.colors.background, theme.colors.card]
-            }
-            style={[styles.healthCard, { borderColor: theme.colors.border }]}
-          >
-            <View style={styles.healthHeader}>
-              {getHealthIcon(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false)}
-              <View style={styles.healthInfo}>
-                <Text style={[styles.healthTitle, { color: theme.colors.text }]}>
-                  {t('storage.systemStatus')}
+          {/* YENİ: İçeriği sarmalayan ve ortalayan View */}
+          <View style={styles.contentWrapper}>
+            <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                    {t('storage.overview')}
                 </Text>
-                <Text style={[
-                  styles.healthStatus,
-                  { color: getHealthColor(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false) }
-                ]}>
-                  {getHealthStatus(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false)}
-                </Text>
-              </View>
-              <Text style={[styles.healthScore, { color: theme.colors.primary }]}>
-                {storageStats?.cache.healthScore || 0}%
-              </Text>
-            </View>
-          </LinearGradient>
 
-          <View style={styles.statsGrid}>
-            {renderStatCard(
-              t('storage.totalSize'),
-              `${storageStats?.fileSystem.totalSizeMB || 0} MB`,
-              <HardDrive color={theme.colors.primary} size={20} />
-            )}
-            {renderStatCard(
-              t('storage.fileCount'),
-              `${storageStats?.fileSystem.fileCount || 0}`,
-              <FileText color={theme.colors.secondary} size={20} />
-            )}
-            {renderStatCard(
-              t('storage.totalItems'),
-              `${storageStats?.usage.totalItems || 0}`,
-              <Database color={theme.colors.accent} size={20} />
-            )}
-            {renderStatCard(
-              t('storage.averageFileSize'),
-              `${storageStats?.cache.averageFileSizeKB || 0} KB`,
-              <BarChart3 color={theme.colors.primary} size={20} />
-            )}
-          </View>
-        </View>
+                <LinearGradient
+                    colors={theme.mode === 'dark' ? [theme.colors.card, theme.colors.background] : [theme.colors.background, theme.colors.card]}
+                    style={[styles.healthCard, { borderColor: theme.colors.border }]}
+                >
+                    <View style={styles.healthHeader}>
+                    {getHealthIcon(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false)}
+                    <View style={styles.healthInfo}>
+                        <Text style={[styles.healthTitle, { color: theme.colors.text }]}>
+                        {t('storage.systemStatus')}
+                        </Text>
+                        <Text style={[styles.healthStatus, { color: getHealthColor(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false) }]}>
+                        {getHealthStatus(storageStats?.cache.healthScore || 0, storageStats?.fileSystem.isHealthy || false)}
+                        </Text>
+                    </View>
+                    <Text style={[styles.healthScore, { color: theme.colors.primary }]}>
+                        {storageStats?.cache.healthScore || 0}%
+                    </Text>
+                    </View>
+                </LinearGradient>
 
-        {(storageStats?.cache.recommendations.length || 0) > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-              {t('storage.recommendations')}
-            </Text>
-            <View style={[styles.recommendationsCard, { backgroundColor: theme.colors.card }]}>
-              {storageStats?.cache.recommendations.map((recommendation, index) => (
-                <View key={index} style={styles.recommendationItem}>
-                  <AlertCircle color={theme.colors.warning} size={16} />
-                  <Text style={[styles.recommendationText, { color: theme.colors.text }]}>
-                    {recommendation}
-                  </Text>
+                <View style={styles.statsGrid}>
+                    {renderStatCard( t('storage.totalSize'), `${storageStats?.fileSystem.totalSizeMB || 0} MB`, <HardDrive color={theme.colors.primary} size={isTablet ? 24 : 20} /> )}
+                    {renderStatCard( t('storage.fileCount'), `${storageStats?.fileSystem.fileCount || 0}`, <FileText color={theme.colors.secondary} size={isTablet ? 24 : 20} /> )}
+                    {renderStatCard( t('storage.totalItems'), `${storageStats?.usage.totalItems || 0}`, <Database color={theme.colors.accent} size={isTablet ? 24 : 20} /> )}
+                    {renderStatCard( t('storage.averageFileSize'), `${storageStats?.cache.averageFileSizeKB || 0} KB`, <BarChart3 color={theme.colors.primary} size={isTablet ? 24 : 20} /> )}
                 </View>
-              ))}
             </View>
-          </View>
-        )}
+
+            {(storageStats?.cache.recommendations.length || 0) > 0 && (
+            <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                {t('storage.recommendations')}
+                </Text>
+                <View style={[styles.recommendationsCard, { backgroundColor: theme.colors.card }]}>
+                {storageStats?.cache.recommendations.map((recommendation, index) => (
+                    <View key={index} style={styles.recommendationItem}>
+                    <AlertCircle color={theme.colors.warning} size={isTablet ? 22 : 16} />
+                    <Text style={[styles.recommendationText, { color: theme.colors.text }]}>
+                        {recommendation}
+                    </Text>
+                    </View>
+                ))}
+                </View>
+            </View>
+            )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -268,58 +245,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flexGrow: 1, // DEĞİŞİKLİK: İçeriğin dikeyde büyümesini sağlar
-    justifyContent: 'center', // DEĞİŞİKLİK: İçeriği dikeyde ortalar
-    padding: 24,
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: isTablet ? 32 : 24,
     paddingBottom: 32,
+    alignItems: 'center', // YENİ: İçeriği yatayda ortalar
+  },
+  // YENİ: İçeriğin genişliğini ayarlayan stil
+  contentWrapper: {
+    width: '100%',
+    maxWidth: isTablet ? 800 : undefined,
   },
   section: {
-    marginBottom: 24,
-    width: '100%', // Genişliğin tam olmasını garantiler
+    marginBottom: 32,
+    width: '100%',
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: isTablet ? 22 : 18,
     fontFamily: 'Montserrat-Bold',
-    marginBottom: 16, // Boşluk artırıldı
-    textAlign: 'center', // Başlığı ortala
+    marginBottom: 20,
+    textAlign: 'center',
   },
   healthCard: {
-    padding: 16,
-    borderRadius: 16,
+    padding: isTablet ? 24 : 16,
+    borderRadius: 20,
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: 24,
   },
   healthHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 16,
   },
   healthInfo: {
     flex: 1,
   },
   healthTitle: {
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16,
     fontFamily: 'Montserrat-Medium',
     marginBottom: 4,
   },
   healthStatus: {
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14,
     fontFamily: 'Montserrat-SemiBold',
   },
   healthScore: {
-    fontSize: 24,
+    fontSize: isTablet ? 36 : 24,
     fontFamily: 'Montserrat-Bold',
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: 16,
   },
   statCard: {
     flex: 1,
     minWidth: '45%',
-    padding: 16,
-    borderRadius: 12,
+    padding: isTablet ? 24 : 16,
+    borderRadius: 16,
   },
   statHeader: {
     flexDirection: 'row',
@@ -328,18 +311,18 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statTitle: {
-    fontSize: 12,
+    fontSize: isTablet ? 14 : 12,
     fontFamily: 'Montserrat-Medium',
     textTransform: 'uppercase',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: isTablet ? 28 : 20,
     fontFamily: 'Montserrat-Bold',
   },
   recommendationsCard: {
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
+    padding: isTablet ? 24 : 16,
+    borderRadius: 16,
+    gap: 16,
   },
   recommendationItem: {
     flexDirection: 'row',
@@ -348,8 +331,8 @@ const styles = StyleSheet.create({
   },
   recommendationText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: isTablet ? 16 : 14,
     fontFamily: 'Montserrat-Regular',
-    lineHeight: 20,
+    lineHeight: isTablet ? 24 : 20,
   },
 });

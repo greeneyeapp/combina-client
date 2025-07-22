@@ -1,6 +1,6 @@
-// app/(tabs)/_layout.tsx - Tab bar metin sığma sorunu düzeltildi
+// app/(tabs)/_layout.tsx - Tablet için en basit ve en doğru ortalama
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Tabs } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
@@ -11,30 +11,16 @@ import {
   History,
   UserCircle2
 } from 'lucide-react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Dimensions, Text } from 'react-native';
 
-const AnimatedIcon = ({ children, focused }: { children: React.ReactNode; focused: boolean }) => {
-  const scale = useSharedValue(1);
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
-  useEffect(() => {
-    scale.value = withSpring(focused ? 1.25 : 1, {
-      damping: 10,
-      stiffness: 400,
-    });
-  }, [focused]);
-
-  const style = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: scale.value }],
-    };
-  });
-
-  return <Animated.View style={style}>{children}</Animated.View>;
-};
-
-export default function TabLayout() {
+// Telefon için olan Tab Düzeni (Değişiklik yok)
+const PhoneLayout = () => {
   const { t } = useTranslation();
   const { theme } = useTheme();
+  const iconSize = 24;
 
   return (
     <Tabs
@@ -44,40 +30,80 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: theme.colors.card,
           borderTopColor: theme.colors.border,
-          elevation: 0,
-          shadowOpacity: 0,
-          height: 60,
-          paddingTop: 2, // İkon ve metin için üst boşluk
-          paddingBottom: 5, // Alt boşluk azaltıldı
+          height: 60, paddingTop: 2, paddingBottom: 5,
         },
-        tabBarLabelStyle: {
-          fontFamily: 'Montserrat-Medium',
-          fontSize: 11, // Yazı tipi boyutu 12'den 11'e düşürüldü
+        tabBarLabelStyle: { fontFamily: 'Montserrat-Medium', fontSize: 11 },
+        headerShown: false,
+      }}>
+      <Tabs.Screen name="home/index" options={{ title: t('tabs.home'), tabBarIcon: ({ color }) => <Home color={color} size={iconSize} /> }} />
+      <Tabs.Screen name="wardrobe/index" options={{ title: t('tabs.wardrobe'), tabBarIcon: ({ color }) => <Shirt color={color} size={iconSize} /> }} />
+      <Tabs.Screen name="suggestions/index" options={{ title: t('tabs.suggestions'), tabBarIcon: ({ color }) => <LightbulbIcon color={color} size={iconSize} /> }} />
+      <Tabs.Screen name="history/index" options={{ title: t('tabs.history'), tabBarIcon: ({ color }) => <History color={color} size={iconSize} /> }} />
+      <Tabs.Screen name="profile/index" options={{ title: t('tabs.profile'), tabBarIcon: ({ color }) => <UserCircle2 color={color} size={iconSize} /> }} />
+      <Tabs.Screen name="wardrobe/add" options={{ href: null }} />
+      <Tabs.Screen name="wardrobe/[id]" options={{ href: null }} />
+      <Tabs.Screen name="wardrobe/edit/[id]" options={{ href: null }} />
+      <Tabs.Screen name="profile/language" options={{ href: null }} />
+    </Tabs>
+  );
+};
+
+// Tablet için olan Tab Düzeni (EN BASİT VE DOĞRU HALİ)
+const TabletLayout = () => {
+  const { t } = useTranslation();
+  const { theme } = useTheme();
+  const iconSize = 32;
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.textLight,
+        tabBarStyle: {
+          backgroundColor: theme.colors.card,
+          borderTopColor: theme.colors.border,
+          height: 90, // Yüksekliği koruyoruz
+        },
+        tabBarItemStyle: {
+          // DEĞİŞİKLİK: 'gap' ile ikon ve metin arasını açıyoruz
+          gap: 2, 
+          // DEĞİŞİKLİK: Dikeyde tam ortalama için padding
+          paddingVertical: 12, 
         },
         headerShown: false,
       }}>
-      
-      {/* Ana Sayfa */}
       <Tabs.Screen
         name="home/index"
         options={{
-          title: t('tabs.home', 'Home'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedIcon focused={focused}>
-              <Home color={color} size={size} />
-            </AnimatedIcon>
+          title: t('tabs.home'),
+          tabBarIcon: ({ color }) => <Home color={color} size={iconSize} />,
+          // DEĞİŞİKLİK: tabBarLabel prop'u ile stil ve vurgu çizgisi
+          tabBarLabel: ({ focused, color, children }) => (
+            <Text style={{ 
+              color, 
+              fontSize: 15,
+              fontFamily: focused ? 'Montserrat-Bold' : 'Montserrat-Medium',
+              // Aktif ise altına 16px'lik boşluk bırak
+              marginBottom: focused ? -16 : 0, 
+              // Aktif ise altını çiz
+              borderBottomColor: focused ? color : 'transparent',
+              borderBottomWidth: focused ? 3 : 0,
+              // Çizgi ve metin arasına boşluk
+              paddingBottom: 8, 
+            }}>
+              {children}
+            </Text>
           ),
         }}
       />
-      
+      {/* Diğer sekmeler için aynı mantığı uyguluyoruz */}
       <Tabs.Screen
         name="wardrobe/index"
         options={{
           title: t('tabs.wardrobe'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedIcon focused={focused}>
-              <Shirt color={color} size={size} />
-            </AnimatedIcon>
+          tabBarIcon: ({ color }) => <Shirt color={color} size={iconSize} />,
+          tabBarLabel: ({ focused, color, children }) => (
+            <Text style={{ color, fontSize: 15, fontFamily: focused ? 'Montserrat-Bold' : 'Montserrat-Medium', marginBottom: focused ? -16 : 0, borderBottomColor: focused ? color : 'transparent', borderBottomWidth: focused ? 3 : 0, paddingBottom: 8, }}>{children}</Text>
           ),
         }}
       />
@@ -85,10 +111,9 @@ export default function TabLayout() {
         name="suggestions/index"
         options={{
           title: t('tabs.suggestions'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedIcon focused={focused}>
-              <LightbulbIcon color={color} size={size} />
-            </AnimatedIcon>
+          tabBarIcon: ({ color }) => <LightbulbIcon color={color} size={iconSize} />,
+          tabBarLabel: ({ focused, color, children }) => (
+            <Text style={{ color, fontSize: 15, fontFamily: focused ? 'Montserrat-Bold' : 'Montserrat-Medium', marginBottom: focused ? -16 : 0, borderBottomColor: focused ? color : 'transparent', borderBottomWidth: focused ? 3 : 0, paddingBottom: 8, }}>{children}</Text>
           ),
         }}
       />
@@ -96,10 +121,9 @@ export default function TabLayout() {
         name="history/index"
         options={{
           title: t('tabs.history'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedIcon focused={focused}>
-              <History color={color} size={size} />
-            </AnimatedIcon>
+          tabBarIcon: ({ color }) => <History color={color} size={iconSize} />,
+          tabBarLabel: ({ focused, color, children }) => (
+            <Text style={{ color, fontSize: 15, fontFamily: focused ? 'Montserrat-Bold' : 'Montserrat-Medium', marginBottom: focused ? -16 : 0, borderBottomColor: focused ? color : 'transparent', borderBottomWidth: focused ? 3 : 0, paddingBottom: 8, }}>{children}</Text>
           ),
         }}
       />
@@ -107,19 +131,26 @@ export default function TabLayout() {
         name="profile/index"
         options={{
           title: t('tabs.profile'),
-          tabBarIcon: ({ color, size, focused }) => (
-            <AnimatedIcon focused={focused}>
-              <UserCircle2 color={color} size={size} />
-            </AnimatedIcon>
+          tabBarIcon: ({ color }) => <UserCircle2 color={color} size={iconSize} />,
+          tabBarLabel: ({ focused, color, children }) => (
+            <Text style={{ color, fontSize: 15, fontFamily: focused ? 'Montserrat-Bold' : 'Montserrat-Medium', marginBottom: focused ? -16 : 0, borderBottomColor: focused ? color : 'transparent', borderBottomWidth: focused ? 3 : 0, paddingBottom: 8, }}>{children}</Text>
           ),
         }}
       />
       
-      {/* Gizli sayfalar */}
+      {/* Gizli Sayfalar */}
       <Tabs.Screen name="wardrobe/add" options={{ href: null }} />
       <Tabs.Screen name="wardrobe/[id]" options={{ href: null }} />
       <Tabs.Screen name="wardrobe/edit/[id]" options={{ href: null }} />
       <Tabs.Screen name="profile/language" options={{ href: null }} />
     </Tabs>
   );
+};
+
+export default function TabLayout() {
+  if (isTablet) {
+    return <TabletLayout />;
+  } else {
+    return <PhoneLayout />;
+  }
 }

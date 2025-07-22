@@ -2,7 +2,7 @@
   "expo": {
     "name": "Combina",
     "slug": "combina-client",
-    "version": "2.0.0",
+    "version": "2.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "com.greeneyeapp.combina",
@@ -14,6 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
+      "orientation": "portrait",
       "bundleIdentifier": "com.greeneyeapp.combina",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -28,6 +29,7 @@
       }
     },
     "android": {
+      "orientation": "portrait",
       "package": "com.greeneyeapp.combina",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon-foreground.png",

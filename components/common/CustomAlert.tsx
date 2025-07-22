@@ -1,19 +1,25 @@
+// components/common/CustomAlert.tsx - iPad için büyütülmüş ve orantılı tasarım
+
 import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, BackHandler } from 'react-native';
+// YENİ: Dimensions modülü eklendi
+import { Modal, View, Text, StyleSheet, TouchableOpacity, BackHandler, Dimensions } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import useAlertStore from '@/store/alertStore';
 import Button from './Button';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 export default function CustomAlert() {
   const { theme } = useTheme();
   const { isVisible, title, message, buttons, hide } = useAlertStore();
 
-  // Modal açıkken Android geri tuşuna basılırsa kapat
   React.useEffect(() => {
     const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
       if (isVisible) {
         hide();
-        return true; // Geri tuşu olayını burada bitir
+        return true;
       }
       return false;
     });
@@ -34,11 +40,10 @@ export default function CustomAlert() {
       <TouchableOpacity
         style={styles.backdrop}
         activeOpacity={1}
-        onPress={hide} // Arka plana tıklayınca kapat
+        onPress={hide}
       >
         <View 
           style={[styles.alertBox, { backgroundColor: theme.colors.card }]}
-          // Alert kutusuna tıklamanın arka planı kapatmasını engelle
           onStartShouldSetResponder={() => true}
         >
           <Text style={[styles.title, { color: theme.colors.text }]}>{title}</Text>
@@ -50,11 +55,13 @@ export default function CustomAlert() {
                 key={index}
                 label={button.text}
                 onPress={() => {
-                  hide(); // Butona basınca önce alert'i kapat
-                  button.onPress(); // Sonra butonun kendi fonksiyonunu çalıştır
+                  hide();
+                  button.onPress();
                 }}
                 variant={button.variant || 'primary'}
                 style={styles.button}
+                // YENİ: Buton boyutu tablet için büyütüldü
+                size={isTablet ? 'large' : 'medium'}
               />
             ))}
           </View>
@@ -64,6 +71,7 @@ export default function CustomAlert() {
   );
 }
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
@@ -74,9 +82,10 @@ const styles = StyleSheet.create({
   },
   alertBox: {
     width: '100%',
-    maxWidth: 400,
-    borderRadius: 16,
-    padding: 24,
+    // DEĞİŞİKLİK: Maksimum genişlik tablet için artırıldı
+    maxWidth: isTablet ? 550 : 400,
+    borderRadius: 24, // Daha yuvarlak
+    padding: isTablet ? 32 : 24, // İç boşluk artırıldı
     elevation: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -85,21 +94,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'PlayfairDisplay-Bold',
-    fontSize: 22,
-    marginBottom: 8,
+    fontSize: isTablet ? 28 : 22, // Büyütüldü
+    marginBottom: 12, // Boşluk artırıldı
     textAlign: 'center',
   },
   message: {
     fontFamily: 'Montserrat-Regular',
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // Büyütüldü
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 22,
+    marginBottom: 32, // Boşluk artırıldı
+    lineHeight: isTablet ? 28 : 22,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    gap: 12,
+    gap: isTablet ? 16 : 12,
   },
   button: {
     flex: 1,

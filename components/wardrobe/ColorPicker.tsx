@@ -1,11 +1,16 @@
-// components/wardrobe/ColorPicker.tsx - Modal yükseklik sorunu düzeltildi
+// components/wardrobe/ColorPicker.tsx - iPad için büyütülmüş ve orantılı tasarım
 
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TextInput, Image } from 'react-native';
+// YENİ: Dimensions modülü eklendi
+import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList, TextInput, Image, Dimensions } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { Check, X, Search } from 'lucide-react-native';
 import { ALL_COLORS } from '@/utils/constants';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 // Renk parlaklığını hesaplayarak, üzerine konulacak ikonun rengini belirler (siyah/beyaz).
 const getBrightness = (hex: string): number => {
@@ -99,7 +104,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
 
     return (
       <View style={styles.selectedColorView}>
-        <View style={[styles.colorCircleWrapper, { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: colorData.name === 'white' ? theme.colors.border : 'transparent' }]}>
+        <View style={[styles.selectedColorCircle, { borderWidth: 1, borderColor: colorData.name === 'white' ? theme.colors.border : 'transparent' }]}>
           {renderColorItemDisplay(colorData)}
         </View>
         <Text style={[styles.selectedColorText, { color: theme.colors.text }]}>
@@ -134,7 +139,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: theme.colors.background }]}>
-            {/* Header - sabit yükseklik */}
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
                 {multiSelect ? t('wardrobe.selectColors') : t('wardrobe.color')}
@@ -147,13 +151,12 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                 style={styles.closeButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <X size={24} color={theme.colors.textLight} />
+                <X size={isTablet ? 30 : 24} color={theme.colors.textLight} />
               </TouchableOpacity>
             </View>
 
-            {/* Search Bar - sabit yükseklik */}
             <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
-              <Search size={18} color={theme.colors.textLight} />
+              <Search size={isTablet ? 22 : 18} color={theme.colors.textLight} />
               <TextInput
                 style={[styles.searchInput, { color: theme.colors.text }]}
                 placeholder={t('common.searchPlaceholder')}
@@ -163,7 +166,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               />
             </View>
 
-            {/* MultiSelect info - sabit yükseklik (varsa) */}
             {multiSelect && (
               <View style={[styles.selectedColorsHeader, { backgroundColor: theme.colors.primaryLight }]}>
                 <Text style={[styles.selectedColorsHeaderText, { color: theme.colors.primary }]}>
@@ -172,17 +174,14 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               </View>
             )}
 
-            {/* Colors List - flex:1 olarak kalanı kaplayacak */}
             <View style={styles.flatListContainer}>
               <FlatList
                 data={filteredColors}
                 keyExtractor={(item) => item.name}
-                numColumns={4}
+                // DEĞİŞİKLİK: Sütun sayısı tablet için artırıldı
+                numColumns={isTablet ? 6 : 4} 
                 contentContainerStyle={styles.listContainer}
                 showsVerticalScrollIndicator={true}
-                bounces={true}
-                scrollEnabled={true}
-                nestedScrollEnabled={true}
                 renderItem={({ item: color }) => {
                   const isSelected = currentSelectedColors.includes(color.name);
                   const isDisabled = multiSelect && !isSelected && currentSelectedColors.length >= maxColors;
@@ -197,7 +196,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
                         {renderColorItemDisplay(color)}
                         {isSelected && (
                           <View style={styles.checkIconContainer}>
-                            <Check size={24} color={getBrightness(color.hex) > 128 ? 'black' : 'white'} />
+                            <Check size={isTablet ? 32 : 24} color={getBrightness(color.hex) > 128 ? 'black' : 'white'} />
                           </View>
                         )}
                       </View>
@@ -210,7 +209,6 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
               />
             </View>
             
-            {/* Footer - sabit yükseklik (varsa) */}
             {multiSelect && (
               <View style={[styles.modalFooter, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.border }]}>
                 <TouchableOpacity 
@@ -233,35 +231,42 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
   );
 };
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
   buttonContainer: { 
     borderWidth: 1, 
-    borderRadius: 8, 
-    padding: 12, 
-    minHeight: 50, 
+    borderRadius: 12, 
+    padding: isTablet ? 16 : 12, 
+    minHeight: isTablet ? 60 : 50, 
     justifyContent: 'center' 
   },
   selectedColorView: { 
     flexDirection: 'row', 
     alignItems: 'center' 
   },
+  selectedColorCircle: {
+      width: isTablet ? 30 : 24,
+      height: isTablet ? 30 : 24,
+      borderRadius: isTablet ? 15 : 12,
+      overflow: 'hidden',
+  },
   selectedColorText: { 
     fontFamily: 'Montserrat-Regular', 
-    fontSize: 16, 
+    fontSize: isTablet ? 18 : 16, 
     marginLeft: 12 
   },
   plusMore: { 
     fontFamily: 'Montserrat-Regular', 
-    fontSize: 14, 
+    fontSize: isTablet ? 16 : 14, 
     marginLeft: 8 
   },
   placeholderText: { 
     fontFamily: 'Montserrat-Regular', 
-    fontSize: 16 
+    fontSize: isTablet ? 18 : 16,
   },
   errorText: { 
     fontFamily: 'Montserrat-Regular', 
-    fontSize: 12, 
+    fontSize: isTablet ? 14 : 12, 
     marginTop: 4 
   },
   modalOverlay: { 
@@ -270,49 +275,45 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)' 
   },
   modalContent: {
-    // Ana değişiklik: Sabit yükseklik yerine maksimum yükseklik kullan
     maxHeight: '85%',
     minHeight: '75%', 
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
-    flex: 0, // flex: 1'den flex: 0'a değiştirildi
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: isTablet ? 24 : 16,
+    flex: 0,
   },
   modalHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
     paddingBottom: 16,
-    // Sabit yükseklik belirtildi
-    height: 60,
+    height: isTablet ? 70 : 60,
   },
   modalTitle: { 
     fontFamily: 'Montserrat-Bold', 
-    fontSize: 18 
+    fontSize: isTablet ? 22 : 18 
   },
   closeButton: {
-    // Kapat butonunun tıklanabilir alanını artır
     padding: 8,
     borderRadius: 8,
   },
   selectedColorsHeader: { 
-    padding: 12, 
-    borderRadius: 8, 
+    padding: isTablet ? 16 : 12, 
+    borderRadius: 12, 
     marginBottom: 16,
-    // Sabit yükseklik
-    minHeight: 40,
+    minHeight: isTablet ? 50 : 40,
   },
   selectedColorsHeaderText: { 
-    fontSize: 14, 
+    fontSize: isTablet ? 16 : 14, 
     fontFamily: 'Montserrat-SemiBold' 
   },
   searchBar: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    borderRadius: 10, 
-    paddingHorizontal: 15, 
+    borderRadius: 12, 
+    paddingHorizontal: isTablet ? 20 : 15, 
     marginBottom: 15, 
-    minHeight: 50, // Sabit yükseklik
+    minHeight: isTablet ? 60 : 50,
     borderWidth: 1, 
     borderColor: '#ddd' 
   },
@@ -320,12 +321,11 @@ const styles = StyleSheet.create({
     flex: 1, 
     marginLeft: 10, 
     fontFamily: 'Montserrat-Regular', 
-    fontSize: 16 
+    fontSize: isTablet ? 18 : 16 
   },
   flatListContainer: {
-    // Ana değişiklik: flex: 1 ile kalan alanı kullan
     flex: 1,
-    minHeight: 200, // Minimum yükseklik garantisi
+    minHeight: 200,
   },
   listContainer: { 
     paddingBottom: 20,
@@ -334,20 +334,20 @@ const styles = StyleSheet.create({
   colorItemContainer: { 
     flex: 1, 
     alignItems: 'center', 
-    marginVertical: 8,
-    maxWidth: '25%',
+    marginVertical: isTablet ? 16 : 8,
   },
   disabledColorItem: { 
     opacity: 0.4 
   },
   colorCircleWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: isTablet ? 72 : 52,
+    height: isTablet ? 72 : 52,
+    borderRadius: isTablet ? 36 : 26,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
     overflow: 'hidden',
+    marginBottom: 8,
   },
   patternImage: {
     width: '100%',
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
   },
   colorName: { 
     fontFamily: 'Montserrat-Medium', 
-    fontSize: 12, 
+    fontSize: isTablet ? 14 : 12, 
     marginTop: 8, 
     textAlign: 'center' 
   },
@@ -371,18 +371,17 @@ const styles = StyleSheet.create({
     paddingTop: 16, 
     paddingBottom: 16, 
     paddingHorizontal: 0,
-    // Sabit yükseklik
-    minHeight: 70,
+    minHeight: isTablet ? 80 : 70,
   },
   doneButton: { 
-    paddingVertical: 14, 
-    borderRadius: 8, 
+    paddingVertical: isTablet ? 18 : 14, 
+    borderRadius: 12, 
     alignItems: 'center', 
     justifyContent: 'center' 
   },
   doneButtonText: { 
     fontFamily: 'Montserrat-Bold', 
-    fontSize: 16 
+    fontSize: isTablet ? 18 : 16 
   },
 });
 

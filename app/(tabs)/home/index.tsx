@@ -1,4 +1,4 @@
-// app/(tabs)/home/index.tsx - Modal yönlendirme sorunu düzeltildi
+// app/(tabs)/home/index.tsx - iPad için çok sütunlu (multi-column) yapı ile güncellendi
 
 import React from 'react';
 import {
@@ -28,6 +28,8 @@ import HeaderBar from '@/components/common/HeaderBar';
 import { useRevenueCat } from '@/context/RevenueCatContext';
 
 const { width } = Dimensions.get('window');
+// YENİ: Cihazın tablet olup olmadığını anlamak için bir kontrol değişkeni
+const isTablet = width >= 768;
 
 export default function HomeScreen() {
     const { t } = useTranslation();
@@ -40,7 +42,7 @@ export default function HomeScreen() {
                 id: 'wardrobe',
                 title: t('home.wardrobeTitle', 'Build Your Wardrobe'),
                 subtitle: t('home.wardrobeSubtitle', 'Add your clothes to get started'),
-                icon: <Shirt size={32} color={theme.colors.white} />,
+                icon: <Shirt size={isTablet ? 40 : 32} color={theme.colors.white} />, // DEĞİŞİKLİK: Tablette ikon boyutu büyütüldü
                 gradient: [theme.colors.primary, theme.colors.secondary],
                 onPress: () => router.push('/(tabs)/wardrobe'),
             },
@@ -48,7 +50,7 @@ export default function HomeScreen() {
                 id: 'suggestions',
                 title: t('home.suggestionsTitle', 'Get Outfit Ideas'),
                 subtitle: t('home.suggestionsSubtitle', 'AI-powered style suggestions'),
-                icon: <Lightbulb size={32} color={theme.colors.white} />,
+                icon: <Lightbulb size={isTablet ? 40 : 32} color={theme.colors.white} />, // DEĞİŞİKLİK: Tablette ikon boyutu büyütüldü
                 gradient: ['#F1C93B', '#FF8A65'],
                 onPress: () => router.push('/(tabs)/suggestions'),
             },
@@ -59,7 +61,7 @@ export default function HomeScreen() {
                 id: 'history-premium',
                 title: t('home.historyTitle', 'Outfit History'),
                 subtitle: t('home.historySubtitle', 'Track your style journey'),
-                icon: <History size={32} color={theme.colors.white} />,
+                icon: <History size={isTablet ? 40 : 32} color={theme.colors.white} />, // DEĞİŞİKLİK: Tablette ikon boyutu büyütüldü
                 gradient: ['#6366F1', '#8B5CF6'],
                 onPress: () => router.push('/(tabs)/history'),
             });
@@ -68,9 +70,8 @@ export default function HomeScreen() {
                 id: 'premium',
                 title: t('home.premiumTitle', 'Upgrade Style'),
                 subtitle: t('home.premiumSubtitle', 'Unlock premium features'),
-                icon: <Crown size={32} color={theme.colors.white} />,
+                icon: <Crown size={isTablet ? 40 : 32} color={theme.colors.white} />, // DEĞİŞİKLİK: Tablette ikon boyutu büyütüldü
                 gradient: ['#F59E0B', '#FBBF24'],
-                // ÇÖZÜM: router.push yerine router.navigate kullanılıyor.
                 onPress: () => router.navigate('/subscription'),
             });
         }
@@ -82,22 +83,22 @@ export default function HomeScreen() {
         {
             id: 'add-item',
             title: t('home.addItemTitle', 'Add New Item'),
-            icon: <Plus size={20} color={theme.colors.primary} />,
+            icon: <Plus size={isTablet ? 28 : 20} color={theme.colors.primary} />, // DEĞİŞİKLİK: Tablette ikon boyutu büyütüldü
             onPress: () => router.push('/wardrobe/add' as any),
         },
         {
             id: 'storage',
             title: t('home.storageTitle', 'Storage Management'),
-            icon: <HardDrive size={20} color={theme.colors.primary} />,
-            // ÇÖZÜM: router.push yerine router.navigate kullanılıyor.
+            icon: <HardDrive size={isTablet ? 28 : 20} color={theme.colors.primary} />, // DEĞİŞİKLİK: Tablette ikon boyutu büyütüldü
             onPress: () => router.navigate('/storage'),
         },
     ];
 
+    // DEĞİŞİKLİK: `style` prop'u eklendi ve tablet için genişlik ayarlandı.
     const renderFeatureCard = (card: ReturnType<typeof getFeatureCards>[0], index: number) => (
         <TouchableOpacity
             key={card.id}
-            style={[styles.featureCard, { marginBottom: index === getFeatureCards().length - 1 ? 0 : 16 }]}
+            style={[styles.featureCard, isTablet && styles.featureCardTablet]}
             onPress={card.onPress}
             activeOpacity={0.8}
         >
@@ -196,7 +197,6 @@ export default function HomeScreen() {
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <HeaderBar
                 title={t('home.title', 'Discover Style')}
-                style={{ backgroundColor: theme.colors.background }}
             />
 
             <ScrollView
@@ -221,7 +221,8 @@ export default function HomeScreen() {
                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
                         {t('home.featuresTitle', 'Explore Features')}
                     </Text>
-                    <View style={styles.featuresContainer}>
+                    {/* DEĞİŞİKLİK: Kartları sarmalayan View'in stili tablet için değişiyor */}
+                    <View style={[styles.featuresContainer, isTablet && styles.featuresContainerTablet]}>
                         {getFeatureCards().map(renderFeatureCard)}
                     </View>
                 </View>
@@ -248,7 +249,6 @@ export default function HomeScreen() {
                         </Text>
                         <TouchableOpacity
                             style={[styles.upgradeButton, { backgroundColor: theme.colors.primary }]}
-                            // ÇÖZÜM: Yanlış rota '/profile/subscription' düzeltildi ve router.navigate kullanıldı.
                             onPress={() => router.navigate('/subscription')}
                             activeOpacity={0.8}
                         >
@@ -264,41 +264,31 @@ export default function HomeScreen() {
     );
 }
 
+// DEĞİŞİKLİK: Tüm stil tanımları tek bir yerde toplandı. Tablet için özel stiller eklendi.
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    headerGradientScrollable: {
-        paddingBottom: 24,
-        marginBottom: 16,
-        borderRadius: 20,
-        marginHorizontal: 16,
-        marginTop: 16,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 8,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
-    loadingText: {
-        fontSize: 16,
-        fontFamily: 'Montserrat-Medium',
+    scrollView: {
+        flex: 1,
     },
-    headerGradient: {
-        paddingBottom: 24,
+    scrollContent: {
+        padding: 16,
+        paddingBottom: 32,
+    },
+    headerGradientScrollable: {
+        paddingVertical: isTablet ? 48 : 24, // Tablette dikey boşluk arttı
+        marginBottom: 16,
+        borderRadius: 20,
+        marginHorizontal: isTablet ? 0 : 16, // Tablette yan boşluklar kalktı
+        marginTop: 16,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 4,
-        },
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 6,
         elevation: 8,
@@ -324,49 +314,50 @@ const styles = StyleSheet.create({
         marginLeft: 6,
     },
     welcomeText: {
-        fontSize: 20,
+        fontSize: isTablet ? 32 : 20, // Tablette font boyutu büyüdü
         fontFamily: 'PlayfairDisplay-Bold',
         textAlign: 'center',
         marginBottom: 8,
     },
     subtitleText: {
-        fontSize: 14,
+        fontSize: isTablet ? 18 : 14, // Tablette font boyutu büyüdü
         fontFamily: 'Montserrat-Regular',
         textAlign: 'center',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    scrollContent: {
-        padding: 16,
-        paddingBottom: 32,
+        maxWidth: 600, // Tablette metin genişliği sınırlandı
     },
     section: {
         marginBottom: 32,
     },
     sectionTitle: {
-        fontSize: 20,
+        fontSize: isTablet ? 28 : 20, // Tablette font boyutu büyüdü
         fontFamily: 'PlayfairDisplay-Bold',
         marginBottom: 16,
     },
-    featuresContainer: {},
+    featuresContainer: {
+        // Telefon için varsayılan dikey dizilim
+    },
+    featuresContainerTablet: { // YENİ: Tablet için yatay, sarmalı dizilim
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
     featureCard: {
         borderRadius: 20,
         overflow: 'hidden',
         elevation: 6,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 3,
-        },
+        shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         backgroundColor: 'transparent',
-        borderWidth: 0,
         width: '100%',
+        marginBottom: 16, // Kartlar arası boşluk
+    },
+    featureCardTablet: { // YENİ: Tablet kartları için genişlik
+        width: '48.5%', // İki sütunlu yapı için
     },
     cardGradient: {
-        padding: 20,
+        padding: isTablet ? 24 : 20, // Tablette iç boşluk arttı
         minHeight: 100,
         justifyContent: 'center',
         width: '100%',
@@ -388,13 +379,13 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     cardTitle: {
-        fontSize: 16,
+        fontSize: isTablet ? 20 : 16, // Tablette font boyutu büyüdü
         fontFamily: 'Montserrat-Bold',
         color: '#FFFFFF',
         marginBottom: 4,
     },
     cardSubtitle: {
-        fontSize: 12,
+        fontSize: isTablet ? 14 : 12, // Tablette font boyutu büyüdü
         fontFamily: 'Montserrat-Regular',
         color: 'rgba(255, 255, 255, 0.9)',
         lineHeight: 16,
@@ -410,32 +401,29 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        borderRadius: 12,
+        padding: isTablet ? 20 : 16, // Tablette iç boşluk arttı
+        borderRadius: 16, // Daha yuvarlak köşeler
         elevation: 2,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.1,
         shadowRadius: 2,
     },
     quickActionIcon: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: isTablet ? 50 : 40, // Tablette ikon alanı büyüdü
+        height: isTablet ? 50 : 40,
+        borderRadius: isTablet ? 25 : 20,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
     },
     quickActionTitle: {
-        fontSize: 14,
+        fontSize: isTablet ? 16 : 14, // Tablette font boyutu büyüdü
         fontFamily: 'Montserrat-SemiBold',
         flex: 1,
     },
     upgradeSection: {
-        padding: 20,
+        padding: isTablet ? 32 : 20, // Tablette iç boşluk arttı
         borderRadius: 16,
         marginTop: 8,
         alignItems: 'center',
@@ -456,6 +444,7 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         textAlign: 'center',
         marginBottom: 16,
+        maxWidth: 500, // Tablette metin genişliği sınırlandı
     },
     upgradeButton: {
         flexDirection: 'row',

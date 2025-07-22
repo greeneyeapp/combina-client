@@ -37,62 +37,45 @@ const getAuthToken = async (): Promise<string> => {
   return storedJwt;
 };
 
-// Optimized fetch user profile
 export const fetchUserProfile = async (): Promise<UserProfileResponse> => {
   const cacheKey = 'user_profile';
-
   return apiDeduplicator.deduplicate(
     cacheKey,
     async () => {
       console.log('🔄 Fetching user profile from API...');
       const token = await getAuthToken();
-
       const response = await fetch(`${API_URL}/api/users/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
-
       if (!response.ok) {
         const errorData = await response.text();
         throw new Error(`Failed to fetch user profile: ${response.status} ${errorData}`);
       }
-
       lastProfileFetch = Date.now();
-      return response.json();
+      const data = await response.json();
+      console.log('📬 RAW API RESPONSE:', JSON.stringify(data, null, 2));
+      return data;
     },
     PROFILE_CACHE_TTL
   );
 };
 
-// Optimized get user profile with intelligent caching
 export const getUserProfile = async (forceRefresh: boolean = false): Promise<UserPlan> => {
-  // Sadece ihtiyacımız olanları alıyoruz (lastFetched kaldırıldı)
   const { userPlan, setUserPlan, setLoading } = useUserPlanStore.getState();
 
-  // --- NİHAİ VE TEK DEĞİŞİKLİK BURADA ---
-  // Eğer zorunlu yenileme istenmişse, en derindeki API önbelleğini temizle.
-  // Bu, her zaman sunucudan yeni veri çekilmesini garanti eder.
   if (forceRefresh) {
     console.log('🔄 Force refresh requested. Clearing API cache for user_profile.');
     apiDeduplicator.clearCache('user_profile');
   }
-  // --- DÜZELTME SONU ---
 
-  // SENİN MEVCUT CACHING MANTIĞIN (DEĞİŞTİRİLMEDİ)
-  // Bu bloklar, forceRefresh true değilse çalışmaya devam eder.
   const timeSinceLastApiFetch = Date.now() - lastProfileFetch;
   if (!forceRefresh && timeSinceLastApiFetch < MIN_FETCH_INTERVAL) {
-    console.log('🚫 Rate limited - too frequent API calls, using cached data');
     if (userPlan) return userPlan;
   }
 
   try {
     setLoading(true);
-    // fetchUserProfile artık (forceRefresh ise) cache'lenmemiş veriyi getirecek.
     const profileData = await fetchUserProfile();
-
     const planData: UserPlan = {
       plan: profileData.plan,
       usage: profileData.usage,
@@ -100,20 +83,16 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
       gender: profileData.gender,
       age: profileData.age,
       created_at: profileData.created_at,
+      birthDate: profileData.birthDate, // UserPlan'e birthDate'i ekleyin
     };
-
     setUserPlan(planData);
     return planData;
-
   } catch (error) {
     console.error('❌ USER SERVICE - Failed to fetch user profile:', error);
-
-    // Hata durumunda eski veriyi kullanma mantığı (DEĞİŞTİRİLMEDİ)
     if (userPlan) {
       console.warn('⚠️ USER SERVICE - Using cached profile due to error');
       return userPlan;
     }
-
     throw error;
   } finally {
     setLoading(false);

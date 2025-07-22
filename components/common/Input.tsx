@@ -52,8 +52,8 @@ const Input: React.FC<InputProps> = ({
             borderColor: error
               ? theme.colors.error
               : props.isFocused
-              ? theme.colors.primary
-              : theme.colors.border,
+                ? theme.colors.primary
+                : theme.colors.border,
             backgroundColor: theme.colors.card,
           },
         ]}
@@ -102,8 +102,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontFamily: 'Montserrat-Medium',
-    fontSize: 14,
+    // DEĞİŞİKLİK: Font ailesini 'Bold' yaptık
+    fontFamily: 'Montserrat-Bold',
+    // DEĞİŞİKLİK: Font boyutunu diğer başlıklarla aynı yaptık
+    fontSize: 16,
     marginBottom: 8,
   },
   inputContainer: {

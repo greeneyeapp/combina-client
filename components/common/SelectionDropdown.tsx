@@ -1,3 +1,5 @@
+// components/common/SelectionDropdown.tsx - iPad için büyütülmüş ve orantılı tasarım
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -9,25 +11,30 @@ import {
   TextInput,
   Platform,
   KeyboardAvoidingView,
+  Dimensions, // YENİ: Dimensions modülü eklendi
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { ChevronDown, X, Search } from 'lucide-react-native';
 
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
+
 interface DropdownOption {
-  label: string; // Görüntülenecek metin (örn: "T-Shirts")
-  value: string; // Gerçek değer (örn: "t-shirt")
-  isGroupHeader?: boolean; // Eğer bu bir grup başlığıysa (örn: "Tops")
+  label: string;
+  value: string;
+  isGroupHeader?: boolean;
 }
 
 interface SelectionDropdownProps {
-  label: string; // Seçicinin üstündeki etiket (örn: "Category")
-  options: DropdownOption[]; // Dropdown'daki tüm seçenekler
-  selectedValue: string; // Halihazırda seçili olan değer
-  onSelect: (value: string) => void; // Bir öğe seçildiğinde çağrılacak fonksiyon
-  placeholder?: string; // Seçili değer yokken görüntülenecek metin
-  error?: string; // Hata mesajı
-  searchable?: boolean; // Arama çubuğu olup olmayacağı
+  label: string;
+  options: DropdownOption[];
+  selectedValue: string;
+  onSelect: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  searchable?: boolean;
 }
 
 const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
@@ -46,23 +53,28 @@ const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
   const [filteredOptions, setFilteredOptions] = useState<DropdownOption[]>(options);
 
   useEffect(() => {
-    // Arama metni veya seçenekler değiştiğinde filtrele
     const lowercasedSearchText = searchText.toLowerCase();
+    if (!searchText.trim()) {
+        setFilteredOptions(options); // Arama boşsa tüm seçenekleri göster
+        return;
+    }
+
     const newFilteredOptions = options.filter(
       (option) =>
         !option.isGroupHeader && option.label.toLowerCase().includes(lowercasedSearchText)
     );
 
-    // Grup başlıklarını da ekleyelim, eğer altlarında filtrelenmiş bir öğe varsa
     const finalOptions: DropdownOption[] = [];
     let lastGroupHeader: DropdownOption | null = null;
+    let addedHeaders = new Set<string>();
 
     options.forEach(option => {
       if (option.isGroupHeader) {
         lastGroupHeader = option;
       } else if (newFilteredOptions.some(f => f.value === option.value)) {
-        if (lastGroupHeader && !finalOptions.includes(lastGroupHeader)) {
+        if (lastGroupHeader && !addedHeaders.has(lastGroupHeader.value)) {
           finalOptions.push(lastGroupHeader);
+          addedHeaders.add(lastGroupHeader.value);
         }
         finalOptions.push(option);
       }
@@ -74,7 +86,7 @@ const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
   const handleSelectOption = (value: string) => {
     onSelect(value);
     setModalVisible(false);
-    setSearchText(''); // Modal kapanınca aramayı sıfırla
+    setSearchText('');
   };
 
   const renderOption = ({ item }: { item: DropdownOption }) => {
@@ -90,17 +102,14 @@ const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
     const isSelected = selectedValue === item.value;
     return (
       <TouchableOpacity
-        style={[
-          styles.optionItem,
-          isSelected && { backgroundColor: theme.colors.primaryLight },
-        ]}
+        style={[styles.optionItem, isSelected && { backgroundColor: theme.colors.primaryLight }]}
         onPress={() => handleSelectOption(item.value)}
       >
         <Text
           style={[
             styles.optionText,
-            isSelected && { color: theme.colors.primary, fontFamily: 'Montserrat-Bold' },
             { color: theme.colors.text },
+            isSelected && { color: theme.colors.primary, fontFamily: 'Montserrat-Bold' },
           ]}
         >
           {item.label}
@@ -132,7 +141,7 @@ const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
         >
           {currentSelectionLabel}
         </Text>
-        <ChevronDown size={20} color={theme.colors.textLight} />
+        <ChevronDown size={isTablet ? 24 : 20} color={theme.colors.textLight} />
       </TouchableOpacity>
       {error && <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>}
 
@@ -150,13 +159,13 @@ const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.colors.text }]}>{label || t('common.select')}</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                <X size={24} color={theme.colors.text} />
+                <X size={isTablet ? 30 : 24} color={theme.colors.text} />
               </TouchableOpacity>
             </View>
 
             {searchable && (
               <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
-                <Search size={18} color={theme.colors.textLight} style={styles.searchIcon} />
+                <Search size={isTablet ? 22 : 18} color={theme.colors.textLight} style={styles.searchIcon} />
                 <TextInput
                   style={[styles.searchInput, { color: theme.colors.text }]}
                   placeholder={t('common.searchPlaceholder')}
@@ -170,7 +179,7 @@ const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
             <FlatList
               data={filteredOptions}
               renderItem={renderOption}
-              keyExtractor={(item, index) => item.value + index} // Grup başlıkları için benzersiz anahtar
+              keyExtractor={(item, index) => item.value + index}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.optionsListContent}
             />
@@ -181,33 +190,34 @@ const SelectionDropdown: React.FC<SelectionDropdownProps> = ({
   );
 };
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
+    // marginBottom: 16, // Bu component artık kart içinde olduğu için dış boşluğa gerek yok
   },
   label: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 16,
-    marginBottom: 8,
+    fontSize: isTablet ? 18 : 16, // Büyütüldü
+    marginBottom: 12, // Boşluk artırıldı
   },
   dropdownButton: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 50,
+    borderRadius: 12, // Daha yuvarlak
+    padding: isTablet ? 16 : 12, // İç boşluk artırıldı
+    minHeight: isTablet ? 60 : 50,
   },
   dropdownButtonText: {
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // Büyütüldü
     fontFamily: 'Montserrat-Regular',
     flex: 1,
   },
   errorText: {
     fontFamily: 'Montserrat-Regular',
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: isTablet ? 14 : 12, // Büyütüldü
+    marginTop: 6,
   },
   modalOverlay: {
     flex: 1,
@@ -215,64 +225,64 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    height: '80%', // Modal yüksekliği
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
+    height: isTablet ? '70%' : '80%', // Tablette yüksekliği biraz azalttık
+    borderTopLeftRadius: 24, // Daha yuvarlak
+    borderTopRightRadius: 24,
+    padding: isTablet ? 32 : 20, // İç boşluk artırıldı
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 24, // Boşluk artırıldı
   },
   modalTitle: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 20,
+    fontSize: isTablet ? 24 : 20, // Büyütüldü
   },
   closeButton: {
-    padding: 5,
+    padding: 8,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    minHeight: 50,
+    borderRadius: 12,
+    paddingHorizontal: isTablet ? 20 : 15,
+    marginBottom: 20,
+    minHeight: isTablet ? 60 : 50, // Büyütüldü
     borderWidth: 1,
     borderColor: '#ddd',
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
     fontFamily: 'Montserrat-Regular',
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // Büyütüldü
   },
   optionsListContent: {
-    paddingBottom: 20, // Liste sonuna boşluk bırakır
+    paddingBottom: 32,
   },
   groupHeaderContainer: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    marginBottom: 5,
-    marginTop: 15,
+    marginBottom: 8,
+    marginTop: 16,
   },
   groupHeaderText: {
     fontFamily: 'Montserrat-Bold',
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // Büyütüldü
   },
   optionItem: {
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderRadius: 8,
-    marginBottom: 5,
+    paddingVertical: isTablet ? 20 : 15, // Dikey boşluk artırıldı
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   optionText: {
     fontFamily: 'Montserrat-Medium',
-    fontSize: 16,
+    fontSize: isTablet ? 18 : 16, // Büyütüldü
   },
 });
 

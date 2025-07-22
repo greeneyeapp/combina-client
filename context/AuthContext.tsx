@@ -3,7 +3,7 @@
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
-import { initializeUserProfile } from '@/services/userService';
+import { initializeUserProfile, fetchUserProfile, getUserProfile } from '@/services/userService';
 import axios from 'axios';
 import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
@@ -66,7 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Ana initialization effect'i - Splash screen koordinasyonu ile
   React.useEffect(() => {
     if (!isReady || isInitialized) return;
 
@@ -75,55 +74,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       try {
         if (jwt) {
-          let finalUser = null;
+          // Token'ın sadece varlığına güvenme, backend'de doğrula.
           try {
-            // Token'dan user bilgisi çıkar
-            const userInfo = await getUserFromToken(jwt);
-            if (!userInfo) {
-              throw new Error("Invalid token could not be decoded.");
-            }
+            console.log('🔄 Validating token with backend...');
+            const profileData = await fetchUserProfile(); // API'ye istek at.
 
-            // Cache'den ek bilgileri yükle
-            let cachedData = {};
-            try {
-              const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
-              if (cachedUser) {
-                cachedData = JSON.parse(cachedUser);
-              }
-            } catch (e) {
-              console.warn('Could not load cached user data:', e);
-            }
+            // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+            // API'den gelen taze veri ile kullanıcı nesnesini oluştur.
+            // Önceki hatayı düzeltiyoruz: birthDate ve diğer tüm alanlar 'profileData' dan gelmeli.
+            const completeUserInfo = {
+              uid: profileData.user_id,
+              name: profileData.fullname || '',
+              fullname: profileData.fullname || '',
+              displayName: profileData.fullname || '',
+              gender: profileData.gender || null,
+              birthDate: profileData.birthDate || null, // DÜZELTME: Veriyi API'den al
+              plan: profileData.plan || 'free',
+              provider: user?.provider || 'api', // Provider bilgisi API'de yoksa eski state'ten al
+              isAnonymous: false
+            };
+            // --- DEĞİŞİKLİK BURADA BİTİYOR ---
 
-            finalUser = { ...userInfo, ...cachedData };
-            setUser(finalUser);
+            setUser(completeUserInfo); // Kullanıcı state'ini taze veriyle güncelle.
+            await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo)); // Yerel cache'i de güncelle.
+            console.log('✅ Token validated, user profile is fresh.');
 
-            // RevenueCat login
-            if (finalUser?.uid) {
+            // RevenueCat'e giriş yap.
+            if (completeUserInfo.uid) {
               try {
-                await Purchases.logIn(finalUser.uid);
+                await Purchases.logIn(completeUserInfo.uid);
               } catch (revenueCatError) {
-                console.warn('RevenueCat login failed:', revenueCatError);
+                console.warn('RevenueCat login failed during initialization:', revenueCatError);
               }
             }
 
           } catch (error) {
-            console.error('🚨 Critical auth validation failed:', error);
+            // Token doğrulama başarısız oldu (kullanıcı silinmiş, token geçersiz vb.).
+            console.error('🚨 Token validation failed. Logging out...', error);
             await clearJwt();
             clearUserPlan();
             setUser(null);
             await AsyncStorage.removeItem(USER_CACHE_KEY);
+            await Purchases.logOut().catch(e => console.log('RC logout failed on validation error'));
           }
-
-          // Background'da profile refresh
-          if (finalUser && finalUser.uid) {
-            try {
-              console.log('🔄 Refreshing user profile in background...');
-              await initializeUserProfile();
-            } catch (profileError) {
-              console.warn('Could not refresh user profile on startup:', profileError);
-            }
-          }
-
         } else {
           // JWT yok, temizlik yap
           setUser(null);
@@ -143,7 +136,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     initializeAuth();
-  }, [isReady]);
+  }, [isReady, jwt]);
 
   const signInWithGoogle = async (accessToken: string) => {
     setLoading(true);
@@ -329,29 +322,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const updateUserInfo = async (info: { name: string; gender: string; birthDate: string }) => {
+  const updateUserInfo = async (info: { name: string; gender: string; birthDate: string }): Promise<any> => {
     try {
       const token = useApiAuthStore.getState().jwt;
-      await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
+      if (!token) throw new Error("No token found");
 
+      await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
+      console.log('Profile updated on backend, refetching...');
+
+      // Önbelleği atlayarak taze veriyi çek.
+      const updatedPlan = await getUserProfile(true);
+
+      // Taze veri ile yeni bir kullanıcı nesnesi oluştur.
       const updatedUser = {
         ...user,
-        name: info.name,
-        fullname: info.name,
-        displayName: info.name,
-        gender: info.gender,
-        birthDate: info.birthDate
+        fullname: updatedPlan.fullname,
+        gender: updatedPlan.gender,
+        birthDate: updatedPlan.birthDate,
       };
 
+      // Merkezi state'i BU NOKTADA GÜNCELLE.
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
+      console.log('✅ AuthContext user state updated with fresh data.');
 
-      // Profile refresh (throttled)
-      const now = Date.now();
-      if (now - lastProfileRefresh > 60000) {
-        setLastProfileRefresh(now);
-        await refreshUserProfile();
-      }
+      // Güncellenmiş kullanıcıyı çağıran fonksiyona döndür.
+      return updatedUser;
+
     } catch (error) {
       console.error('Update user info error:', error);
       throw error;

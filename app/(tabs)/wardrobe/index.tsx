@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/index.tsx - Sanallaştırma ve Performans Optimizasyonları
+// app/(tabs)/wardrobe/index.tsx - iPad için dinamik grid ve performans optimizasyonları
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
@@ -22,21 +22,19 @@ import { CustomBannerAd } from '@/components/ads/BannerAd';
 
 interface SectionData {
   title: string;
-  data: TClothingItem[][]; // data, satırları (her satırda 3 item) içeren bir dizi
+  data: TClothingItem[][];
   id: string;
 }
 
+// --- YENİ: iPad için Dinamik Grid Ayarları ---
 const { width } = Dimensions.get('window');
-const gridSpacing = 8;
-const gridColumns = 3;
+const isTablet = width >= 768;
+const gridSpacing = isTablet ? 16 : 8;
+const gridColumns = isTablet ? 5 : 3; // Tablette 5 sütun, telefonda 3
 const sidePadding = 16;
 const gridItemWidth = (width - sidePadding * 2 - gridSpacing * (gridColumns - 1)) / gridColumns;
+// --- YENİ KOD BİTİŞİ ---
 
-// --- PERFORMANS OPTİMİZASYONU İÇİN SABİTLER ---
-// Her bir satırın yaklaşık yüksekliği (kare resim + alt boşluk)
-const ROW_HEIGHT = gridItemWidth + 75; // 65'ten 75'e çıkardık (daha fazla alan)
-const SECTION_HEADER_HEIGHT = 46; // Başlık yüksekliği
-const AD_BANNER_HEIGHT = 60; // Standart banner yüksekliği
 
 export default function WardrobeScreen() {
   const { t, i18n } = useTranslation();
@@ -245,11 +243,9 @@ export default function WardrobeScreen() {
           renderSectionHeader={renderSectionHeader}
           renderItem={renderItem}
           renderSectionFooter={renderSectionFooter}
-
-          // ⭐ BU SATIRI EKLEYİN:
+          // DEĞİŞİKLİK: SectionList'in içeriğine padding veriyoruz
+          contentContainerStyle={{ paddingHorizontal: sidePadding }}
           extraData={i18n.language}
-
-          // Performans optimizasyonları:
           removeClippedSubviews={true}
           maxToRenderPerBatch={9}
           windowSize={21}
@@ -269,20 +265,33 @@ export default function WardrobeScreen() {
   );
 }
 
+// DEĞİŞİKLİK: Tüm stiller dinamik değişkenleri kullanacak şekilde güncellendi
 const styles = StyleSheet.create({
   container: { flex: 1 },
   usageContainer: { alignItems: 'center', paddingBottom: 8, paddingTop: 0, minHeight: 21 },
   usageText: { fontFamily: 'Montserrat-Bold', fontSize: 14 },
-  searchContainer: { flexDirection: 'row', padding: 16, paddingTop: 0, alignItems: 'center' },
+  searchContainer: { flexDirection: 'row', padding: sidePadding, paddingTop: 0, alignItems: 'center' },
   searchInput: { flex: 1, marginBottom: 0 },
   filterButton: { width: 48, height: 48, borderRadius: 12, justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
   filterBadge: { position: 'absolute', top: 6, right: 6, minWidth: 18, height: 18, borderRadius: 9, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 5 },
   filterBadgeText: { fontFamily: 'Montserrat-Bold', fontSize: 10, color: 'white' },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12, marginHorizontal: gridSpacing },
-  itemWrapper: { width: gridItemWidth },
+  row: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: gridSpacing,
+  },
+  itemWrapper: { 
+    width: gridItemWidth 
+  },
   addButton: { position: 'absolute', bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5 },
-  categoryHeaderContainer: { paddingVertical: 10, paddingHorizontal: 16, marginTop: 15, marginBottom: 5 },
-  categoryHeaderText: { fontFamily: 'Montserrat-Bold', fontSize: 16 },
+  categoryHeaderContainer: { 
+    paddingVertical: 10, 
+    // DEĞİŞİKLİK: Başlıkların yan boşluklarını kaldırıyoruz, SectionList'ten gelecek
+    // paddingHorizontal: sidePadding, 
+    marginTop: 15, 
+    marginBottom: 5 
+  },
+  categoryHeaderText: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 20 : 16 }, // Tablette başlık büyüdü
   adContainer: {
     marginTop: 16,
     marginBottom: 8,

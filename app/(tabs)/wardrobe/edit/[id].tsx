@@ -1,7 +1,8 @@
-// app/(tabs)/wardrobe/edit/[id].tsx - Renk seçimi alanı düzeltildi
+// app/(tabs)/wardrobe/edit/[id].tsx - iPad için kartlı tasarım ve daha iyi yerleşim ile güncellendi
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView } from 'react-native';
+// YENİ: Dimensions modülü eklendi
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, KeyboardAvoidingView, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +24,10 @@ import Toast from 'react-native-toast-message';
 import { getImageUri, checkImageExists, deleteImage, commitTempImage, deleteTempImage } from '@/utils/fileSystemImageManager';
 import { useFocusEffect } from '@react-navigation/native';
 import { ALL_COLORS } from '@/utils/constants';
+
+// YENİ: iPad tespiti için
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 type FormData = {
   name: string;
@@ -171,7 +176,7 @@ export default function EditClothingScreen() {
       updateClothing(id, updatedItemData);
 
       Toast.show({ type: 'success', text1: t('common.success'), text2: t('wardrobe.itemUpdatedSuccessfully') });
-      router.replace(`/wardrobe/${id}`);
+      router.replace(`/wardrobe`);
     } catch (error) {
       console.error("❌ Error updating item: ", error);
       showAlert({ title: t('common.error'), message: t('wardrobe.errorAddingItem'), buttons: [{ text: t('common.ok') }] });
@@ -232,121 +237,93 @@ export default function EditClothingScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.imageSection}>
-            {renderImageSection()}
-            <View style={styles.imageButtonsContainer}>
-              <Button
-                icon={<ImageIcon color={theme.colors.text} size={20} />}
-                label={t('wardrobe.changePhoto')}
-                onPress={() => setShowGalleryPicker(true)}
-                variant="outline"
-                style={styles.imageButton}
-                disabled={isLoading}
-              />
-            </View>
-          </View>
+            {/* YENİ: Formu ortalayan ve genişliğini sınırlayan container */}
+            <View style={styles.formContainer}>
+                <View style={[styles.formSectionCard, { backgroundColor: theme.colors.card }]}>
+                    {renderImageSection()}
+                    <Button
+                        icon={<ImageIcon color={theme.colors.text} size={20} />}
+                        label={t('wardrobe.changePhoto')}
+                        onPress={() => setShowGalleryPicker(true)}
+                        variant="outline"
+                        style={styles.imageButton}
+                        disabled={isLoading}
+                    />
+                </View>
           
-          <View style={styles.formSection}>
-            <Controller
-              control={control}
-              name="name"
-              rules={{ required: t('wardrobe.nameRequired') as string }}
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label={t('wardrobe.name')}
-                  placeholder={t('wardrobe.namePlaceholder')}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  error={errors.name?.message}
-                  editable={!isLoading}
-                />
-              )}
-            />
+                <View style={[styles.formSectionCard, { backgroundColor: theme.colors.card }]}>
+                    <Controller
+                    control={control} name="name" rules={{ required: t('wardrobe.nameRequired') as string }}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                        <Input
+                        label={t('wardrobe.name')} placeholder={t('wardrobe.namePlaceholder')} onBlur={onBlur}
+                        onChangeText={onChange} value={value} error={errors.name?.message} editable={!isLoading}
+                        />
+                    )}
+                    />
+                </View>
 
-            <Controller
-              control={control}
-              name="category"
-              rules={{ required: t('wardrobe.categoryRequired') as string }}
-              render={({ field: { onChange, value } }) => (
-                <CategoryPicker
-                  selectedCategory={value}
-                  onSelectCategory={onChange}
-                  error={errors.category?.message}
-                  gender={userPlan?.gender as 'female' | 'male' | 'unisex' | undefined}
-                />
-              )}
-            />
+                <View style={[styles.formSectionCard, { backgroundColor: theme.colors.card }]}>
+                    <Controller
+                    control={control} name="category" rules={{ required: t('wardrobe.categoryRequired') as string }}
+                    render={({ field: { onChange, value } }) => (
+                        <CategoryPicker
+                        selectedCategory={value} onSelectCategory={onChange} error={errors.category?.message}
+                        gender={userPlan?.gender as 'female' | 'male' | 'unisex' | undefined}
+                        />
+                    )}
+                    />
+                </View>
 
-            <View>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                {t('wardrobe.colors')}
-              </Text>
-              <Controller
-                control={control}
-                name="colors"
-                rules={{ validate: (value) => (value && value.length > 0) || (t('wardrobe.colorRequired') as string) }}
-                render={({ field: { onChange, value } }) => (
-                  <ColorPicker
-                    selectedColors={value || []}
-                    onSelectColors={onChange}
-                    multiSelect={true}
-                    maxColors={3}
-                    error={errors.colors?.message}
-                  />
-                )}
-              />
+                <View style={[styles.formSectionCard, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.colors')}</Text>
+                    <Controller
+                    control={control} name="colors" rules={{ validate: (value) => (value && value.length > 0) || (t('wardrobe.colorRequired') as string) }}
+                    render={({ field: { onChange, value } }) => (
+                        <ColorPicker
+                        selectedColors={value || []} onSelectColors={onChange} multiSelect={true}
+                        maxColors={3} error={errors.colors?.message}
+                        />
+                    )}
+                    />
+                </View>
+                
+                <View style={[styles.formSectionCard, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.season')}</Text>
+                    <Controller
+                        control={control} name="season" rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }}
+                        render={({ field: { onChange, value } }) => <SeasonPicker selectedSeasons={value} onSelectSeason={onChange} />}
+                    />
+                    {errors.season && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>}
+                </View>
+
+                <View style={[styles.formSectionCard, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.style')}</Text>
+                    <Controller
+                        control={control} name="style" rules={{ validate: (value) => value.length > 0 || (t('wardrobe.styleRequired') as string) }}
+                        render={({ field: { onChange, value } }) => <StylePicker selectedStyles={value} onSelectStyles={onChange} multiSelect />}
+                    />
+                    {errors.style && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>}
+                </View>
+
+                <View style={[styles.formSectionCard, { backgroundColor: theme.colors.card }]}>
+                    <Controller
+                    control={control} name="notes"
+                    render={({ field: { onChange, onBlur, value } }) => (
+                        <Input
+                        label={t('wardrobe.notes')} placeholder={t('wardrobe.notesPlaceholder')} onBlur={onBlur}
+                        onChangeText={onChange} value={value} multiline numberOfLines={4} textAlignVertical="top" editable={!isLoading}
+                        />
+                    )}
+                    />
+                </View>
+
+                <Button
+                label={isLoading ? t('common.saving') : t('wardrobe.saveChanges')}
+                onPress={handleSubmit(onSubmit)}
+                variant="primary" style={styles.saveButton} disabled={isLoading} loading={isLoading}
+                />
             </View>
-            
-            <View>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.season')}</Text>
-                <Controller
-                    control={control}
-                    name="season"
-                    rules={{ validate: (value) => value.length > 0 || (t('wardrobe.seasonRequired') as string) }}
-                    render={({ field: { onChange, value } }) => <SeasonPicker selectedSeasons={value} onSelectSeason={onChange} />}
-                />
-                {errors.season && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.season.message}</Text>}
-            </View>
-
-            <View>
-                <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('wardrobe.style')}</Text>
-                <Controller
-                    control={control}
-                    name="style"
-                    rules={{ validate: (value) => value.length > 0 || (t('wardrobe.styleRequired') as string) }}
-                    render={({ field: { onChange, value } }) => <StylePicker selectedStyles={value} onSelectStyles={onChange} multiSelect />}
-                />
-                {errors.style && <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.style.message}</Text>}
-            </View>
-
-            <Controller
-              control={control}
-              name="notes"
-              render={({ field: { onChange, onBlur, value } }) => (
-                <Input
-                  label={t('wardrobe.notes')}
-                  placeholder={t('wardrobe.notesPlaceholder')}
-                  onBlur={onBlur}
-                  onChangeText={onChange}
-                  value={value}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                  editable={!isLoading}
-                />
-              )}
-            />
-
-            <Button
-              label={isLoading ? t('common.saving') : t('wardrobe.saveChanges')}
-              onPress={handleSubmit(onSubmit)}
-              variant="primary"
-              style={styles.saveButton}
-              disabled={isLoading}
-              loading={isLoading}
-            />
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -364,17 +341,46 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     keyboardAvoidingView: { flex: 1 },
     scrollView: { flex: 1 },
-    scrollContent: { padding: 16, paddingBottom: 32 },
-    imageSection: { marginBottom: 24 },
-    imageContainer: { position: 'relative', width: '100%', height: 250, borderRadius: 16, overflow: 'hidden', marginBottom: 16 },
+    // DEĞİŞİKLİK: scrollContent artık formu ortalamak için kullanılıyor
+    scrollContent: { 
+      flexGrow: 1, 
+      alignItems: 'center', // Yatayda ortala
+      paddingVertical: 16,
+    },
+    // YENİ: Formun genişliğini kontrol eden stil
+    formContainer: {
+      width: '100%',
+      maxWidth: isTablet ? 700 : undefined, // Tablette maksimum genişlik 700px
+      paddingHorizontal: 16,
+      gap: 16, // Kartlar arası boşluk
+    },
+    // YENİ: Her bir form bölümünü saran kart stili
+    formSectionCard: {
+      borderRadius: 16,
+      padding: 16,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 2.22,
+      elevation: 3,
+    },
+    imageContainer: { 
+      position: 'relative', width: '100%', height: 350, // DEĞİŞİKLİK: Yükseklik artırıldı
+      borderRadius: 12, overflow: 'hidden', marginBottom: 16 
+    },
     clothingImage: { width: '100%', height: '100%' },
-    removeImageButton: { position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: 16, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-    imagePlaceholder: { width: '100%', height: 250, borderRadius: 16, justifyContent: 'center', alignItems: 'center', marginBottom: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: '#ddd' },
+    removeImageButton: { 
+      position: 'absolute', top: 8, right: 8, width: 32, height: 32, 
+      borderRadius: 16, justifyContent: 'center', alignItems: 'center'
+    },
+    imagePlaceholder: { 
+      width: '100%', height: 350, // DEĞİŞİKLİK: Yükseklik artırıldı
+      borderRadius: 12, justifyContent: 'center', alignItems: 'center', 
+      marginBottom: 16, borderWidth: 2, borderStyle: 'dashed', borderColor: '#ddd' 
+    },
     imagePlaceholderText: { fontFamily: 'Montserrat-Medium', fontSize: 16, marginTop: 8 },
-    imageButtonsContainer: { flexDirection: 'row', justifyContent: 'center' },
-    imageButton: { flex: 1, marginHorizontal: 4 },
-    formSection: { gap: 16 },
+    imageButton: { width: '100%' },
     sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: 16, marginBottom: 8 },
     errorText: { fontFamily: 'Montserrat-Regular', fontSize: 12, marginTop: 4 },
-    saveButton: { marginTop: 16 },
+    saveButton: { marginTop: 16, marginBottom: 32 },
 });

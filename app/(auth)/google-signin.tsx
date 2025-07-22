@@ -1,7 +1,8 @@
-// kodlar/app/(auth)/google-signin.tsx
+// kodlar/app/(auth)/google-signin.tsx - iPad için büyütülmüş ve orantılı tasarım
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
+// YENİ: Dimensions modülü eklendi
+import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,6 +13,10 @@ import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
+
+// YENİ: iPad tespiti
+const { width } = Dimensions.get('window');
+const isTablet = width >= 768;
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -36,7 +41,6 @@ export default function GoogleSignInScreen() {
         scopes: ['profile', 'email'],
     });
 
-    // Google giriş ekranını tetikle
     useEffect(() => {
         if (request) {
             setAuthFlowActive(true);
@@ -48,10 +52,8 @@ export default function GoogleSignInScreen() {
         }
     }, [request]);
 
-    // Google'dan gelen cevabı işle
     useEffect(() => {
         if (!response) return;
-
         if (response.type === 'success' && response.authentication?.accessToken) {
             setIsProcessing(true);
             handleGoogleSignIn(response.authentication.accessToken);
@@ -65,19 +67,7 @@ export default function GoogleSignInScreen() {
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-            
-            // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
-            // signInWithGoogle'dan kullanıcı bilgisini al.
-            const userInfo = await signInWithGoogle(accessToken);
-
-            // Gelen kullanıcı bilgisine göre yönlendirme yap.
-            if (userInfo && userInfo.gender && userInfo.birthDate) {
-                // Profili tam ise ana sayfaya yönlendir.
-                router.replace('/(tabs)/home');
-            } else {
-                // Profili eksikse tamamlama ekranına yönlendir.
-                router.replace('/(auth)/complete-profile');
-            }
+            await signInWithGoogle(accessToken);
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
@@ -88,11 +78,8 @@ export default function GoogleSignInScreen() {
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
-            // Hata durumunda ana giriş ekranına dön.
             router.replace('/(auth)');
         } finally {
-            // Başarılı yönlendirme sonrası bu ekran kapanacağı için auth akışını bitiriyoruz.
-            // Hata durumunda zaten yukarıda yönlendirme yapıldı.
             setAuthFlowActive(false);
         }
     };
@@ -120,12 +107,29 @@ export default function GoogleSignInScreen() {
     );
 }
 
+// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
     gradient: { flex: 1 },
     container: { flex: 1 },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-    loadingContainer: { alignItems: 'center', gap: 20 },
-    iconContainer: { width: 80, height: 80, borderRadius: 40, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-    mainStatus: { fontFamily: 'Montserrat-Bold', fontSize: 18, textAlign: 'center' },
-    stepText: { fontFamily: 'Montserrat-Regular', fontSize: 14, textAlign: 'center', fontStyle: 'italic' },
+    loadingContainer: { alignItems: 'center', gap: 24 },
+    iconContainer: { 
+        width: isTablet ? 120 : 80, // Büyüdü
+        height: isTablet ? 120 : 80, 
+        borderRadius: isTablet ? 60 : 40, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        marginBottom: 10 
+    },
+    mainStatus: { 
+        fontFamily: 'Montserrat-Bold', 
+        fontSize: isTablet ? 24 : 18, // Büyüdü
+        textAlign: 'center' 
+    },
+    stepText: { 
+        fontFamily: 'Montserrat-Regular', 
+        fontSize: isTablet ? 18 : 14, // Büyüdü
+        textAlign: 'center', 
+        fontStyle: 'italic' 
+    },
 });

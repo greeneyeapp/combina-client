@@ -47,7 +47,7 @@ export default function GoogleSignInScreen() {
             promptAsync().catch(error => {
                 console.error("promptAsync error:", error);
                 setAuthFlowActive(false);
-                router.replace('/(auth)');
+                router.replace('/(auth)'); // Prompt başarısız olursa/iptal edilirse geri dön
             });
         }
     }, [request]);
@@ -60,14 +60,23 @@ export default function GoogleSignInScreen() {
         } else {
             console.log('Google auth failed or cancelled:', response.type);
             setAuthFlowActive(false);
-            router.replace('/(auth)');
+            router.replace('/(auth)'); // Kimlik doğrulama başarılı değilse geri dön
         }
     }, [response]);
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-            await signInWithGoogle(accessToken);
+            // signInWithGoogle artık kullanıcı objesini döndürüyor, onu yakalayalım.
+            const signedInUser = await signInWithGoogle(accessToken); 
+            
+            // Başarılı giriş sonrası doğrudan yönlendirme yapalım.
+            if (signedInUser && (!signedInUser.gender || !signedInUser.birthDate)) {
+                router.replace('/(auth)/complete-profile');
+            } else {
+                router.replace('/(tabs)/home');
+            }
+
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
@@ -78,8 +87,9 @@ export default function GoogleSignInScreen() {
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
-            router.replace('/(auth)');
+            router.replace('/(auth)'); // Hata durumunda auth sayfasına geri dön
         } finally {
+            setIsProcessing(false);
             setAuthFlowActive(false);
         }
     };
@@ -113,23 +123,23 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
     loadingContainer: { alignItems: 'center', gap: 24 },
-    iconContainer: { 
+    iconContainer: {
         width: isTablet ? 120 : 80, // Büyüdü
-        height: isTablet ? 120 : 80, 
-        borderRadius: isTablet ? 60 : 40, 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        marginBottom: 10 
+        height: isTablet ? 120 : 80,
+        borderRadius: isTablet ? 60 : 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 10
     },
-    mainStatus: { 
-        fontFamily: 'Montserrat-Bold', 
+    mainStatus: {
+        fontFamily: 'Montserrat-Bold',
         fontSize: isTablet ? 24 : 18, // Büyüdü
-        textAlign: 'center' 
+        textAlign: 'center'
     },
-    stepText: { 
-        fontFamily: 'Montserrat-Regular', 
+    stepText: {
+        fontFamily: 'Montserrat-Regular',
         fontSize: isTablet ? 18 : 14, // Büyüdü
-        textAlign: 'center', 
-        fontStyle: 'italic' 
+        textAlign: 'center',
+        fontStyle: 'italic'
     },
 });

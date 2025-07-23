@@ -133,15 +133,12 @@ export default function CompleteProfileScreen() {
 
         setLoading(true);
         try {
-            // 1. Backend'i güncelle VE güncellenmiş kullanıcı verisini bekle.
+            // Backend'i güncelle. AuthContext'teki user state'i bu işlem sonrası otomatik güncellenecektir.
             await updateUserInfo({
                 name: formData.name.trim(),
                 gender: formData.gender,
                 birthDate: formData.birthDate.toISOString()
             });
-
-            // Artık AuthContext'teki `user` state'inin güncel olduğundan eminiz.
-            // Bu noktadan sonra AuthContext'in yönlendirme useEffect'i doğru çalışacaktır.
 
             Toast.show({
                 type: 'success',
@@ -150,16 +147,15 @@ export default function CompleteProfileScreen() {
                 position: 'top'
             });
 
-            // 2. Onboarding'i kontrol et ve başlat.
+            // Onboarding'i kontrol et ve başlat.
             const isCompleted = await checkIfOnboardingCompleted();
             if (!isCompleted) {
                 console.log('🎯 Onboarding state set to true.');
                 startOnboarding();
             }
 
-            // 3. Son olarak, manuel yönlendirme yap.
-            // Bu komut çalıştığında AuthContext'teki `user` zaten güncel olduğu için döngüye girilmeyecek.
-            router.replace('/(tabs)/home');
+            // Artık navigasyonu bu componentten yapmıyoruz, AuthContext kendisi yönetecek.
+            // router.replace('/(tabs)/home');
 
         } catch (error) {
             showAlert({

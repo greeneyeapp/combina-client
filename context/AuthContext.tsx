@@ -84,6 +84,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             // Önceki hatayı düzeltiyoruz: birthDate ve diğer tüm alanlar 'profileData' dan gelmeli.
             const completeUserInfo = {
               uid: profileData.user_id,
+              email: (profileData as any).email || '',
               name: profileData.fullname || '',
               fullname: profileData.fullname || '',
               displayName: profileData.fullname || '',

@@ -643,6 +643,8 @@
     "someItemsRemoved": "このコーディネートの一部のアイテムは削除されました。"
   },
   "profile": {
+    "privacyPolicy": "プライバシーポリシー",
+    "termsOfUse": "利用規約",
     "title": "プロフィール",
     "guest": "ゲストユーザー",
     "guestSubtitle": "フルアクセスするにはサインインまたはアカウントを作成してください",

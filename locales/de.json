@@ -643,6 +643,8 @@
     "someItemsRemoved": "Einige Artikel in diesem Outfit wurden entfernt."
   },
   "profile": {
+    "privacyPolicy": "Datenschutzerklärung",
+    "termsOfUse": "Nutzungsbedingungen",
     "title": "Profil",
     "guest": "Gast-Benutzer",
     "guestSubtitle": "Melde dich an oder erstelle ein Konto für vollen Zugriff",

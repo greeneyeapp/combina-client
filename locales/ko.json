@@ -643,6 +643,8 @@
     "someItemsRemoved": "이 의상의 일부 항목이 제거되었습니다."
   },
   "profile": {
+    "privacyPolicy": "개인정보 처리방침",
+    "termsOfUse": "이용약관",
     "title": "프로필",
     "guest": "게스트 사용자",
     "guestSubtitle": "전체 액세스를 위해 로그인하거나 계정을 만드세요",

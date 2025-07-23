@@ -643,6 +643,8 @@
     "someItemsRemoved": "此穿搭中的某些衣物已被删除。"
   },
   "profile": {
+    "privacyPolicy": "隐私政策",
+    "termsOfUse": "使用条款",
     "title": "我的",
     "guest": "访客用户",
     "guestSubtitle": "登录或创建帐户以获得完整访问权限",

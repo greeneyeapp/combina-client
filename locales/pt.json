@@ -643,6 +643,8 @@
     "someItemsRemoved": "Alguns itens deste look foram removidos."
   },
   "profile": {
+    "privacyPolicy": "Política de Privacidade",
+    "termsOfUse": "Termos de Uso",
     "title": "Perfil",
     "guest": "Usuário Convidado",
     "guestSubtitle": "Faça login ou crie uma conta para acesso completo",

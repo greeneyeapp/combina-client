@@ -643,6 +643,8 @@
     "someItemsRemoved": "חלק מהפריטים בתלבושת זו הוסרו."
   },
   "profile": {
+    "privacyPolicy": "מדיניות פרטיות",
+    "termsOfUse": "תנאי שימוש",
     "title": "פרופיל",
     "guest": "משתמש אורח",
     "guestSubtitle": "התחבר או צור חשבון לגישה מלאה",

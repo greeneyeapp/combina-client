@@ -643,6 +643,8 @@
     "someItemsRemoved": "Beberapa item dalam pakaian ini telah dihapus."
   },
   "profile": {
+    "privacyPolicy": "Kebijakan Privasi",
+    "termsOfUse": "Ketentuan Penggunaan",
     "title": "Profil",
     "guest": "Pengguna Tamu",
     "guestSubtitle": "Masuk atau buat akun untuk akses penuh",

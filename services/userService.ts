@@ -9,15 +9,18 @@ import i18n from '@/locales/i18n';
 interface UserProfileResponse {
   user_id: string;
   fullname: string;
+  email?: string; // email artık opsiyonel bir string
   gender: string;
   age?: number;
+  birthDate?: string; // birthDate artık opsiyonel bir string
   plan: 'free' | 'premium';
   usage: {
-    daily_limit: number;
+    daily_limit: number | "unlimited";
     current_usage: number;
-    remaining: number;
+    remaining: number | "unlimited";
     percentage_used: number;
     date: string;
+    rewarded_count?: number;
   };
   created_at: any;
 }

@@ -643,6 +643,8 @@
     "someItemsRemoved": "Se han eliminado algunas prendas de este atuendo."
   },
   "profile": {
+    "privacyPolicy": "Política de Privacidad",
+    "termsOfUse": "Términos de Uso",
     "title": "Perfil",
     "guest": "Usuario invitado",
     "guestSubtitle": "Inicia sesión o crea una cuenta para tener acceso completo",

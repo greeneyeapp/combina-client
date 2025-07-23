@@ -643,6 +643,8 @@
     "someItemsRemoved": "Inalis ang ilang item sa outfit na ito."
   },
   "profile": {
+    "privacyPolicy": "Patakaran sa Privacy",
+    "termsOfUse": "Mga Tuntunin ng Paggamit",
     "title": "Profile",
     "guest": "Bisitang User",
     "guestSubtitle": "Mag-sign in o gumawa ng account para sa buong access",

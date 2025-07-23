@@ -643,6 +643,8 @@
     "someItemsRemoved": "Certains articles de cette tenue ont été supprimés."
   },
   "profile": {
+    "privacyPolicy": "Politique de Confidentialité",
+    "termsOfUse": "Conditions d'Utilisation",
     "title": "Profil",
     "guest": "Utilisateur invité",
     "guestSubtitle": "Connectez-vous ou créez un compte pour un accès complet",

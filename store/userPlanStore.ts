@@ -7,16 +7,18 @@ import { simpleStorage } from '@/store/simpleStorage';
 export interface UserPlan {
   plan: 'free' | 'premium';
   usage: {
-    daily_limit: number;
-    rewarded_count?: number; // HATA BURADAYDI - Bu alan eklendi
+    daily_limit: number | "unlimited";
+    rewarded_count?: number;
     current_usage: number;
-    remaining: number;
+    remaining: number | "unlimited";
     percentage_used: number;
     date: string;
   };
   fullname?: string;
+  email?: string; // EKLENDİ
   gender?: string;
   age?: number;
+  birthDate?: string; // EKLENDİ
   created_at?: string;
 }
 

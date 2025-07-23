@@ -643,6 +643,8 @@
     "someItemsRemoved": "Bu kombindeki bazı parçalar kaldırıldı."
   },
   "profile": {
+    "privacyPolicy": "Gizlilik Politikası",
+    "termsOfUse": "Kullanım Koşulları",
     "title": "Profil",
     "guest": "Misafir Kullanıcı",
     "guestSubtitle": "Tam erişim için giriş yapın veya hesap oluşturun",

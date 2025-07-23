@@ -12,7 +12,9 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import {
   Moon, Sun, Globe, LogOut, ChevronRight, Trash2, Crown,
-  Star, Zap, HelpCircle, RefreshCw, HardDrive
+  Star, Zap, HelpCircle, RefreshCw, HardDrive,
+  FileText,
+  Lock
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
@@ -62,6 +64,9 @@ export default function ProfileScreen() {
     { code: 'tr', name: 'Türkçe' },
     { code: 'zh', name: '中文' }
   ];
+
+  const handlePrivacyPolicyPress = () => Linking.openURL('https://greeneyeapp.com/privacy.html');
+  const handleTermsOfUsePress = () => Linking.openURL('https://greeneyeapp.com/terms-of-use.html');
 
   useEffect(() => {
     const fetchUsage = async () => {
@@ -187,7 +192,7 @@ export default function ProfileScreen() {
     );
   };
 
-  return (
+   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('profile.title')} />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -224,11 +229,9 @@ export default function ProfileScreen() {
                 </View>
                 <Switch value={theme.mode === 'dark'} onValueChange={toggleTheme} trackColor={{ false: theme.colors.border, true: theme.colors.primary }} thumbColor={theme.colors.white} transform={isTablet ? [{ scaleX: 1.3 }, { scaleY: 1.3 }] : []} />
               </View>
-            </View>
-          </View>
-          <View style={styles.settingsSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.account')}</Text>
-            <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
+
+              {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <TouchableOpacity style={styles.settingRow} onPress={handleStoragePress}>
                 <View style={styles.settingLabelContainer}>
                   <HardDrive color={theme.colors.text} size={isTablet ? 24 : 20} />
@@ -236,7 +239,34 @@ export default function ProfileScreen() {
                 </View>
                 <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
               </TouchableOpacity>
+              {/* --- DEĞİŞİKLİK BURADA BİTİYOR --- */}
+
+            </View>
+          </View>
+          <View style={styles.settingsSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.account')}</Text>
+            <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
+              
+              {/* Storage Management buradan kaldırıldı */}
+
+              <TouchableOpacity style={styles.settingRow} onPress={handlePrivacyPolicyPress}>
+                <View style={styles.settingLabelContainer}>
+                  <Lock color={theme.colors.text} size={isTablet ? 24 : 20} />
+                  <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.privacyPolicy')}</Text>
+                </View>
+                <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+              </TouchableOpacity>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+              <TouchableOpacity style={styles.settingRow} onPress={handleTermsOfUsePress}>
+                <View style={styles.settingLabelContainer}>
+                  <FileText color={theme.colors.text} size={isTablet ? 24 : 20} />
+                  <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.termsOfUse')}</Text>
+                </View>
+                <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+              </TouchableOpacity>
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              
               <TouchableOpacity style={styles.settingRow} onPress={handleHelpPress}>
                 <View style={styles.settingLabelContainer}>
                   <HelpCircle color={theme.colors.text} size={isTablet ? 24 : 20} />

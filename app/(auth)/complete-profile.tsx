@@ -147,16 +147,6 @@ export default function CompleteProfileScreen() {
                 position: 'top'
             });
 
-            // Onboarding'i kontrol et ve başlat.
-            const isCompleted = await checkIfOnboardingCompleted();
-            if (!isCompleted) {
-                console.log('🎯 Onboarding state set to true.');
-                startOnboarding();
-            }
-
-            // Artık navigasyonu bu componentten yapmıyoruz, AuthContext kendisi yönetecek.
-            // router.replace('/(tabs)/home');
-
         } catch (error) {
             showAlert({
                 title: t('common.error'),

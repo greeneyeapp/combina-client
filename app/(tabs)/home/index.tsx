@@ -1,6 +1,6 @@
 // app/(tabs)/home/index.tsx - iPad için çok sütunlu (multi-column) yapı ile güncellendi
 
-import React from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react'; // useEffect'i ekleyin
 import {
     View,
     Text,
@@ -26,6 +26,8 @@ import {
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import { useRevenueCat } from '@/context/RevenueCatContext';
+import { useOnboardingStore } from '@/store/onboardingStore';
+
 
 const { width } = Dimensions.get('window');
 // YENİ: Cihazın tablet olup olmadığını anlamak için bir kontrol değişkeni
@@ -35,6 +37,18 @@ export default function HomeScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
     const { currentPlan, isLoading: isPlanLoading } = useRevenueCat();
+    const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
+
+    useEffect(() => {
+        const checkOnboarding = async () => {
+            const isCompleted = await checkIfOnboardingCompleted();
+            if (!isCompleted) {
+                console.log('🎯 Home Screen: Onboarding needs to be shown.');
+                startOnboarding();
+            }
+        };
+        checkOnboarding();
+    }, []);
 
     const getFeatureCards = () => {
         const baseCards = [

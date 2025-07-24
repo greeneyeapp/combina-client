@@ -1,10 +1,9 @@
-
 // app/(tabs)/profile/index.tsx - iPad için ortalanmış ve orantılı tasarım
 
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch,
-  Linking, ScrollView, Platform, ActivityIndicator, Dimensions // YENİ: Dimensions eklendi
+  Linking, ScrollView, Platform, ActivityIndicator, Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -20,11 +19,12 @@ import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
 import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
-import { getUserProfile } from '@/services/userService';
+// YENİ: deleteUserAccount fonksiyonunu import ediyoruz
+import { getUserProfile, deleteUserAccount } from '@/services/userService';
 import { restorePurchases } from '@/services/purchaseService';
 import { useRevenueCat } from '@/context/RevenueCatContext';
+import Toast from 'react-native-toast-message'; // Toast'u import ediyoruz
 
-// YENİ: iPad tespiti
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
@@ -43,6 +43,8 @@ export default function ProfileScreen() {
   const [usageInfo, setUsageInfo] = useState<UsageInfo | null>(null);
   const [isUsageLoading, setIsUsageLoading] = useState(true);
   const [isRestoring, setIsRestoring] = useState(false);
+  // YENİ: Silme işlemi için loading state'i
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const languages = [
     { code: 'ar', name: 'العربية' },
@@ -160,10 +162,43 @@ export default function ProfileScreen() {
 
   const handleClearData = () => {
     showAlert({
-      title: t('profile.clearDataTitle'), message: t('profile.clearDataMessage'),
+      title: t('profile.clearDataTitle'),
+      message: t('profile.clearDataMessage'),
       buttons: [
         { text: t('common.cancel'), variant: 'outline' },
-        { text: t('profile.continueToDelete'), onPress: () => Linking.openURL('https://greeneyeapp.com/data-deletion.html'), variant: 'destructive' }
+        {
+          text: t('profile.continueToDelete'),
+          variant: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              const result = await deleteUserAccount();
+              if (result.success) {
+                Toast.show({
+                  type: 'success',
+                  text1: t('common.success'), // Mevcut çeviri kullanıldı
+                  text2: t('profile.clearDataTitle'), // Mevcut çeviri kullanıldı
+                });
+                logout();
+              } else {
+                showAlert({
+                  title: t('common.error'),
+                  message: result.error || t('subscription.unexpectedError', 'An error occurred.'),
+                  buttons: [{ text: t('common.ok') }]
+                });
+              }
+            } catch (error) {
+              console.error('Account deletion failed:', error);
+              showAlert({
+                title: t('common.error'),
+                message: t('subscription.unexpectedError', 'An error occurred.'),
+                buttons: [{ text: t('common.ok') }]
+              });
+            } finally {
+              setIsDeleting(false);
+            }
+          }
+        }
       ]
     });
   };
@@ -192,7 +227,7 @@ export default function ProfileScreen() {
     );
   };
 
-   return (
+  return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <HeaderBar title={t('profile.title')} />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -229,8 +264,6 @@ export default function ProfileScreen() {
                 </View>
                 <Switch value={theme.mode === 'dark'} onValueChange={toggleTheme} trackColor={{ false: theme.colors.border, true: theme.colors.primary }} thumbColor={theme.colors.white} transform={isTablet ? [{ scaleX: 1.3 }, { scaleY: 1.3 }] : []} />
               </View>
-
-              {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <TouchableOpacity style={styles.settingRow} onPress={handleStoragePress}>
                 <View style={styles.settingLabelContainer}>
@@ -239,16 +272,11 @@ export default function ProfileScreen() {
                 </View>
                 <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
               </TouchableOpacity>
-              {/* --- DEĞİŞİKLİK BURADA BİTİYOR --- */}
-
             </View>
           </View>
           <View style={styles.settingsSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.account')}</Text>
             <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
-              
-              {/* Storage Management buradan kaldırıldı */}
-
               <TouchableOpacity style={styles.settingRow} onPress={handlePrivacyPolicyPress}>
                 <View style={styles.settingLabelContainer}>
                   <Lock color={theme.colors.text} size={isTablet ? 24 : 20} />
@@ -257,7 +285,6 @@ export default function ProfileScreen() {
                 <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
               </TouchableOpacity>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-
               <TouchableOpacity style={styles.settingRow} onPress={handleTermsOfUsePress}>
                 <View style={styles.settingLabelContainer}>
                   <FileText color={theme.colors.text} size={isTablet ? 24 : 20} />
@@ -266,7 +293,6 @@ export default function ProfileScreen() {
                 <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
               </TouchableOpacity>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              
               <TouchableOpacity style={styles.settingRow} onPress={handleHelpPress}>
                 <View style={styles.settingLabelContainer}>
                   <HelpCircle color={theme.colors.text} size={isTablet ? 24 : 20} />
@@ -285,13 +311,19 @@ export default function ProfileScreen() {
                 </View>
               </TouchableOpacity>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              <TouchableOpacity style={styles.settingRow} onPress={handleClearData}>
+              {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
+              <TouchableOpacity style={styles.settingRow} onPress={handleClearData} disabled={isDeleting}>
                 <View style={styles.settingLabelContainer}>
                   <Trash2 color={theme.colors.error} size={isTablet ? 24 : 20} />
                   <Text style={[styles.settingLabel, { color: theme.colors.error }]}>{t('profile.clearData')}</Text>
                 </View>
-                <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+                {/* Yükleme göstergesi ekliyoruz */}
+                {isDeleting
+                  ? <ActivityIndicator size="small" color={theme.colors.error} />
+                  : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+                }
               </TouchableOpacity>
+              {/* --- DEĞİŞİKLİK BİTTİ --- */}
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <TouchableOpacity style={styles.settingRow} onPress={handleLogout}>
                 <View style={styles.settingLabelContainer}>
@@ -308,7 +340,7 @@ export default function ProfileScreen() {
   );
 }
 
-// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
+// Stillerin geri kalanı aynı kalıyor
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -319,9 +351,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: 16,
     paddingBottom: 32,
-    alignItems: 'center', // YENİ: İçeriği yatayda ortalar
+    alignItems: 'center',
   },
-  // YENİ: İçeriğin genişliğini kontrol eden sarmalayıcı
   contentWrapper: {
     width: '100%',
     maxWidth: isTablet ? 800 : undefined,
@@ -355,10 +386,10 @@ const styles = StyleSheet.create({
     fontSize: isTablet ? 16 : 14,
     marginBottom: 12,
     paddingHorizontal: 8,
-    textTransform: 'uppercase', // Başlıkları daha belirgin yapar
+    textTransform: 'uppercase',
   },
   settingsCard: {
-    borderRadius: 20, // Daha yuvarlak köşeler
+    borderRadius: 20,
   },
   subscriptionCard: {
     padding: isTablet ? 20 : 16,

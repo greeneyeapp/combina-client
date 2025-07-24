@@ -16,11 +16,11 @@ interface AuthContextType {
   user: any | null;
   loading: boolean;
   isAuthFlowActive: boolean;
-  isInitialized: boolean; // Yeni: splash screen kontrolü için
+  isInitialized: boolean;
   setAuthFlowActive: (isActive: boolean) => void;
   signInWithGoogle: (accessToken: string) => Promise<any>;
   signInWithApple: (credential: any) => Promise<any>;
-  updateUserInfo: (info: { name: string; gender: string; birthDate: string }) => Promise<void>;
+  updateUserInfo: (info: { name: string; gender: string }) => Promise<void>; // DEĞİŞİKLİK BURADA
   logout: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
 }
@@ -39,9 +39,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = React.useState<any | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isAuthFlowActive, setAuthFlowActive] = React.useState(false);
-  const [isInitialized, setIsInitialized] = React.useState(false); // Yeni state
+  const [isInitialized, setIsInitialized] = React.useState(false);
 
-  // Component-level initialization tracking
   const [lastProfileRefresh, setLastProfileRefresh] = React.useState(0);
 
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
@@ -49,22 +48,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const segments = useSegments();
   const navigationState = useRootNavigationState();
 
-  // İlk JWT yükleme
   React.useEffect(() => {
     loadJwt();
   }, [loadJwt]);
-
-  const getUserFromToken = async (token: string) => {
-    try {
-      const payloadBase64 = token.split('.')[1];
-      const decodedPayload = atob(payloadBase64);
-      const payload = JSON.parse(decodedPayload);
-      return { uid: payload.sub, isAnonymous: false, name: null, fullname: null, gender: null, birthDate: null };
-    } catch (error) {
-      console.error('Failed to decode token:', error);
-      return null;
-    }
-  };
 
   React.useEffect(() => {
     if (!isReady || isInitialized) return;
@@ -74,14 +60,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       try {
         if (jwt) {
-          // Token'ın sadece varlığına güvenme, backend'de doğrula.
           try {
             console.log('🔄 Validating token with backend...');
-            const profileData = await fetchUserProfile(); // API'ye istek at.
+            const profileData = await fetchUserProfile();
 
-            // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-            // API'den gelen taze veri ile kullanıcı nesnesini oluştur.
-            // Önceki hatayı düzeltiyoruz: birthDate ve diğer tüm alanlar 'profileData' dan gelmeli.
             const completeUserInfo = {
               uid: profileData.user_id,
               email: (profileData as any).email || '',
@@ -89,18 +71,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               fullname: profileData.fullname || '',
               displayName: profileData.fullname || '',
               gender: profileData.gender || null,
-              birthDate: profileData.birthDate || null, // DÜZELTME: Veriyi API'den al
               plan: profileData.plan || 'free',
-              provider: user?.provider || 'api', // Provider bilgisi API'de yoksa eski state'ten al
+              provider: user?.provider || 'api',
               isAnonymous: false
             };
-            // --- DEĞİŞİKLİK BURADA BİTİYOR ---
 
-            setUser(completeUserInfo); // Kullanıcı state'ini taze veriyle güncelle.
-            await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo)); // Yerel cache'i de güncelle.
+            setUser(completeUserInfo);
+            await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
             console.log('✅ Token validated, user profile is fresh.');
 
-            // RevenueCat'e giriş yap.
             if (completeUserInfo.uid) {
               try {
                 await Purchases.logIn(completeUserInfo.uid);
@@ -110,7 +89,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             }
 
           } catch (error) {
-            // Token doğrulama başarısız oldu (kullanıcı silinmiş, token geçersiz vb.).
             console.error('🚨 Token validation failed. Logging out...', error);
             await clearJwt();
             clearUserPlan();
@@ -119,7 +97,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             await Purchases.logOut().catch(e => console.log('RC logout failed on validation error'));
           }
         } else {
-          // JWT yok, temizlik yap
           setUser(null);
           clearUserPlan();
           await AsyncStorage.removeItem(USER_CACHE_KEY);
@@ -131,7 +108,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         clearUserPlan();
       } finally {
         setLoading(false);
-        setIsInitialized(true); // ✅ Initialization tamamlandı
+        setIsInitialized(true);
         console.log('✅ Auth initialization completed');
       }
     };
@@ -155,7 +132,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         displayName: user_info?.name || '',
         email: user_info?.email || '',
         gender: user_info?.gender || null,
-        birthDate: user_info?.birthDate || null,
         plan: user_info?.plan || 'free',
         provider: 'google',
         isAnonymous: false
@@ -172,7 +148,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(completeUserInfo);
       console.log('✅ User state set successfully');
 
-      // RevenueCat login (non-blocking)
       if (user_info?.uid) {
         try {
           await Purchases.logIn(user_info.uid);
@@ -182,9 +157,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
-      // Profile refresh optimize edildi - sadece eksik data varsa
       const now = Date.now();
-      if (now - lastProfileRefresh > 60000 && (!user_info?.gender || !user_info?.birthDate)) {
+      if (now - lastProfileRefresh > 60000 && (!user_info?.gender)) {
         setLastProfileRefresh(now);
         try {
           console.log('🔄 Google: Fetching additional profile data...');
@@ -212,9 +186,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setLoading(false);
       console.log('✅ Google sign-in completed successfully');
-      // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
-      // Başarılı giriş sonrası kullanıcı bilgisini döndürerek
-      // çağıran component'in yönlendirme yapmasını sağla.
       return completeUserInfo;
 
     } catch (error) {
@@ -261,7 +232,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         displayName: finalName,
         email: finalEmail,
         gender: user_info.gender || null,
-        birthDate: user_info.birthDate || null,
         plan: user_info.plan || 'free',
         provider: 'apple',
         isAnonymous: false
@@ -272,7 +242,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
 
-      // RevenueCat login (non-blocking)
       if (user_info.uid) {
         try {
           await Purchases.logIn(user_info.uid);
@@ -282,9 +251,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
-      // Profile refresh optimize edildi - Google ile aynı logic
       const now = Date.now();
-      if (now - lastProfileRefresh > 60000 && (!user_info?.gender || !user_info?.birthDate)) {
+      if (now - lastProfileRefresh > 60000 && (!user_info?.gender)) {
         setLastProfileRefresh(now);
         try {
           console.log('🔄 Apple: Fetching additional profile data...');
@@ -312,8 +280,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       setLoading(false);
       console.log('✅ Apple sign-in completed successfully');
-      // ===== 🚀 DEĞİŞİKLİK BURADA 🚀 =====
-      // Başarılı giriş sonrası kullanıcı bilgisini döndür.
       return completeUserInfo;
 
     } catch (error) {
@@ -323,7 +289,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const updateUserInfo = async (info: { name: string; gender: string; birthDate: string }): Promise<any> => {
+  // DEĞİŞİKLİK BURADA
+  const updateUserInfo = async (info: { name: string; gender: string }): Promise<any> => {
     try {
       const token = useApiAuthStore.getState().jwt;
       if (!token) throw new Error("No token found");
@@ -331,23 +298,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
       console.log('Profile updated on backend, refetching...');
 
-      // Önbelleği atlayarak taze veriyi çek.
       const updatedPlan = await getUserProfile(true);
 
-      // Taze veri ile yeni bir kullanıcı nesnesi oluştur.
       const updatedUser = {
         ...user,
         fullname: updatedPlan.fullname,
         gender: updatedPlan.gender,
-        birthDate: updatedPlan.birthDate,
       };
 
-      // Merkezi state'i BU NOKTADA GÜNCELLE.
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
       console.log('✅ AuthContext user state updated with fresh data.');
 
-      // Güncellenmiş kullanıcıyı çağıran fonksiyona döndür.
       return updatedUser;
 
     } catch (error) {
@@ -359,16 +321,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     try {
       console.log('🚪 Starting logout process...');
-
-      // Logout işlemi başladığında navigation'ı durdur
       setAuthFlowActive(true);
-
       setUser(null);
       clearUserPlan();
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
-
-      setIsInitialized(false); // ✅ Logout'ta initialization'ı reset et
+      setIsInitialized(false);
       setLastProfileRefresh(0);
 
       try {
@@ -378,11 +336,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
       }
 
-      // Tek navigation ile auth'a yönlendir
       console.log('🔐 Logout: Redirecting to auth...');
       router.replace('/(auth)');
 
-      // Navigation tamamlandıktan sonra flag'i temizle
       setTimeout(() => {
         setAuthFlowActive(false);
         console.log('✅ Logout process completed');
@@ -417,10 +373,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Navigation logic - Logout ve duplicate navigation fix
   React.useEffect(() => {
     if (!navigationState?.key || loading || isAuthFlowActive || !isInitialized) {
-      return; // ✅ isInitialized kontrolü eklendi
+      return;
     }
 
     const handleNavigation = () => {
@@ -429,11 +384,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const isNotFoundPage = segments.includes('+not-found');
       const isInTabs = segments[0] === '(tabs)';
       const isLogoutScenario = !user && !jwt && isInTabs;
-
-      // Modal route'larını kontrol et
       const isModalRoute = segments.includes('subscription') || segments.includes('storage');
 
-      // Modal açıkken navigation yapma
       if (isModalRoute) {
         console.log('🚫 Navigation suspended: Modal route detected');
         return;
@@ -446,7 +398,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           user: !!user,
           jwt: !!jwt,
           userGender: user?.gender,
-          userBirthDate: user?.birthDate,
           segments: segments,
           currentPath: currentPath,
           inAuthGroup: inAuthGroup,
@@ -459,13 +410,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (user && jwt) {
-        const profileComplete = user.gender && user.birthDate;
+        const profileComplete = user.gender;
 
         if (shouldLog || __DEV__) {
           console.log('🚀 Navigation: User and JWT available, checking profile completion...');
           console.log('🔍 Profile completeness check:', {
             gender: user.gender,
-            birthDate: user.birthDate,
             profileComplete: profileComplete
           });
         }
@@ -514,7 +464,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key, isInitialized]);
 
-  // Development debug helpers
   if (__DEV__) {
     React.useEffect(() => {
       (global as any).forceNavigateHome = () => {
@@ -530,7 +479,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           isAuthFlowActive,
           isInitialized,
           segments,
-          userComplete: !!(user?.gender && user?.birthDate)
+          userComplete: !!(user?.gender)
         });
       };
 
@@ -545,7 +494,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     user,
     loading,
     isAuthFlowActive,
-    isInitialized, // ✅ Yeni değer eklendi
+    isInitialized,
     setAuthFlowActive,
     signInWithGoogle,
     signInWithApple,

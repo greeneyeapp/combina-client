@@ -16,7 +16,6 @@ import Toast from 'react-native-toast-message';
 import useAlertStore from '@/store/alertStore';
 import { useRevenueCat } from '@/context/RevenueCatContext';
 
-// YENİ: iPad tespiti
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
@@ -348,6 +347,23 @@ export default function SubscriptionScreen() {
             </View>
             {renderPlanToggle()}
             {renderSelectedPlan()}
+            
+            {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
+            <View style={styles.legalLinksContainer}>
+              <TouchableOpacity onPress={() => Linking.openURL('https://greeneyeapp.com/privacy.html')}>
+                <Text style={[styles.legalLinkText, { color: theme.colors.textLight }]}>
+                  {t('profile.privacyPolicy')}
+                </Text>
+              </TouchableOpacity>
+              <Text style={[styles.legalLinkSeparator, { color: theme.colors.textLight }]}>•</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('https://greeneyeapp.com/terms-of-use.html')}>
+                <Text style={[styles.legalLinkText, { color: theme.colors.textLight }]}>
+                  {t('profile.termsOfUse')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+            {/* --- DEĞİŞİKLİK BİTTİ --- */}
+
           </View>
       </ScrollView>
     );
@@ -414,4 +430,23 @@ const styles = StyleSheet.create({
   featureRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   featureText: { fontFamily: 'Montserrat-Medium', fontSize: isTablet ? 18 : 14, marginLeft: 16, flex: 1 },
   planButton: { marginTop: 8 },
+
+  // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+  legalLinksContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 24,
+    paddingHorizontal: 16,
+  },
+  legalLinkText: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: isTablet ? 14 : 12,
+    textDecorationLine: 'underline',
+  },
+  legalLinkSeparator: {
+    marginHorizontal: 8,
+    fontSize: 12,
+  },
+  // --- DEĞİŞİKLİK BİTTİ ---
 });

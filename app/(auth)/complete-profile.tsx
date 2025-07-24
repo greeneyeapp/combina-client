@@ -3,13 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, ScrollView, TouchableOpacity,
-    Platform, ActivityIndicator, Dimensions // YENİ: Dimensions eklendi
+    Platform, ActivityIndicator, Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Calendar, ChevronDown, User, CheckCircle, LogOut } from 'lucide-react-native';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -18,7 +17,6 @@ import { useOnboardingStore } from '@/store/onboardingStore';
 import Input from '@/components/common/Input';
 import Toast from 'react-native-toast-message';
 
-// YENİ: iPad tespiti
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
@@ -29,13 +27,12 @@ export default function CompleteProfileScreen() {
     const { show: showAlert } = useAlertStore();
     const { checkIfOnboardingCompleted, startOnboarding } = useOnboardingStore();
     const scrollViewRef = useRef<ScrollView>(null);
+
     const [formData, setFormData] = useState({
         name: '',
         gender: '',
-        birthDate: new Date(2000, 0, 1)
     });
 
-    const [showDatePicker, setShowDatePicker] = useState(false);
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -45,7 +42,6 @@ export default function CompleteProfileScreen() {
             setFormData(prev => ({
                 name: userName,
                 gender: user.gender || '',
-                birthDate: user.birthDate ? new Date(user.birthDate) : prev.birthDate
             }));
         }
     }, [user]);
@@ -56,36 +52,11 @@ export default function CompleteProfileScreen() {
         { label: t('gender.unisex'), value: 'unisex' }
     ];
 
-    const handleOpenDatePicker = () => {
-        setShowDatePicker(true);
-        setTimeout(() => {
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-        }, 100);
-    };
-
     const handleNameChange = (text: string) => {
         setFormData(prev => ({ ...prev, name: text }));
         if (errors.name) {
             setErrors(prev => ({ ...prev, name: '' }));
         }
-    };
-
-    const handleDateChange = (event: any, selectedDate?: Date) => {
-        if (Platform.OS === 'android') {
-            setShowDatePicker(false);
-        }
-        if (selectedDate) {
-            setFormData(prev => ({ ...prev, birthDate: selectedDate }));
-            if (errors.birthDate) {
-                setErrors(prev => ({ ...prev, birthDate: '' }));
-            }
-        }
-    };
-
-    const formatDate = (date: Date) => {
-        return date.toLocaleDateString('tr-TR', {
-            year: 'numeric', month: 'long', day: 'numeric'
-        });
     };
 
     const validateForm = (): boolean => {
@@ -97,16 +68,6 @@ export default function CompleteProfileScreen() {
         }
         if (!formData.gender) {
             newErrors.gender = t('auth.genderRequired');
-        }
-        const today = new Date();
-        const age = today.getFullYear() - formData.birthDate.getFullYear();
-        const monthDiff = today.getMonth() - formData.birthDate.getMonth();
-        const dayDiff = today.getDate() - formData.birthDate.getDate();
-        const exactAge = age - (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? 1 : 0);
-        if (exactAge < 13) {
-            newErrors.birthDate = t('auth.ageMinimum');
-        } else if (exactAge > 100) {
-            newErrors.birthDate = t('auth.ageMaximum');
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -133,11 +94,9 @@ export default function CompleteProfileScreen() {
 
         setLoading(true);
         try {
-            // Backend'i güncelle. AuthContext'teki user state'i bu işlem sonrası otomatik güncellenecektir.
             await updateUserInfo({
                 name: formData.name.trim(),
                 gender: formData.gender,
-                birthDate: formData.birthDate.toISOString()
             });
 
             Toast.show({
@@ -170,7 +129,6 @@ export default function CompleteProfileScreen() {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* YENİ: İçeriği sarmalayan ve ortalayan View */}
                     <View style={styles.contentWrapper}>
                         <View style={styles.header}>
                             <View style={[styles.progressContainer, { backgroundColor: theme.colors.surface }]}>
@@ -212,21 +170,6 @@ export default function CompleteProfileScreen() {
                                 </View>
                                 {errors.gender && (<Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.gender}</Text>)}
                             </View>
-                            <TouchableOpacity style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: errors.birthDate ? theme.colors.error : 'transparent', borderWidth: errors.birthDate ? 1 : 0 }]} onPress={handleOpenDatePicker} activeOpacity={0.7}>
-                                <View style={styles.cardHeader}>
-                                    <Calendar color={theme.colors.primary} size={isTablet ? 24 : 20} />
-                                    <Text style={[styles.cardTitle, { color: theme.colors.text }]}>{t('register.birthDate')} <Text style={styles.required}>*</Text></Text>
-                                    <ChevronDown color={theme.colors.textSecondary} size={isTablet ? 20 : 16} />
-                                </View>
-                                <View style={styles.cardContent}><Text style={[styles.dateDisplay, { color: theme.colors.text }]}>{formatDate(formData.birthDate)}</Text></View>
-                                {errors.birthDate && (<Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.birthDate}</Text>)}
-                            </TouchableOpacity>
-                            {showDatePicker && (
-                                <View style={[styles.datePickerContainer, { backgroundColor: theme.colors.surface }]}>
-                                    <DateTimePicker value={formData.birthDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'} onChange={handleDateChange} maximumDate={new Date()} minimumDate={new Date(1920, 0, 1)} />
-                                    {Platform.OS === 'ios' && (<TouchableOpacity style={[styles.doneButton, { backgroundColor: theme.colors.primary }]} onPress={() => setShowDatePicker(false)}><Text style={styles.doneButtonText}>{t('authFlow.completeProfile.done')}</Text></TouchableOpacity>)}
-                                </View>
-                            )}
                         </View>
                         <View style={styles.actionSection}>
                             <TouchableOpacity style={[styles.submitButton, { backgroundColor: theme.colors.primary, opacity: loading ? 0.7 : 1 }]} onPress={handleSubmit} disabled={loading} activeOpacity={0.8}>
@@ -247,10 +190,9 @@ const styles = StyleSheet.create({
     scrollView: { flex: 1 },
     scrollContent: {
         flexGrow: 1,
-        justifyContent: 'center', // YENİ: Dikeyde ortalama
+        justifyContent: 'center',
         padding: 20,
     },
-    // YENİ: İçeriği sarmalayan ve genişliği ayarlayan stil
     contentWrapper: {
         width: '100%',
         maxWidth: isTablet ? 600 : undefined,
@@ -264,13 +206,13 @@ const styles = StyleSheet.create({
     progressContainer: { width: 80, height: 4, borderRadius: 2, marginBottom: 24, overflow: 'hidden' },
     progressBar: { width: '60%', height: '100%', borderRadius: 2 },
     title: {
-        fontSize: isTablet ? 36 : 28, // Büyüdü
+        fontSize: isTablet ? 36 : 28,
         fontFamily: 'PlayfairDisplay-Bold',
         textAlign: 'center',
         marginBottom: 8,
     },
     subtitle: {
-        fontSize: isTablet ? 18 : 16, // Büyüdü
+        fontSize: isTablet ? 18 : 16,
         fontFamily: 'Montserrat-Regular',
         textAlign: 'center',
         lineHeight: isTablet ? 28 : 22,
@@ -278,17 +220,17 @@ const styles = StyleSheet.create({
     },
     formContainer: { flex: 1, gap: 20 },
     formCard: {
-        borderRadius: 20, // Daha yuvarlak
-        padding: isTablet ? 24 : 20, // İç boşluk arttı
+        borderRadius: 20,
+        padding: isTablet ? 24 : 20,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 3.84,
         elevation: 5,
     },
-    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 }, // Boşluk arttı
+    cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
     cardTitle: {
-        fontSize: isTablet ? 18 : 16, // Büyüdü
+        fontSize: isTablet ? 18 : 16,
         fontFamily: 'Montserrat-SemiBold',
         flex: 1,
     },
@@ -299,24 +241,17 @@ const styles = StyleSheet.create({
     genderOptions: { gap: 12 },
     genderOption: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        padding: isTablet ? 20 : 16, // İç boşluk arttı
+        padding: isTablet ? 20 : 16,
         borderRadius: 16,
         borderWidth: 1,
     },
     genderOptionText: {
-        fontSize: isTablet ? 18 : 16, // Büyüdü
+        fontSize: isTablet ? 18 : 16,
         fontFamily: 'Montserrat-Medium',
     },
-    dateDisplay: {
-        fontSize: isTablet ? 18 : 16, // Büyüdü
-        fontFamily: 'Montserrat-Medium',
-    },
-    datePickerContainer: { borderRadius: 16, padding: 16, marginTop: 12 },
-    doneButton: { marginTop: 16, padding: 12, borderRadius: 8, alignItems: 'center' },
-    doneButtonText: { color: '#FFFFFF', fontSize: 16, fontFamily: 'Montserrat-SemiBold' },
     actionSection: { marginTop: 32, gap: 16 },
     submitButton: {
-        height: isTablet ? 64 : 56, // Büyüdü
+        height: isTablet ? 64 : 56,
         borderRadius: 20,
         justifyContent: 'center',
         alignItems: 'center',
@@ -328,11 +263,11 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
         color: '#FFFFFF',
-        fontSize: isTablet ? 18 : 16, // Büyüdü
+        fontSize: isTablet ? 18 : 16,
         fontFamily: 'Montserrat-Bold',
     },
     errorText: {
-        fontSize: isTablet ? 14 : 12, // Büyüdü
+        fontSize: isTablet ? 14 : 12,
         fontFamily: 'Montserrat-Regular',
         marginTop: 8,
         marginLeft: 40,

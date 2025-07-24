@@ -191,6 +191,29 @@ export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: 
   }
 };
 
+export const deleteUserAccount = async (): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const token = await getAuthToken();
+    const response = await fetch(`${API_URL}/api/users/delete-account`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to delete account');
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('❌ USER SERVICE - Failed to delete user account:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+};
+
 export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?: string }> => {
   try {
     const profile = await getUserProfile();

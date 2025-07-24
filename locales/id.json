@@ -643,6 +643,7 @@
     "someItemsRemoved": "Beberapa item dalam pakaian ini telah dihapus."
   },
   "profile": {
+    "deletingData": "Menghapus data Anda...",
     "privacyPolicy": "Kebijakan Privasi",
     "termsOfUse": "Ketentuan Penggunaan",
     "title": "Profil",

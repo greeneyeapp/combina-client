@@ -643,6 +643,7 @@
     "someItemsRemoved": "Alguns itens deste look foram removidos."
   },
   "profile": {
+    "deletingData": "Excluindo seus dados...",
     "privacyPolicy": "Política de Privacidade",
     "termsOfUse": "Termos de Uso",
     "title": "Perfil",

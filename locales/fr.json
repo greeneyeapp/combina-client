@@ -643,6 +643,7 @@
     "someItemsRemoved": "Certains articles de cette tenue ont été supprimés."
   },
   "profile": {
+    "deletingData": "Suppression de vos données...",
     "privacyPolicy": "Politique de Confidentialité",
     "termsOfUse": "Conditions d'Utilisation",
     "title": "Profil",

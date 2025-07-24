@@ -643,6 +643,7 @@
     "someItemsRemoved": "이 의상의 일부 항목이 제거되었습니다."
   },
   "profile": {
+    "deletingData": "데이터를 삭제하는 중입니다...",
     "privacyPolicy": "개인정보 처리방침",
     "termsOfUse": "이용약관",
     "title": "프로필",

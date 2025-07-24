@@ -9,6 +9,7 @@ import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useRootNavigationState, useSegments } from 'expo-router';
+import { apiDeduplicator } from '@/utils/apiDeduplication'; // Bu importu dosyanın başına ekleyin
 
 const USER_CACHE_KEY = 'cached_user_data';
 
@@ -326,6 +327,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       clearUserPlan();
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
+
+      apiDeduplicator.clearCache();
+
+
       setIsInitialized(false);
       setLastProfileRefresh(0);
 

@@ -643,6 +643,7 @@
     "someItemsRemoved": "تمت إزالة بعض القطع في هذه الإطلالة."
   },
   "profile": {
+    "deletingData": "جارٍ حذف بياناتك...",
     "privacyPolicy": "سياسة الخصوصية",
     "termsOfUse": "شروط الاستخدام",
     "title": "الملف الشخصي",

@@ -643,6 +643,7 @@
     "someItemsRemoved": "このコーディネートの一部のアイテムは削除されました。"
   },
   "profile": {
+    "deletingData": "データを削除しています...",
     "privacyPolicy": "プライバシーポリシー",
     "termsOfUse": "利用規約",
     "title": "プロフィール",

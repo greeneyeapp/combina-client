@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch,
-  Linking, ScrollView, Platform, ActivityIndicator, Dimensions
+  Linking, ScrollView, Platform, ActivityIndicator, Dimensions, Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -19,11 +19,10 @@ import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
 import { useAuth } from '@/context/AuthContext';
 import useAlertStore from '@/store/alertStore';
-// YENİ: deleteUserAccount fonksiyonunu import ediyoruz
 import { getUserProfile, deleteUserAccount } from '@/services/userService';
 import { restorePurchases } from '@/services/purchaseService';
 import { useRevenueCat } from '@/context/RevenueCatContext';
-import Toast from 'react-native-toast-message'; // Toast'u import ediyoruz
+import Toast from 'react-native-toast-message';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -43,8 +42,9 @@ export default function ProfileScreen() {
   const [usageInfo, setUsageInfo] = useState<UsageInfo | null>(null);
   const [isUsageLoading, setIsUsageLoading] = useState(true);
   const [isRestoring, setIsRestoring] = useState(false);
-  // YENİ: Silme işlemi için loading state'i
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+
 
   const languages = [
     { code: 'ar', name: 'العربية' },
@@ -171,31 +171,31 @@ export default function ProfileScreen() {
           variant: 'destructive',
           onPress: async () => {
             setIsDeleting(true);
+            setIsGlobalLoading(true);
             try {
               const result = await deleteUserAccount();
               if (result.success) {
-                Toast.show({
-                  type: 'success',
-                  text1: t('common.success'), // Mevcut çeviri kullanıldı
-                  text2: t('profile.clearDataTitle'), // Mevcut çeviri kullanıldı
-                });
+                // Başarılı silme işleminden sonra doğrudan çıkış yap
+                // Yükleme ekranı, çıkış işlemi tamamlanana kadar görünür kalacak
                 logout();
               } else {
+                setIsGlobalLoading(false);
+                setIsDeleting(false);
                 showAlert({
                   title: t('common.error'),
-                  message: result.error || t('subscription.unexpectedError', 'An error occurred.'),
+                  message: result.error || t('subscription.unexpectedError'),
                   buttons: [{ text: t('common.ok') }]
                 });
               }
             } catch (error) {
               console.error('Account deletion failed:', error);
+              setIsGlobalLoading(false);
+              setIsDeleting(false);
               showAlert({
                 title: t('common.error'),
-                message: t('subscription.unexpectedError', 'An error occurred.'),
+                message: t('subscription.unexpectedError'),
                 buttons: [{ text: t('common.ok') }]
               });
-            } finally {
-              setIsDeleting(false);
             }
           }
         }
@@ -229,6 +229,17 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Modal
+        transparent={true}
+        animationType="fade"
+        visible={isGlobalLoading}
+      >
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={theme.colors.white} />
+          <Text style={styles.loadingOverlayText}>{t('profile.deletingData')}</Text>
+        </View>
+      </Modal>
+
       <HeaderBar title={t('profile.title')} />
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.contentWrapper}>
@@ -311,19 +322,16 @@ export default function ProfileScreen() {
                 </View>
               </TouchableOpacity>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
               <TouchableOpacity style={styles.settingRow} onPress={handleClearData} disabled={isDeleting}>
                 <View style={styles.settingLabelContainer}>
                   <Trash2 color={theme.colors.error} size={isTablet ? 24 : 20} />
                   <Text style={[styles.settingLabel, { color: theme.colors.error }]}>{t('profile.clearData')}</Text>
                 </View>
-                {/* Yükleme göstergesi ekliyoruz */}
                 {isDeleting
                   ? <ActivityIndicator size="small" color={theme.colors.error} />
                   : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
                 }
               </TouchableOpacity>
-              {/* --- DEĞİŞİKLİK BİTTİ --- */}
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <TouchableOpacity style={styles.settingRow} onPress={handleLogout}>
                 <View style={styles.settingLabelContainer}>
@@ -340,7 +348,6 @@ export default function ProfileScreen() {
   );
 }
 
-// Stillerin geri kalanı aynı kalıyor
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -444,5 +451,22 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginHorizontal: 16,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  loadingOverlayText: {
+    color: '#FFFFFF',
+    fontFamily: 'Montserrat-Medium',
+    fontSize: isTablet ? 18 : 16,
+    marginTop: 16,
   },
 });

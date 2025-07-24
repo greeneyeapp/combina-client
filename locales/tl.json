@@ -643,6 +643,7 @@
     "someItemsRemoved": "Inalis ang ilang item sa outfit na ito."
   },
   "profile": {
+    "deletingData": "Tinatanggal ang iyong data...",
     "privacyPolicy": "Patakaran sa Privacy",
     "termsOfUse": "Mga Tuntunin ng Paggamit",
     "title": "Profile",

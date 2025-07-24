@@ -643,6 +643,7 @@
     "someItemsRemoved": "חלק מהפריטים בתלבושת זו הוסרו."
   },
   "profile": {
+    "deletingData": "...מוחק את הנתונים שלך",
     "privacyPolicy": "מדיניות פרטיות",
     "termsOfUse": "תנאי שימוש",
     "title": "פרופיל",

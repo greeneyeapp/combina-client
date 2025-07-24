@@ -643,6 +643,7 @@
     "someItemsRemoved": "Bu kombindeki bazı parçalar kaldırıldı."
   },
   "profile": {
+    "deletingData": "Verileriniz siliniyor...",
     "privacyPolicy": "Gizlilik Politikası",
     "termsOfUse": "Kullanım Koşulları",
     "title": "Profil",

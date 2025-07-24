@@ -643,6 +643,7 @@
     "someItemsRemoved": "इस पहनावे में कुछ आइटम हटा दिए गए हैं।"
   },
   "profile": {
+    "deletingData": "आपका डेटा हटाया जा रहा है...",
     "privacyPolicy": "गोपनीयता नीति",
     "termsOfUse": "उपयोग की शर्तें",
     "title": "प्रोफ़ाइल",

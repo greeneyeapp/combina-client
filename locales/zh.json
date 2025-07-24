@@ -643,6 +643,7 @@
     "someItemsRemoved": "此穿搭中的某些衣物已被删除。"
   },
   "profile": {
+    "deletingData": "正在删除您的数据...",
     "privacyPolicy": "隐私政策",
     "termsOfUse": "使用条款",
     "title": "我的",

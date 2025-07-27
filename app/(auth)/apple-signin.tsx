@@ -1,4 +1,4 @@
-// kodlar/app/(auth)/apple-signin.tsx - Yönlendirme mantığı iyileştirilmiş
+// kodlar/app/(auth)/apple-signin.tsx - Çeviri anahtarı düzeltildi
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
@@ -42,10 +42,10 @@ export default function AppleSignInScreen() {
                 ],
             });
 
-            setStatusMessage(t('authFlow.appleSignIn.verifying'));
+            // DEĞİŞİKLİK: Var olan çeviri anahtarı kullanıldı
+            setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
             const signedInUser = await signInWithApple(credential); 
             
-            // DÖNEN KULLANICI BİLGİSİNE GÖRE YÖNLENDİRME
             if (signedInUser && (!signedInUser.gender || !signedInUser.name)) {
                 router.replace('/(auth)/complete-profile');
             } else {
@@ -68,7 +68,6 @@ export default function AppleSignInScreen() {
         }
     };
     
-    // ... (Geri kalan kod aynı)
     return (
         <LinearGradient colors={[theme.colors.background, theme.colors.secondary]} style={styles.gradient}>
             <SafeAreaView style={styles.container}>

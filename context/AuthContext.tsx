@@ -180,23 +180,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
       const nameFromApple = `${givenName} ${familyName}`.trim();
+
       const response = await axios.post(`${API_URL}/auth/apple`, {
         identity_token: credential.identityToken,
         authorization_code: credential.authorizationCode,
         user_info: { name: nameFromApple, email: credential.email }
       }, { timeout: 30000 });
+
       const { access_token, user_info } = response.data;
       if (!user_info) throw new Error("User info was not returned from the server.");
       await setJwt(access_token);
-      const finalName = user_info.fullname || user_info.name || nameFromApple;
+
+      const finalName = user_info.fullname || nameFromApple;
+      
       const finalEmail = user_info.email || credential.email || '';
       const completeUserInfo = {
         uid: user_info.uid, name: finalName, fullname: finalName, displayName: finalName,
         email: finalEmail, gender: user_info.gender || null, plan: user_info.plan || 'free',
         provider: 'apple', isAnonymous: false
       };
+
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
+
       if (user_info.uid) {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Apple RC login failed:', e));
       }

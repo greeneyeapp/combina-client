@@ -1,4 +1,4 @@
-// kodlar/app/(auth)/google-signin.tsx - Yönlendirme mantığı iyileştirilmiş
+// kodlar/app/(auth)/google-signin.tsx - Çeviri anahtarı düzeltildi
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
@@ -64,10 +64,10 @@ export default function GoogleSignInScreen() {
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
-            setStatusMessage(t('authFlow.googleSignIn.verifying'));
+            // DEĞİŞİKLİK: Var olan çeviri anahtarı kullanıldı
+            setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
             const signedInUser = await signInWithGoogle(accessToken); 
             
-            // DÖNEN KULLANICI BİLGİSİNE GÖRE YÖNLENDİRME
             if (signedInUser && (!signedInUser.gender || !signedInUser.name)) {
                 router.replace('/(auth)/complete-profile');
             } else {
@@ -90,8 +90,7 @@ export default function GoogleSignInScreen() {
             setAuthFlowActive(false);
         }
     };
-    
-    // ... (Geri kalan kod aynı)
+
     return (
         <LinearGradient colors={[theme.colors.background, theme.colors.secondary]} style={styles.gradient}>
             <SafeAreaView style={styles.container}>

@@ -99,7 +99,7 @@
       },
       "googleAuth": {
         "androidClientIdDev": "58339241217-doo7k2mr5219tonptrkmasmsrvja24k9.apps.googleusercontent.com",
-        "androidClientIdProd": "58339241217-gff45pc0kurp7t8bvv8keluf0bk51fc1a.apps.googleusercontent.com",
+        "androidClientIdProd": "58339241217-gff45pc0kurp7s8vv8keluf0bk51lc1a.apps.googleusercontent.com",
         "iosClientId": "58339241217-dvfh2fl5p2hfi9a6m0vaqnuf4esf53qk.apps.googleusercontent.com"
       }
     }

@@ -9,7 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useClothingStore } from '@/store/clothingStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
 import { Image as ImageIcon, ArrowLeft, X } from 'lucide-react-native';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, FieldErrors } from 'react-hook-form';
 import HeaderBar from '@/components/common/HeaderBar';
 import Input from '@/components/common/Input';
 import Button from '@/components/common/Button';
@@ -45,9 +45,11 @@ export default function AddClothingScreen() {
   const [tempImageUri, setTempImageUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
   const { show: showAlert } = useAlertStore();
   const formSubmitted = useRef(false);
+
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [sectionPositions, setSectionPositions] = useState<Record<string, number>>({});
 
   const {
     control,
@@ -96,23 +98,11 @@ export default function AddClothingScreen() {
     setTempImageUri(null);
   };
 
-  const onSubmit = async (data: FormData) => {
-    if (!tempImageUri) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.imageRequired'), buttons: [{ text: t('common.ok') }] });
-      return;
-    }
-    if (!data.category) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.categoryRequired'), buttons: [{ text: t('common.ok') }] });
-      return;
-    }
-    if (!data.colors || data.colors.length === 0) {
-      showAlert({ title: t('common.error'), message: t('wardrobe.colorRequired'), buttons: [{ text: t('common.ok') }] });
-      return;
-    }
-
+const onSubmit = async (data: FormData) => {
+    // Resim kontrolü onInvalid içinde yapıldığı için buradaki tekrar kaldırıldı.
     setIsLoading(true);
     try {
-      const finalImagePaths = await commitTempImage(tempImageUri);
+      const finalImagePaths = await commitTempImage(tempImageUri!);
       formSubmitted.current = true;
 
       const newItem = {
@@ -144,6 +134,44 @@ export default function AddClothingScreen() {
       setIsLoading(false);
     }
   };
+
+  // --- YENİ: Hata durumunda tetiklenecek fonksiyon ---
+  const onInvalid = (errors: FieldErrors<FormData>) => {
+    // Alanların ekrandaki görsel sırası
+    const fieldOrder: (keyof FormData | 'image')[] = ['image', 'name', 'category', 'colors', 'season', 'style'];
+    
+    let firstErrorField: string | null = null;
+    let errorMessage: string | null = null;
+
+    // Önce resmi manuel olarak kontrol et
+    if (!tempImageUri) {
+        firstErrorField = 'image';
+        errorMessage = t('wardrobe.imageRequired');
+    } else {
+        // react-hook-form hatalarını sırayla kontrol et
+        for (const field of fieldOrder) {
+            if (errors[field as keyof FormData]) {
+                firstErrorField = field;
+                errorMessage = errors[field as keyof FormData]?.message || t('wardrobe.formInvalid');
+                break;
+            }
+        }
+    }
+
+    if (firstErrorField) {
+        const yPos = sectionPositions[firstErrorField];
+        if (yPos !== undefined && scrollViewRef.current) {
+            // Hatalı alana doğru kaydır (-20px yukarıda boşluk bırak)
+            scrollViewRef.current.scrollTo({ y: yPos - 20, animated: true });
+        }
+        showAlert({
+            title: t('common.error'),
+            message: errorMessage || t('wardrobe.formInvalid'),
+            buttons: [{ text: t('common.ok') }]
+        });
+    }
+  };
+  // --- YENİ KOD BİTTİ ---
 
   const renderImageSection = () => {
     if (tempImageUri) {
@@ -252,7 +280,7 @@ export default function AddClothingScreen() {
             
             <Button
               label={isLoading ? t('common.saving') : t('wardrobe.saveItem')}
-              onPress={handleSubmit(onSubmit)}
+              onPress={handleSubmit(onSubmit, onInvalid)}
               variant="primary" style={styles.saveButton} disabled={isLoading} loading={isLoading}
             />
           </View>

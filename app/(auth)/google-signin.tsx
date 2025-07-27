@@ -1,7 +1,6 @@
-// kodlar/app/(auth)/google-signin.tsx - iPad için büyütülmüş ve orantılı tasarım
+// kodlar/app/(auth)/google-signin.tsx - Yönlendirme mantığı iyileştirilmiş
 
 import React, { useState, useEffect } from 'react';
-// YENİ: Dimensions modülü eklendi
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +13,6 @@ import * as WebBrowser from 'expo-web-browser';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 
-// YENİ: iPad tespiti
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
@@ -47,7 +45,7 @@ export default function GoogleSignInScreen() {
             promptAsync().catch(error => {
                 console.error("promptAsync error:", error);
                 setAuthFlowActive(false);
-                router.replace('/(auth)'); // Prompt başarısız olursa/iptal edilirse geri dön
+                router.replace('/(auth)');
             });
         }
     }, [request]);
@@ -60,18 +58,17 @@ export default function GoogleSignInScreen() {
         } else {
             console.log('Google auth failed or cancelled:', response.type);
             setAuthFlowActive(false);
-            router.replace('/(auth)'); // Kimlik doğrulama başarılı değilse geri dön
+            router.replace('/(auth)');
         }
     }, [response]);
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
-            setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-            // signInWithGoogle artık kullanıcı objesini döndürüyor, onu yakalayalım.
+            setStatusMessage(t('authFlow.googleSignIn.verifying'));
             const signedInUser = await signInWithGoogle(accessToken); 
             
-            // Başarılı giriş sonrası doğrudan yönlendirme yapalım.
-            if (signedInUser && (!signedInUser.gender || !signedInUser.birthDate)) {
+            // DÖNEN KULLANICI BİLGİSİNE GÖRE YÖNLENDİRME
+            if (signedInUser && (!signedInUser.gender || !signedInUser.name)) {
                 router.replace('/(auth)/complete-profile');
             } else {
                 router.replace('/(tabs)/home');
@@ -87,13 +84,14 @@ export default function GoogleSignInScreen() {
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
-            router.replace('/(auth)'); // Hata durumunda auth sayfasına geri dön
+            router.replace('/(auth)');
         } finally {
             setIsProcessing(false);
             setAuthFlowActive(false);
         }
     };
-
+    
+    // ... (Geri kalan kod aynı)
     return (
         <LinearGradient colors={[theme.colors.background, theme.colors.secondary]} style={styles.gradient}>
             <SafeAreaView style={styles.container}>
@@ -117,14 +115,13 @@ export default function GoogleSignInScreen() {
     );
 }
 
-// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
     gradient: { flex: 1 },
     container: { flex: 1 },
     content: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
     loadingContainer: { alignItems: 'center', gap: 24 },
     iconContainer: {
-        width: isTablet ? 120 : 80, // Büyüdü
+        width: isTablet ? 120 : 80,
         height: isTablet ? 120 : 80,
         borderRadius: isTablet ? 60 : 40,
         justifyContent: 'center',
@@ -133,12 +130,12 @@ const styles = StyleSheet.create({
     },
     mainStatus: {
         fontFamily: 'Montserrat-Bold',
-        fontSize: isTablet ? 24 : 18, // Büyüdü
+        fontSize: isTablet ? 24 : 18,
         textAlign: 'center'
     },
     stepText: {
         fontFamily: 'Montserrat-Regular',
-        fontSize: isTablet ? 18 : 14, // Büyüdü
+        fontSize: isTablet ? 18 : 14,
         textAlign: 'center',
         fontStyle: 'italic'
     },

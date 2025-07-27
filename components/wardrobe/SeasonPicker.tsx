@@ -1,3 +1,5 @@
+// kodlar/components/wardrobe/SeasonPicker.tsx - 2x2 grid yapısıyla güncellendi
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/context/ThemeContext';
@@ -79,22 +81,25 @@ const SeasonPicker: React.FC<SeasonPickerProps> = ({
   );
 };
 
+// --- DEĞİŞİKLİK BURADA ---
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap', // Öğelerin alt satıra kaymasını sağlar
+    justifyContent: 'space-between', // Sütunlar arasında boşluk bırakır
+    rowGap: 10, // Satırlar arasına dikey boşluk ekler
   },
   seasonItem: {
-    flex: 1,
+    width: '48.5%', // İki sütunlu bir yapı için genişlik ayarı (%3 aradaki boşluk için)
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    marginHorizontal: 4,
     alignItems: 'center',
   },
   seasonText: {
     fontSize: 14,
   },
 });
+// --- DEĞİŞİKLİK BİTTİ ---
 
 export default SeasonPicker;

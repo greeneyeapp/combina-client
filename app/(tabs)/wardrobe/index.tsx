@@ -1,4 +1,4 @@
-// app/(tabs)/wardrobe/index.tsx - iPad için dinamik grid ve performans optimizasyonları
+// app/(tabs)/wardrobe/index.tsx - Kategoriler artık ürün sayısına göre sıralanıyor
 
 import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet, SectionList, ActivityIndicator, TouchableOpacity, Dimensions } from 'react-native';
@@ -26,14 +26,12 @@ interface SectionData {
   id: string;
 }
 
-// --- YENİ: iPad için Dinamik Grid Ayarları ---
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 const gridSpacing = isTablet ? 16 : 8;
-const gridColumns = isTablet ? 5 : 3; // Tablette 5 sütun, telefonda 3
+const gridColumns = isTablet ? 5 : 3;
 const sidePadding = 16;
 const gridItemWidth = (width - sidePadding * 2 - gridSpacing * (gridColumns - 1)) / gridColumns;
-// --- YENİ KOD BİTİŞİ ---
 
 
 export default function WardrobeScreen() {
@@ -154,11 +152,20 @@ export default function WardrobeScreen() {
       }
     });
 
+    // --- DEĞİŞİKLİK BURADA ---
+    // Kategorileri alfabetik olarak değil, içerdikleri ürün sayısına göre (çoktan aza) sırala
     return Object.keys(grouped).map(mainCat => ({
       title: t(`categories.${mainCat}`),
       data: chunkArray(grouped[mainCat], gridColumns),
       id: mainCat,
-    })).sort((a, b) => a.title.localeCompare(b.title, i18n.language));
+    })).sort((a, b) => {
+        // Her bölümdeki toplam ürün sayısını hesapla
+        const countA = a.data.reduce((acc, row) => acc + row.length, 0);
+        const countB = b.data.reduce((acc, row) => acc + row.length, 0);
+        // Büyükten küçüğe sırala
+        return countB - countA;
+    });
+    // --- DEĞİŞİKLİK BİTTİ ---
   }, [filteredClothing, t, storedUserPlan?.gender, i18n.language]);
 
   const handleAddItem = () => router.push('/wardrobe/add');
@@ -243,7 +250,6 @@ export default function WardrobeScreen() {
           renderSectionHeader={renderSectionHeader}
           renderItem={renderItem}
           renderSectionFooter={renderSectionFooter}
-          // DEĞİŞİKLİK: SectionList'in içeriğine padding veriyoruz
           contentContainerStyle={{ paddingHorizontal: sidePadding }}
           extraData={i18n.language}
           removeClippedSubviews={true}
@@ -265,7 +271,6 @@ export default function WardrobeScreen() {
   );
 }
 
-// DEĞİŞİKLİK: Tüm stiller dinamik değişkenleri kullanacak şekilde güncellendi
 const styles = StyleSheet.create({
   container: { flex: 1 },
   usageContainer: { alignItems: 'center', paddingBottom: 8, paddingTop: 0, minHeight: 21 },
@@ -286,12 +291,10 @@ const styles = StyleSheet.create({
   addButton: { position: 'absolute', bottom: 24, right: 24, width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', elevation: 5 },
   categoryHeaderContainer: { 
     paddingVertical: 10, 
-    // DEĞİŞİKLİK: Başlıkların yan boşluklarını kaldırıyoruz, SectionList'ten gelecek
-    // paddingHorizontal: sidePadding, 
     marginTop: 15, 
     marginBottom: 5 
   },
-  categoryHeaderText: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 20 : 16 }, // Tablette başlık büyüdü
+  categoryHeaderText: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 20 : 16 },
   adContainer: {
     marginTop: 16,
     marginBottom: 8,

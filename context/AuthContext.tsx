@@ -1,4 +1,4 @@
-// context/AuthContext.tsx - Splash screen koordinasyonu ile geliştirilmiş
+// kodlar/context/AuthContext.tsx - Login döngüsü VE modal kapanma sorunlarının her ikisini de çözen nihai versiyon
 
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
@@ -9,7 +9,8 @@ import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useRootNavigationState, useSegments } from 'expo-router';
-import { apiDeduplicator } from '@/utils/apiDeduplication'; // Bu importu dosyanın başına ekleyin
+import { apiDeduplicator } from '@/utils/apiDeduplication';
+import { useConfigStore } from '@/store/configStore'; // YENİ IMPORT
 
 const USER_CACHE_KEY = 'cached_user_data';
 
@@ -21,7 +22,7 @@ interface AuthContextType {
   setAuthFlowActive: (isActive: boolean) => void;
   signInWithGoogle: (accessToken: string) => Promise<any>;
   signInWithApple: (credential: any) => Promise<any>;
-  updateUserInfo: (info: { name: string; gender: string }) => Promise<void>; // DEĞİŞİKLİK BURADA
+  updateUserInfo: (info: { name: string; gender: string }) => Promise<void>;
   logout: () => Promise<void>;
   refreshUserProfile: () => Promise<void>;
 }
@@ -53,60 +54,55 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loadJwt();
   }, [loadJwt]);
 
+  // 1. DÜZELTME: SÜREKLİ LOGIN İSTEME SORUNU İÇİN - Oturum durumunu başlatan useEffect bloğu
   React.useEffect(() => {
     if (!isReady || isInitialized) return;
 
     const initializeAuth = async () => {
       console.log('🔐 Initializing auth...', { jwt: !!jwt });
-
       try {
         if (jwt) {
-          try {
-            console.log('🔄 Validating token with backend...');
-            const profileData = await fetchUserProfile();
+          const cachedUser = await AsyncStorage.getItem(USER_CACHE_KEY);
+          if (cachedUser) {
+            setUser(JSON.parse(cachedUser));
+          }
 
-            const completeUserInfo = {
-              uid: profileData.user_id,
-              email: (profileData as any).email || '',
-              name: profileData.fullname || '',
-              fullname: profileData.fullname || '',
-              displayName: profileData.fullname || '',
-              gender: profileData.gender || null,
-              plan: profileData.plan || 'free',
-              provider: user?.provider || 'api',
-              isAnonymous: false
-            };
+          useConfigStore.getState().fetchOccasionRules();
 
-            setUser(completeUserInfo);
-            await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
-            console.log('✅ Token validated, user profile is fresh.');
+          console.log('🔄 Validating token with backend...');
+          const profileData = await fetchUserProfile();
 
-            if (completeUserInfo.uid) {
-              try {
-                await Purchases.logIn(completeUserInfo.uid);
-              } catch (revenueCatError) {
-                console.warn('RevenueCat login failed during initialization:', revenueCatError);
-              }
-            }
+          const completeUserInfo = {
+            uid: profileData.user_id,
+            email: (profileData as any).email || '',
+            name: profileData.fullname || '',
+            fullname: profileData.fullname || '',
+            displayName: profileData.fullname || '',
+            gender: profileData.gender || null,
+            plan: profileData.plan || 'free',
+            provider: 'api',
+            isAnonymous: false
+          };
+          
+          setUser(completeUserInfo);
+          await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
+          console.log('✅ Token validated, user profile is fresh.');
 
-          } catch (error) {
-            console.error('🚨 Token validation failed. Logging out...', error);
-            await clearJwt();
-            clearUserPlan();
-            setUser(null);
-            await AsyncStorage.removeItem(USER_CACHE_KEY);
-            await Purchases.logOut().catch(e => console.log('RC logout failed on validation error'));
+          if (completeUserInfo.uid) {
+            await Purchases.logIn(completeUserInfo.uid).catch(e => console.warn('RC login failed during init:', e));
           }
         } else {
           setUser(null);
           clearUserPlan();
           await AsyncStorage.removeItem(USER_CACHE_KEY);
         }
-
       } catch (error) {
-        console.error('❌ Auth initialization failed:', error);
-        setUser(null);
+        console.error('🚨 Token validation failed. Logging out...', error);
+        await clearJwt();
         clearUserPlan();
+        setUser(null);
+        await AsyncStorage.removeItem(USER_CACHE_KEY);
+        await Purchases.logOut().catch(e => console.log('RC logout failed on validation error'));
       } finally {
         setLoading(false);
         setIsInitialized(true);
@@ -117,78 +113,60 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
   }, [isReady, jwt]);
 
+  // 2. DÜZELTME: MODALLARIN KAPANMA SORUNU İÇİN - Yönlendirmeleri yöneten useEffect bloğu
+  React.useEffect(() => {
+    if (!navigationState?.key || loading || isAuthFlowActive || !isInitialized) {
+      return;
+    }
+
+    const handleNavigation = () => {
+      const inAuthGroup = segments[0] === '(auth)';
+      
+      if (user && jwt) {
+        const profileComplete = user.gender && user.name;
+        if (!profileComplete) {
+          if (segments[1] !== 'complete-profile') {
+            router.replace('/(auth)/complete-profile');
+          }
+        } else {
+          // Profil tamsa, SADECE auth ekranlarındaysa ana sayfaya yönlendir.
+          // Bu, modal gibi diğer ekranlara müdahale etmez.
+          if (inAuthGroup) {
+            console.log('🏠 Navigation: Profile complete, redirecting from auth to home');
+            router.replace('/(tabs)/home');
+          }
+        }
+      } else {
+        // Kullanıcı giriş yapmamışsa ve auth ekranlarında değilse, auth'a yönlendir.
+        if (!inAuthGroup) {
+          router.replace('/(auth)');
+        }
+      }
+    };
+
+    const timer = setTimeout(handleNavigation, 100);
+    return () => clearTimeout(timer);
+  }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key, isInitialized]);
+
   const signInWithGoogle = async (accessToken: string) => {
     setLoading(true);
-
     try {
       const response = await axios.post(`${API_URL}/auth/google`, { access_token: accessToken }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
-
-      console.log('🔍 Google Backend response user_info:', JSON.stringify(user_info, null, 2));
-
       const completeUserInfo = {
-        uid: user_info?.uid,
-        name: user_info?.name || '',
-        fullname: user_info?.name || '',
-        displayName: user_info?.name || '',
-        email: user_info?.email || '',
-        gender: user_info?.gender || null,
-        plan: user_info?.plan || 'free',
-        provider: 'google',
-        isAnonymous: false
+        uid: user_info?.uid, name: user_info?.name || '', fullname: user_info?.name || '',
+        displayName: user_info?.name || '', email: user_info?.email || '',
+        gender: user_info?.gender || null, plan: user_info?.plan || 'free',
+        provider: 'google', isAnonymous: false
       };
-
-      console.log('🔍 Google Created user object:', JSON.stringify(completeUserInfo, null, 2));
-
       await setJwt(access_token);
-      console.log('✅ JWT token set successfully');
-
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
-      console.log('✅ User data cached successfully');
-
       setUser(completeUserInfo);
-      console.log('✅ User state set successfully');
-
       if (user_info?.uid) {
-        try {
-          await Purchases.logIn(user_info.uid);
-          console.log('✅ Google RevenueCat login successful');
-        } catch (revenueCatError) {
-          console.warn('⚠️ Google RevenueCat login failed:', revenueCatError);
-        }
+        await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Google RC login failed:', e));
       }
-
-      const now = Date.now();
-      if (now - lastProfileRefresh > 60000 && (!user_info?.gender)) {
-        setLastProfileRefresh(now);
-        try {
-          console.log('🔄 Google: Fetching additional profile data...');
-
-          const { fetchUserProfile } = await import('@/services/userService');
-          const profileData = await fetchUserProfile();
-
-          if (profileData && (profileData.gender || profileData.fullname)) {
-            const updatedUserInfo = {
-              ...completeUserInfo,
-              gender: profileData.gender || completeUserInfo.gender,
-              fullname: profileData.fullname || completeUserInfo.fullname,
-            };
-
-            console.log('🔄 Google: Profile enhanced with additional data');
-            setUser(updatedUserInfo);
-            await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUserInfo));
-          }
-        } catch (profileError) {
-          console.warn('⚠️ Google: Profile enhancement failed:', profileError);
-        }
-      } else {
-        console.log('📋 Google: Profile refresh skipped - recent or complete data available');
-      }
-
       setLoading(false);
-      console.log('✅ Google sign-in completed successfully');
       return completeUserInfo;
-
     } catch (error) {
       setLoading(false);
       console.error('❌ GOOGLE SIGN-IN ERROR:', error);
@@ -198,91 +176,32 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithApple = async (credential: any) => {
     setLoading(true);
-
     try {
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
-      const nameForBackend = `${givenName} ${familyName}`.trim();
-
+      const nameFromApple = `${givenName} ${familyName}`.trim();
       const response = await axios.post(`${API_URL}/auth/apple`, {
         identity_token: credential.identityToken,
         authorization_code: credential.authorizationCode,
-        user_info: {
-          name: nameForBackend,
-          email: credential.email
-        }
+        user_info: { name: nameFromApple, email: credential.email }
       }, { timeout: 30000 });
-
       const { access_token, user_info } = response.data;
-
-      if (!user_info) {
-        throw new Error("User info was not returned from the server.");
-      }
-
-      console.log('🔍 Apple Backend response user_info:', JSON.stringify(user_info, null, 2));
-
+      if (!user_info) throw new Error("User info was not returned from the server.");
       await setJwt(access_token);
-
-      const finalName = user_info.fullname || user_info.name || nameForBackend;
+      const finalName = user_info.fullname || user_info.name || nameFromApple;
       const finalEmail = user_info.email || credential.email || '';
-
       const completeUserInfo = {
-        uid: user_info.uid,
-        name: finalName,
-        fullname: finalName,
-        displayName: finalName,
-        email: finalEmail,
-        gender: user_info.gender || null,
-        plan: user_info.plan || 'free',
-        provider: 'apple',
-        isAnonymous: false
+        uid: user_info.uid, name: finalName, fullname: finalName, displayName: finalName,
+        email: finalEmail, gender: user_info.gender || null, plan: user_info.plan || 'free',
+        provider: 'apple', isAnonymous: false
       };
-
-      console.log('🔍 Apple Created user object:', JSON.stringify(completeUserInfo, null, 2));
-
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
-
       if (user_info.uid) {
-        try {
-          await Purchases.logIn(user_info.uid);
-          console.log('✅ Apple RevenueCat login successful');
-        } catch (revenueCatError) {
-          console.warn('⚠️ Apple RevenueCat login failed:', revenueCatError);
-        }
+        await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Apple RC login failed:', e));
       }
-
-      const now = Date.now();
-      if (now - lastProfileRefresh > 60000 && (!user_info?.gender)) {
-        setLastProfileRefresh(now);
-        try {
-          console.log('🔄 Apple: Fetching additional profile data...');
-
-          const { fetchUserProfile } = await import('@/services/userService');
-          const profileData = await fetchUserProfile();
-
-          if (profileData && (profileData.gender || profileData.fullname)) {
-            const updatedUserInfo = {
-              ...completeUserInfo,
-              gender: profileData.gender || completeUserInfo.gender,
-              fullname: profileData.fullname || completeUserInfo.fullname,
-            };
-
-            console.log('🔄 Apple: Profile enhanced with additional data');
-            setUser(updatedUserInfo);
-            await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUserInfo));
-          }
-        } catch (profileError) {
-          console.warn('⚠️ Apple: Profile enhancement failed:', profileError);
-        }
-      } else {
-        console.log('📋 Apple: Profile refresh skipped - recent or complete data available');
-      }
-
       setLoading(false);
-      console.log('✅ Apple sign-in completed successfully');
       return completeUserInfo;
-
     } catch (error) {
       setLoading(false);
       console.error('❌ APPLE SIGN-IN ERROR:', error);
@@ -290,29 +209,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // DEĞİŞİKLİK BURADA
   const updateUserInfo = async (info: { name: string; gender: string }): Promise<any> => {
     try {
       const token = useApiAuthStore.getState().jwt;
       if (!token) throw new Error("No token found");
-
       await axios.post(`${API_URL}/api/users/update-info`, { ...info }, { headers: { Authorization: `Bearer ${token}` } });
       console.log('Profile updated on backend, refetching...');
-
       const updatedPlan = await getUserProfile(true);
-
       const updatedUser = {
         ...user,
         fullname: updatedPlan.fullname,
+        name: updatedPlan.fullname,
+        displayName: updatedPlan.fullname,
         gender: updatedPlan.gender,
       };
-
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
       console.log('✅ AuthContext user state updated with fresh data.');
-
       return updatedUser;
-
     } catch (error) {
       console.error('Update user info error:', error);
       throw error;
@@ -324,35 +238,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log('🚪 Starting logout process...');
       setAuthFlowActive(true);
       setUser(null);
-      clearUserPlan();
+      useUserPlanStore.getState().clearUserPlan();
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
-
       apiDeduplicator.clearCache();
-
-
       setIsInitialized(false);
       setLastProfileRefresh(0);
-
-      try {
-        await Purchases.logOut();
-        console.log('✅ RevenueCat logout successful');
-      } catch (revenueCatError) {
-        console.log('⚠️ RevenueCat logout error (expected):', revenueCatError);
-      }
-
-      console.log('🔐 Logout: Redirecting to auth...');
+      await Purchases.logOut().catch(e => console.log('⚠️ RC logout error (expected):', e));
       router.replace('/(auth)');
-
       setTimeout(() => {
         setAuthFlowActive(false);
         console.log('✅ Logout process completed');
-      }, 1000);
-
+      }, 500);
     } catch (error) {
       console.error("🚨 Logout Error:", error);
       setUser(null);
-      clearUserPlan();
+      useUserPlanStore.getState().clearUserPlan();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
       setIsInitialized(false);
       setLastProfileRefresh(0);
@@ -363,11 +264,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const refreshUserProfile = async () => {
     const now = Date.now();
-    if (now - lastProfileRefresh < 60000) {
-      console.log('🚫 Profile refresh throttled');
-      return;
-    }
-
+    if (now - lastProfileRefresh < 60000) return;
     if (user) {
       try {
         setLastProfileRefresh(now);
@@ -377,123 +274,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
   };
-
-  React.useEffect(() => {
-    if (!navigationState?.key || loading || isAuthFlowActive || !isInitialized) {
-      return;
-    }
-
-    const handleNavigation = () => {
-      const inAuthGroup = segments[0] === '(auth)';
-      const currentPath = segments.join('/');
-      const isNotFoundPage = segments.includes('+not-found');
-      const isInTabs = segments[0] === '(tabs)';
-      const isLogoutScenario = !user && !jwt && isInTabs;
-      const isModalRoute = segments.includes('subscription') || segments.includes('storage');
-
-      if (isModalRoute) {
-        console.log('🚫 Navigation suspended: Modal route detected');
-        return;
-      }
-
-      const shouldLog = isNotFoundPage || inAuthGroup || !isInTabs || isLogoutScenario;
-
-      if (shouldLog || __DEV__) {
-        console.log('🔍 Navigation Debug:', {
-          user: !!user,
-          jwt: !!jwt,
-          userGender: user?.gender,
-          segments: segments,
-          currentPath: currentPath,
-          inAuthGroup: inAuthGroup,
-          isNotFoundPage: isNotFoundPage,
-          isInTabs: isInTabs,
-          isLogoutScenario: isLogoutScenario,
-          isModalRoute: isModalRoute,
-          isInitialized: isInitialized
-        });
-      }
-
-      if (user && jwt) {
-        const profileComplete = user.gender;
-
-        if (shouldLog || __DEV__) {
-          console.log('🚀 Navigation: User and JWT available, checking profile completion...');
-          console.log('🔍 Profile completeness check:', {
-            gender: user.gender,
-            profileComplete: profileComplete
-          });
-        }
-
-        if (!profileComplete) {
-          if (segments[1] !== 'complete-profile') {
-            console.log('📝 Navigation: Profile incomplete, redirecting to complete-profile');
-            router.replace('/(auth)/complete-profile');
-            return;
-          }
-          return;
-        }
-
-        if (profileComplete) {
-          if (inAuthGroup || isNotFoundPage || currentPath === '' || currentPath === '+not-found') {
-            console.log('🏠 Navigation: Profile complete, redirecting to home from:', currentPath);
-            router.replace('/(tabs)/home');
-            return;
-          }
-
-          if (isInTabs) {
-            if (__DEV__ && shouldLog) {
-              console.log('✅ Navigation: Already in tabs area');
-            }
-            return;
-          }
-
-          console.log('🔄 Navigation: Profile complete, ensuring user is in tabs area');
-          router.replace('/(tabs)/home');
-          return;
-        }
-      } else if (!user && !jwt) {
-        if (!inAuthGroup) {
-          if (!isLogoutScenario) {
-            console.log('🔐 Navigation: No user/JWT, redirecting to auth');
-          }
-          router.replace('/(auth)');
-          return;
-        }
-        return;
-      }
-    };
-
-    const timer = setTimeout(handleNavigation, 250);
-    return () => clearTimeout(timer);
-
-  }, [user, jwt, loading, isAuthFlowActive, segments, navigationState?.key, isInitialized]);
-
-  if (__DEV__) {
-    React.useEffect(() => {
-      (global as any).forceNavigateHome = () => {
-        console.log('🔧 DEBUG: Force navigating to home');
-        router.replace('/(tabs)/home');
-      };
-
-      (global as any).debugAuthState = () => {
-        console.log('🔧 DEBUG Auth State:', {
-          user: !!user,
-          jwt: !!jwt,
-          loading,
-          isAuthFlowActive,
-          isInitialized,
-          segments,
-          userComplete: !!(user?.gender)
-        });
-      };
-
-      (global as any).testLogout = () => {
-        console.log('🔧 DEBUG: Testing logout');
-        logout();
-      };
-    }, [user, jwt, loading, isAuthFlowActive, segments, isInitialized]);
-  }
 
   const value = {
     user,

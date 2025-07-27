@@ -22,7 +22,8 @@ import useAlertStore from '@/store/alertStore';
 import { getUserProfile, deleteUserAccount } from '@/services/userService';
 import { restorePurchases } from '@/services/purchaseService';
 import { useRevenueCat } from '@/context/RevenueCatContext';
-import Toast from 'react-native-toast-message';
+import { useClothingStore } from '@/store/clothingStore';
+import { useOutfitStore } from '@/store/outfitStore';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
@@ -175,9 +176,16 @@ export default function ProfileScreen() {
             try {
               const result = await deleteUserAccount();
               if (result.success) {
-                // Başarılı silme işleminden sonra doğrudan çıkış yap
-                // Yükleme ekranı, çıkış işlemi tamamlanana kadar görünür kalacak
+                // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
+                // 1. Backend'den hesap silme başarılı olduktan sonra yerel verileri temizle
+                console.log('🧹 Clearing all local user data after account deletion...');
+                await useClothingStore.getState().clearAllClothing();
+                useOutfitStore.getState().clearAllOutfits();
+                console.log('✅ Local data cleared.');
+
+                // 2. Son adım olarak çıkış yap ve kullanıcıyı auth ekranına yönlendir
                 logout();
+                // --- DEĞİŞİKLİK BURADA BİTİYOR ---
               } else {
                 setIsGlobalLoading(false);
                 setIsDeleting(false);

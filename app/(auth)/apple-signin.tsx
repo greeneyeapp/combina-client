@@ -1,4 +1,4 @@
-// kodlar/app/(auth)/apple-signin.tsx - Yönlendirme mantığı kaldırıldı
+// app/(auth)/apple-signin.tsx - Direkt yönlendirme yapılıyor
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
@@ -42,9 +42,19 @@ export default function AppleSignInScreen() {
             });
 
             setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
-            // --- DÜZELTME: Sadece giriş fonksiyonunu çağır. Yönlendirmeyi AuthContext yapacak. ---
-            await signInWithApple(credential);
-            // Yönlendirme kodu buradan tamamen kaldırıldı.
+            console.log('🔄 Processing Apple credentials...');
+            
+            // Sign in işlemini yap
+            const userInfo = await signInWithApple(credential);
+            
+            // DÜZELTME: Sign-in başarılı olduğunda direkt yönlendirme yap
+            if (userInfo.profile_complete) {
+                console.log('✅ Apple sign-in complete, redirecting to home');
+                router.replace('/(tabs)/home');
+            } else {
+                console.log('✅ Apple sign-in complete, redirecting to complete-profile');
+                router.replace('/(auth)/complete-profile');
+            }
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);
@@ -55,7 +65,6 @@ export default function AppleSignInScreen() {
                     buttons: [{ text: t('common.ok') }]
                 });
             }
-            // Hata durumunda veya kullanıcı iptal ettiğinde ana giriş ekranına dön.
             router.replace('/(auth)');
         } finally {
             setIsProcessing(false);

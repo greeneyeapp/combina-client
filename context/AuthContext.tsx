@@ -120,57 +120,40 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(clearStuckNavigation);
   }, [isNavigating]);
 
-  // DÜZELTME: User state değişimlerini izle - provider'a göre farklı handling
+  // DÜZELTME: User state değişimlerini izle - sadece anonymous için reset
   React.useEffect(() => {
-    // User state değiştiğinde navigation'ı resetle
-    if (user && jwt) {
-      const isOAuthProvider = user.provider === 'google' || user.provider === 'apple';
-      
-      if (isOAuthProvider) {
-        console.log(`👤 OAuth user (${user.provider}) state changed, gentle navigation reset`);
-        // OAuth için daha nazik reset - sadece pending'i temizle
-        setPendingNavigation(null);
-        // isNavigating'i hemen temizleme, biraz bekle
-        setTimeout(() => {
-          setIsNavigating(false);
-        }, 100);
-      } else {
-        console.log(`👤 ${user.provider || 'unknown'} user state changed, resetting navigation flags`);
-        setIsNavigating(false);
-        setPendingNavigation(null);
-      }
+    if (user && jwt && user.provider === 'anonymous') {
+      console.log(`👤 Anonymous user state changed, gentle navigation reset`);
+      setIsNavigating(false);
+      setPendingNavigation(null);
     }
+    // OAuth providers için navigation reset yapma
   }, [user?.uid, user?.profile_complete, user?.provider, jwt]);
 
-  // DÜZELTME: Navigation effect'i - OAuth sign-in sürecini koru
+  // DÜZELTME: Navigation effect'i - OAuth'a dokunmama modeli
   React.useEffect(() => {
     if (!navigationState?.key || !isInitialized || loading) {
       return;
     }
 
-    // DÜZELTME: OAuth sign-in sürecindeyse navigation'ı tetikleme
     const currentPath = segments.join('/');
-    const isOAuthSignInInProgress = currentPath.includes('google-signin') || currentPath.includes('apple-signin');
     
-    if (isOAuthSignInInProgress && !user) {
-      console.log('⏳ OAuth sign-in in progress, skipping navigation...');
+    // DÜZELTME: OAuth ekranlarındayken HİÇBİR navigation yapma
+    const isOAuthScreen = currentPath.includes('google-signin') || 
+                         currentPath.includes('apple-signin') ||
+                         currentPath.includes('anonymous-signin');
+    
+    if (isOAuthScreen) {
+      console.log(`⏸️ Blocking all navigation - on OAuth screen: ${currentPath}`);
       return;
     }
 
-    // DÜZELTME: Provider'a göre farklı debounce süreleri
-    const getDebounceTime = () => {
-      if (user?.provider === 'google' || user?.provider === 'apple') {
-        return 500; // OAuth providers için daha uzun bekle
-      }
-      if (user?.provider === 'anonymous') {
-        return 200; // Anonymous için hızlı
-      }
-      return 300; // Diğerleri için orta
-    };
+    // DÜZELTME: Sadece anonymous için hızlı, diğerleri için yavaş
+    const debounceTime = user?.provider === 'anonymous' ? 200 : 800;
 
     const navigationTimer = setTimeout(() => {
       performNavigation();
-    }, getDebounceTime());
+    }, debounceTime);
 
     return () => clearTimeout(navigationTimer);
   }, [
@@ -188,50 +171,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const inAuthGroup = segments[0] === '(auth)';
     const currentPath = segments.join('/');
 
+    // DÜZELTME: OAuth ekranlarında HİÇBİR navigation yapma
+    const isOAuthScreen = currentPath.includes('google-signin') || 
+                         currentPath.includes('apple-signin') ||
+                         currentPath.includes('anonymous-signin');
+    
+    if (isOAuthScreen) {
+      console.log(`⏸️ Navigation completely blocked - OAuth screen: ${currentPath}`);
+      return;
+    }
+
     console.log('🧭 Navigation check:', {
       currentPath,
       inAuthGroup,
       hasUser: !!user,
       hasJwt: !!jwt,
       profileComplete: user?.profile_complete,
-      isAnonymous: user?.isAnonymous,
-      userUid: user?.uid,
       provider: user?.provider,
       isNavigating
     });
 
-    // DÜZELTME: OAuth providers için özel handling
-    const isOAuthProvider = user?.provider === 'google' || user?.provider === 'apple';
-    
     if (isNavigating) {
-      if (isOAuthProvider) {
-        console.log('🚫 OAuth navigation in progress, waiting once...');
-        return;
-      } else {
-        console.log('🚫 Navigation already in progress, force resetting and continuing...');
-        setIsNavigating(false);
-        setPendingNavigation(null);
-      }
+      console.log('🚫 Navigation already in progress, skipping...');
+      return;
     }
     
     setIsNavigating(true);
     
     try {
       if (user && jwt) {
-        // DÜZELTME: OAuth providers için ekstra kontrol
-        if (isOAuthProvider && !user.profile_complete && user.profile_complete !== false) {
-          console.log('⏳ OAuth user profile still loading, waiting...');
-          return;
-        }
+        console.log(`🔍 User authenticated with ${user.provider}, profile_complete: ${user.profile_complete}`);
 
         if (user.profile_complete === true) {
-          // Profil tamamlanmış - ana uygulamaya yönlendir
           if (inAuthGroup) {
             console.log(`🏠 Profile complete (${user.provider}). Redirecting to home.`);
             router.replace('/(tabs)/home');
           }
         } else {
-          // DÜZELTME: Profil tamamlanmamış - complete-profile'a yönlendir
           if (currentPath !== '(auth)/complete-profile') {
             console.log(`📝 Profile incomplete (${user.provider}). Redirecting to complete-profile.`);
             router.replace('/(auth)/complete-profile');
@@ -240,27 +216,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
       } else {
-        // DÜZELTME: OAuth sign-in sürecindeyse auth/index'e gitme
-        const isOAuthSignInInProgress = currentPath.includes('google-signin') || currentPath.includes('apple-signin');
-        
-        if (!inAuthGroup && !isOAuthSignInInProgress) {
+        // User yok - sadece auth group dışındaysak yönlendir
+        if (!inAuthGroup) {
           console.log('🚪 No user found. Redirecting to auth screen.');
           router.replace('/(auth)');
-        } else if (isOAuthSignInInProgress) {
-          console.log('⏳ OAuth sign-in in progress, staying put...');
-          // OAuth sign-in sürecinde yönlendirme yapma
+        } else {
+          console.log('👤 No user but in auth group, staying put');
         }
       }
     } catch (error) {
       console.error('❌ Navigation error:', error);
     } finally {
-      // DÜZELTME: Provider'a göre farklı cleanup süreleri
-      const cleanupTime = isOAuthProvider ? 200 : 50;
       setTimeout(() => {
         setIsNavigating(false);
         setPendingNavigation(null);
-        console.log(`🔓 Navigation flags cleared (${user?.provider || 'unknown'})`);
-      }, cleanupTime);
+        console.log(`🔓 Navigation flags cleared`);
+      }, 100);
     }
   };
 
@@ -336,7 +307,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async (accessToken: string) => {
     try {
-      console.log('🔄 Starting Google sign-in process...');
+      console.log('🔄 AuthContext: Starting Google sign-in...');
       
       let response;
       if (user?.isAnonymous) {
@@ -352,7 +323,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           access_token: accessToken 
         }, { timeout: 30000 });
       }
+      
       const { access_token, user_info } = response.data;
+      console.log('📬 Google API Response received');
+      
       const completeUserInfo = {
         uid: user_info?.uid,
         name: user_info?.name || '',
@@ -368,25 +342,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       await setJwt(access_token);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
-      
-      console.log('✅ Google user created, setting user state...');
       setUser(completeUserInfo);
       
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Google RC login failed:', e));
       }
       
-      console.log(`✅ Google sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
+      console.log(`✅ AuthContext: Google sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
       return completeUserInfo;
+      
     } catch (error) {
-      console.error('❌ GOOGLE SIGN-IN ERROR:', error);
+      console.error('❌ AuthContext: Google sign-in error:', error);
       throw error;
     }
   };
 
   const signInWithApple = async (credential: any) => {
     try {
-      console.log('🔄 Starting Apple sign-in process...');
+      console.log('🔄 Starting Apple sign-in process in AuthContext...');
       
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
@@ -418,6 +391,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       
       console.log('✅ Apple user created, setting user state...');
+      console.log('🚫 BLOCKING AuthContext navigation for Apple OAuth');
+      
+      // DÜZELTME: Apple OAuth için navigation'ı tamamen engelle
+      setIsNavigating(true);
+      setPendingNavigation('OAUTH_IN_PROGRESS');
+      
       setUser(completeUserInfo);
       
       if (user_info.uid) {
@@ -425,9 +404,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log(`✅ Apple sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
+      console.log('🔓 Apple OAuth will handle its own navigation');
+      
       return completeUserInfo;
     } catch (error) {
       console.error('❌ APPLE SIGN-IN ERROR:', error);
+      // Hata durumunda navigation'ı normale döndür
+      setIsNavigating(false);
+      setPendingNavigation(null);
       throw error;
     }
   };

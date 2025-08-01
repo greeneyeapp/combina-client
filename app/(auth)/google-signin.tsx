@@ -1,4 +1,4 @@
-// kodlar/app/(auth)/google-signin.tsx - Yönlendirme mantığı kaldırıldı
+// app/(auth)/google-signin.tsx - ESKİ ÇALIŞAN VERSİYON + YÖNLENDİRME DÜZELTMESİ
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
@@ -53,7 +53,7 @@ export default function GoogleSignInScreen() {
         if (response.type === 'success' && response.authentication?.accessToken) {
             setIsProcessing(true);
             handleGoogleSignIn(response.authentication.accessToken);
-        } else if (response.type !== 'dismiss' && response.type !== 'cancel') { // Kullanıcı iptali normal bir durum
+        } else if (response.type !== 'dismiss' && response.type !== 'cancel') {
             console.log('Google auth failed or was cancelled:', response.type);
             router.replace('/(auth)');
         } else if (response.type === 'cancel' || response.type === 'dismiss') {
@@ -64,9 +64,27 @@ export default function GoogleSignInScreen() {
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-            // --- DÜZELTME: Sadece giriş fonksiyonunu çağır. Yönlendirmeyi AuthContext yapacak. ---
-            await signInWithGoogle(accessToken);
-            // Yönlendirme kodu buradan tamamen kaldırıldı. AuthContext yönlendirmeyi yönetecek.
+            console.log('🔄 Processing Google access token...');
+            
+            // AuthContext sign in
+            const userInfo = await signInWithGoogle(accessToken);
+            
+            console.log('✅ Google sign-in successful:', {
+                uid: userInfo.uid,
+                profileComplete: userInfo.profile_complete
+            });
+            
+            // DÜZELTME: Başarılı giriş sonrası yönlendirme
+            setTimeout(() => {
+                if (userInfo.profile_complete) {
+                    console.log('🏠 Redirecting to home');
+                    router.replace('/(tabs)/home');
+                } else {
+                    console.log('📝 Redirecting to complete-profile');
+                    router.replace('/(auth)/complete-profile');
+                }
+            }, 1000); // 1 saniye bekle
+            
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
@@ -77,11 +95,8 @@ export default function GoogleSignInScreen() {
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
-            // Hata durumunda ana giriş ekranına dön.
             router.replace('/(auth)');
         } finally {
-            // Bu ekran yönlendirme sonrası kaybolacağı için isProcessing'i false yapmaya gerek kalmayabilir,
-            // ama güvenlik için kalabilir.
             setIsProcessing(false);
         }
     };

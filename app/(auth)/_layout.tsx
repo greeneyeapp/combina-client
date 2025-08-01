@@ -7,6 +7,13 @@ export default function AuthLayout() {
       screenOptions={{
         headerShown: false,
       }}
-    />
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="google-signin" />
+      <Stack.Screen name="apple-signin" />
+      <Stack.Screen name="anonymous-signin" />
+      <Stack.Screen name="complete-profile" />
+      <Stack.Screen name="language" />
+    </Stack>
   );
 }

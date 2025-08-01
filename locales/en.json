@@ -125,6 +125,12 @@
     "files": "files"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Setting up your experience...",
+      "pleaseWait": "Please wait a moment",
+      "creating": "Creating guest account",
+      "almostReady": "Almost ready!"
+    },
     "googleSignIn": {
       "redirecting": "Redirecting to Google...",
       "processing": "Signing in...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Guest",
+    "createAccount": "Create Account",
+    "upgradeAccount": "Upgrade Account",
+    "continueAsGuest": "Continue as Guest",
+    "guestUser": "Guest User",
+    "or": "or",
     "done": "Done",
     "cancel": "Cancel",
     "confirm": "Confirm",
@@ -185,9 +197,12 @@
     "loadMore": "Load More"
   },
   "auth": {
+    "continueAsGuest": "Continue as Guest",
     "signInWithGoogle": "Sign in with Google",
     "signInWithApple": "Sign in with Apple",
-    "continueAsGuest": "Continue as Guest",
+    "guestAccountCreating": "Creating guest account...",
+    "guestWelcome": "Welcome, Guest!",
+    "guestSubtitle": "You're using a temporary account",
     "signingInWithGoogle": "Signing in with Google...",
     "signingInWithApple": "Signing in with Apple...",
     "signInError": "Sign in failed. Please try again.",
@@ -234,6 +249,9 @@
     "profile": "Profile"
   },
   "home": {
+    "guestWelcome": "Welcome to Your Style Assistant!",
+    "guestSubtitle": "Start building your wardrobe and get AI-powered outfit suggestions",
+    "guestUpgradePrompt": "Create an account to sync across devices",
     "title": "Discover Style",
     "styleTipsTitle": "Style Tips",
     "styleTipsSubtitle": "Learn color & styling basics",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "No limits on your style journey"
   },
   "wardrobe": {
+    "guestMode": "Guest Mode",
+    "guestDataLocal": "Your wardrobe is saved locally on this device",
+    "createAccountToSync": "Create account to sync across devices",
     "title": "My Wardrobe",
     "addItem": "Add New Item",
     "editItem": "Edit Item",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Outfit Suggestions",
+    "guestLimitInfo": "As a guest, you have the same daily suggestion limits as registered users",
     "generating": "Generating...",
     "generatingOutfit": "Creating Your Perfect Outfit",
     "analyzingWardrobe": "Analyzing your wardrobe...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Some items in this outfit have been removed."
   },
   "profile": {
+    "guest": "Guest User",
+    "guestSubtitle": "Temporary account",
+    "upgradeFromGuest": "Create Your Account",
+    "upgradeGuestTitle": "Save Your Style Journey",
+    "upgradeGuestDesc": "Create a permanent account to sync your wardrobe across devices and never lose your data.",
+    "createPermanentAccount": "Create Account",
+    "guestAccountInfo": "You're currently using a temporary guest account. Your data is saved locally.",
+    "guestLimitations": "Guest account limitations apply",
+    "upgradeForFullAccess": "Create account for full access",
+    "guestAccount": "Guest Account",
+    "createAccountBenefits": "Benefits of creating an account",
+    "crossDeviceSync": "Sync across all your devices",
+    "neverLoseData": "Never lose your wardrobe data",
+    "fullFeatureAccess": "Access to all features",
     "deletingData": "Deleting your data...",
     "privacyPolicy": "Privacy Policy",
     "termsOfUse": "Terms of Use",
     "title": "Profile",
-    "guest": "Guest User",
-    "guestSubtitle": "Sign in or create an account for full access",
     "subscription": "Subscription",
     "dailyUsage": "{{used}}/{{total}} daily suggestions used",
     "upgradeForMore": "Tap to upgrade for more suggestions!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Redirecting..."
+    "redirecting": "Redirecting...",
+    "guestMode": "Guest Mode",
+    "signUpForMore": "Sign up for more features"
   },
   "register": {
     "name": "Name",

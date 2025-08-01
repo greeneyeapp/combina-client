@@ -1,7 +1,6 @@
-// app/auth/index.tsx - iPad için büyütülmüş ve orantılı tasarım
+// app/(auth)/index.tsx - Guest button eklenmesi
 
 import React from 'react';
-// YENİ: Dimensions modülü eklendi
 import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -11,7 +10,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/common/Button';
 
-// YENİ: iPad tespiti
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
@@ -33,7 +31,6 @@ export default function AuthIndexScreen() {
                 ? require('@/assets/images/logo-dark.png')
                 : require('@/assets/images/logo-light.png')
             }
-            // DEĞİŞİKLİK: Stil artık StyleSheet'ten dinamik olarak geliyor
             style={styles.logo}
             resizeMode="contain"
           />
@@ -42,8 +39,26 @@ export default function AuthIndexScreen() {
           </Text>
         </View>
 
-        {/* DEĞİŞİKLİK: Buton konteyneri artık ortalanmış ve genişliği sınırlı */}
         <View style={styles.buttonContainer}>
+          {/* Guest Mode Button - En üstte */}
+          <Button
+            label={t('auth.continueAsGuest')}
+            onPress={() => router.push('/(auth)/anonymous-signin')}
+            variant="secondary"
+            style={[styles.button, styles.guestButton]}
+            disabled={isAuthFlowActive}
+            size={isTablet ? 'large' : 'medium'}
+          />
+          
+          {/* Divider */}
+          <View style={styles.dividerContainer}>
+            <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+            <Text style={[styles.dividerText, { color: theme.colors.textLight }]}>
+              {t('common.or')}
+            </Text>
+            <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
+          </View>
+
           <Button
             label={t('auth.signInWithGoogle')}
             onPress={() => router.push('/(auth)/google-signin')}
@@ -51,7 +66,6 @@ export default function AuthIndexScreen() {
             style={styles.button}
             icon="google"
             disabled={isAuthFlowActive}
-            // YENİ: Buton boyutu tablet için büyütüldü
             size={isTablet ? 'large' : 'medium'}
           />
           
@@ -62,7 +76,6 @@ export default function AuthIndexScreen() {
               variant="primary"
               style={styles.button}
               disabled={isAuthFlowActive}
-              // YENİ: Buton boyutu tablet için büyütüldü
               size={isTablet ? 'large' : 'medium'}
             />
           )}
@@ -89,36 +102,51 @@ export default function AuthIndexScreen() {
   );
 }
 
-// DEĞİŞİKLİK: Tüm stiller tablet için dinamik hale getirildi
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { 
     flex: 1, 
     padding: 24, 
-    justifyContent: 'space-around', // DEĞİŞİKLİK: Elemanları dikeyde daha iyi dağıtmak için
+    justifyContent: 'space-around',
   },
   logoContainer: { 
     alignItems: 'center', 
-    // marginTop: 12, // Dikey boşluk justifyContent ile yönetiliyor
   },
   logo: { 
-    width: isTablet ? 320 : 220, // Büyüdü
-    height: isTablet ? 320 : 220, // Büyüdü
+    width: isTablet ? 320 : 220,
+    height: isTablet ? 320 : 220,
   },
   tagline: { 
     fontFamily: 'Montserrat-Medium', 
-    fontSize: isTablet ? 20 : 16, // Büyüdü
+    fontSize: isTablet ? 20 : 16,
     marginTop: 8, 
     textAlign: 'center' 
   },
   buttonContainer: { 
     width: '100%', 
-    // YENİ: Tablette genişliği sınırla ve ortala
     maxWidth: isTablet ? 450 : undefined, 
     alignSelf: 'center',
   },
   button: { 
     marginBottom: 16 
+  },
+  guestButton: {
+    marginBottom: 24 // Guest button için daha fazla boşluk
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
+    marginBottom: 24
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    fontSize: isTablet ? 16 : 14,
+    fontFamily: 'Montserrat-Medium',
   },
   footer: { 
     alignItems: 'center', 
@@ -126,7 +154,7 @@ const styles = StyleSheet.create({
   },
   languageSelector: { 
     fontFamily: 'Montserrat-Medium', 
-    fontSize: isTablet ? 18 : 16, // Büyüdü
+    fontSize: isTablet ? 18 : 16,
     textDecorationLine: 'underline' 
   },
 });

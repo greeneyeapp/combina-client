@@ -125,6 +125,12 @@
     "files": "Dateien"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Deine Erfahrung wird eingerichtet...",
+      "pleaseWait": "Bitte warte einen Moment",
+      "creating": "Gastkonto wird erstellt",
+      "almostReady": "Fast fertig!"
+    },
     "googleSignIn": {
       "redirecting": "Leite zu Google weiter...",
       "processing": "Anmeldung läuft...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Gast",
+    "createAccount": "Konto erstellen",
+    "upgradeAccount": "Konto upgraden",
+    "continueAsGuest": "Als Gast fortfahren",
+    "guestUser": "Gast-Benutzer",
+    "or": "oder",
     "done": "Fertig",
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
@@ -185,9 +197,12 @@
     "loadMore": "Mehr laden"
   },
   "auth": {
+    "continueAsGuest": "Als Gast fortfahren",
     "signInWithGoogle": "Mit Google anmelden",
     "signInWithApple": "Mit Apple anmelden",
-    "continueAsGuest": "Als Gast fortfahren",
+    "guestAccountCreating": "Gastkonto wird erstellt...",
+    "guestWelcome": "Willkommen, Gast!",
+    "guestSubtitle": "Du verwendest ein temporäres Konto",
     "signingInWithGoogle": "Anmeldung mit Google...",
     "signingInWithApple": "Anmeldung mit Apple...",
     "signInError": "Anmeldung fehlgeschlagen. Bitte versuche es erneut.",
@@ -234,6 +249,9 @@
     "profile": "Profil"
   },
   "home": {
+    "guestWelcome": "Willkommen bei deinem Style-Assistenten!",
+    "guestSubtitle": "Beginne mit dem Aufbau deiner Garderobe und erhalte KI-gestützte Outfit-Vorschläge",
+    "guestUpgradePrompt": "Erstelle ein Konto, um über Geräte hinweg zu synchronisieren",
     "title": "Entdecke Stil",
     "styleTipsTitle": "Stil-Tipps",
     "styleTipsSubtitle": "Lerne Farb- & Styling-Grundlagen",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Keine Grenzen auf deiner Stilreise"
   },
   "wardrobe": {
+    "guestMode": "Gastmodus",
+    "guestDataLocal": "Deine Garderobe wird lokal auf diesem Gerät gespeichert",
+    "createAccountToSync": "Erstelle ein Konto, um über Geräte hinweg zu synchronisieren",
     "title": "Meine Garderobe",
     "addItem": "Neuen Artikel hinzufügen",
     "editItem": "Artikel bearbeiten",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Outfit-Vorschläge",
+    "guestLimitInfo": "Als Gast hast du die gleichen täglichen Vorschlagslimits wie registrierte Benutzer",
     "generating": "Wird generiert...",
     "generatingOutfit": "Erstelle dein perfektes Outfit",
     "analyzingWardrobe": "Analysiere deine Garderobe...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Einige Artikel in diesem Outfit wurden entfernt."
   },
   "profile": {
+    "guest": "Gast-Benutzer",
+    "guestSubtitle": "Temporäres Konto",
+    "upgradeFromGuest": "Erstelle dein Konto",
+    "upgradeGuestTitle": "Speichere deine Stilreise",
+    "upgradeGuestDesc": "Erstelle ein dauerhaftes Konto, um deine Garderobe über Geräte hinweg zu synchronisieren und deine Daten niemals zu verlieren.",
+    "createPermanentAccount": "Dauerhaftes Konto erstellen",
+    "guestAccountInfo": "Du verwendest derzeit ein temporäres Gastkonto. Deine Daten werden lokal gespeichert.",
+    "guestLimitations": "Einschränkungen für Gastkonten gelten",
+    "upgradeForFullAccess": "Erstelle ein Konto für vollen Zugriff",
+    "guestAccount": "Gastkonto",
+    "createAccountBenefits": "Vorteile der Kontoerstellung",
+    "crossDeviceSync": "Synchronisierung über alle deine Geräte",
+    "neverLoseData": "Verliere niemals deine Garderobendaten",
+    "fullFeatureAccess": "Zugriff auf alle Funktionen",
     "deletingData": "Deine Daten werden gelöscht...",
     "privacyPolicy": "Datenschutzerklärung",
     "termsOfUse": "Nutzungsbedingungen",
     "title": "Profil",
-    "guest": "Gast-Benutzer",
-    "guestSubtitle": "Melde dich an oder erstelle ein Konto für vollen Zugriff",
     "subscription": "Abonnement",
     "dailyUsage": "{{used}}/{{total}} tägliche Vorschläge genutzt",
     "upgradeForMore": "Tippe, um für mehr Vorschläge upzugraden!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Leite weiter..."
+    "redirecting": "Leite weiter...",
+    "guestMode": "Gastmodus",
+    "signUpForMore": "Registriere dich für mehr Funktionen"
   },
   "register": {
     "name": "Name",

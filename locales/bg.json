@@ -125,6 +125,12 @@
     "files": "файла"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Настройване на вашето изживяване...",
+      "pleaseWait": "Моля, изчакайте малко",
+      "creating": "Създаване на акаунт за гост",
+      "almostReady": "Почти готово!"
+    },
     "googleSignIn": {
       "redirecting": "Пренасочване към Google...",
       "processing": "Влизане...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Гост",
+    "createAccount": "Създай акаунт",
+    "upgradeAccount": "Надгради акаунт",
+    "continueAsGuest": "Продължи като гост",
+    "guestUser": "Потребител гост",
+    "or": "или",
     "done": "Готово",
     "cancel": "Отказ",
     "confirm": "Потвърди",
@@ -185,9 +197,12 @@
     "loadMore": "Зареди още"
   },
   "auth": {
+    "continueAsGuest": "Продължи като гост",
     "signInWithGoogle": "Влез с Google",
     "signInWithApple": "Влез с Apple",
-    "continueAsGuest": "Продължи като гост",
+    "guestAccountCreating": "Създаване на акаунт за гост...",
+    "guestWelcome": "Добре дошли, Гост!",
+    "guestSubtitle": "Използвате временен акаунт",
     "signingInWithGoogle": "Влизане с Google...",
     "signingInWithApple": "Влизане с Apple...",
     "signInError": "Влизането е неуспешно. Моля, опитайте отново.",
@@ -234,6 +249,9 @@
     "profile": "Профил"
   },
   "home": {
+    "guestWelcome": "Добре дошли във Вашия стилен асистент!",
+    "guestSubtitle": "Започнете да изграждате гардероба си и получавайте предложения за тоалети, задвижвани от AI",
+    "guestUpgradePrompt": "Създайте акаунт, за да синхронизирате между устройства",
     "title": "Открийте стил",
     "styleTipsTitle": "Съвети за стил",
     "styleTipsSubtitle": "Научете основите на цветовете и стила",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Без ограничения във вашето стилно пътуване"
   },
   "wardrobe": {
+    "guestMode": "Режим на гост",
+    "guestDataLocal": "Вашият гардероб се записва локално на това устройство",
+    "createAccountToSync": "Създайте акаунт, за да синхронизирате между устройства",
     "title": "Моят гардероб",
     "addItem": "Добави нова дреха",
     "editItem": "Редактирай дреха",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Предложения за тоалети",
+    "guestLimitInfo": "Като гост имате същите дневни лимити за предложения като регистрираните потребители",
     "generating": "Генериране...",
     "generatingOutfit": "Създаване на вашия перфектен тоалет",
     "analyzingWardrobe": "Анализиране на вашия гардероб...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Някои елементи в този тоалет са премахнати."
   },
   "profile": {
+    "guest": "Потребител гост",
+    "guestSubtitle": "Временен акаунт",
+    "upgradeFromGuest": "Създайте своя акаунт",
+    "upgradeGuestTitle": "Запазете своето стилно пътуване",
+    "upgradeGuestDesc": "Създайте постоянен акаунт, за да синхронизирате гардероба си между устройства и никога да не губите данните си.",
+    "createPermanentAccount": "Създай постоянен акаунт",
+    "guestAccountInfo": "В момента използвате временен акаунт за гост. Вашите данни се записват локално.",
+    "guestLimitations": "Прилагат се ограничения за акаунта на гост",
+    "upgradeForFullAccess": "Създайте акаунт за пълен достъп",
+    "guestAccount": "Акаунт на гост",
+    "createAccountBenefits": "Предимства от създаването на акаунт",
+    "crossDeviceSync": "Синхронизация на всички ваши устройства",
+    "neverLoseData": "Никога не губете данните за гардероба си",
+    "fullFeatureAccess": "Достъп до всички функции",
     "deletingData": "Вашите данни се изтриват...",
     "privacyPolicy": "Политика за поверителност",
     "termsOfUse": "Условия за ползване",
     "title": "Профил",
-    "guest": "Потребител гост",
-    "guestSubtitle": "Влезте или създайте акаунт за пълен достъп",
     "subscription": "Абонамент",
     "dailyUsage": "{{used}}/{{total}} използвани дневни предложения",
     "upgradeForMore": "Докоснете, за да надстроите за повече предложения!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Пренасочване..."
+    "redirecting": "Пренасочване...",
+    "guestMode": "Режим на гост",
+    "signUpForMore": "Регистрирайте се за повече функции"
   },
   "register": {
     "name": "Име",

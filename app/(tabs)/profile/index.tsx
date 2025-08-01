@@ -1,9 +1,9 @@
-// app/(tabs)/profile/index.tsx - iPad için ortalanmış ve orantılı tasarım
+// app/(tabs)/profile/index.tsx - Guest user desteği eklendi
 
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch,
-  Linking, ScrollView, Platform, ActivityIndicator, Dimensions, Modal
+  Linking, ScrollView, ActivityIndicator, Dimensions, Modal
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -12,8 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import {
   Moon, Sun, Globe, LogOut, ChevronRight, Trash2, Crown,
   Star, Zap, HelpCircle, RefreshCw, HardDrive,
-  FileText,
-  Lock
+  FileText, Lock, UserCheck, AlertCircle
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
@@ -45,7 +44,6 @@ export default function ProfileScreen() {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isGlobalLoading, setIsGlobalLoading] = useState(false);
-
 
   const languages = [
     { code: 'ar', name: 'العربية' },
@@ -176,16 +174,11 @@ export default function ProfileScreen() {
             try {
               const result = await deleteUserAccount();
               if (result.success) {
-                // --- DEĞİŞİKLİK BURADA BAŞLIYOR ---
-                // 1. Backend'den hesap silme başarılı olduktan sonra yerel verileri temizle
                 console.log('🧹 Clearing all local user data after account deletion...');
                 await useClothingStore.getState().clearAllClothing();
                 useOutfitStore.getState().clearAllOutfits();
                 console.log('✅ Local data cleared.');
-
-                // 2. Son adım olarak çıkış yap ve kullanıcıyı auth ekranına yönlendir
                 logout();
-                // --- DEĞİŞİKLİK BURADA BİTİYOR ---
               } else {
                 setIsGlobalLoading(false);
                 setIsDeleting(false);
@@ -213,7 +206,64 @@ export default function ProfileScreen() {
 
   const handleHelpPress = () => Linking.openURL('https://greeneyeapp.com/contact.html');
 
+  // OKUNABİLİRLİK GARANTİLİ VE TIKLANAMAZ TASARIM
+  const renderGuestUpgradeSection = () => {
+    console.log("hebele", user);
+    if (!user?.isAnonymous) return null;
+
+    return (
+      <View style={styles.settingsSection}>
+        <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.guestAccount')}</Text>
+
+        {/* TouchableOpacity, View olarak değiştirildi ve onPress kaldırıldı */}
+        <View
+          style={[
+            styles.guestUpgradeCard,
+            {
+              backgroundColor: theme.colors.card,
+              borderColor: theme.colors.border
+            }
+          ]}
+        >
+          {/* Sol taraftaki renkli vurgu şeridi */}
+          <View style={[styles.accentBar, { backgroundColor: theme.colors.primary }]} />
+
+          <View style={styles.guestUpgradeContent}>
+            <View style={styles.guestUpgradeHeader}>
+              <AlertCircle color={theme.colors.primary} size={isTablet ? 28 : 24} />
+              <Text style={[styles.guestUpgradeTitle, { color: theme.colors.text }]}>
+                {t('profile.upgradeGuestTitle')}
+              </Text>
+            </View>
+            <Text style={[styles.guestUpgradeDesc, { color: theme.colors.textSecondary }]}>
+              {t('profile.upgradeGuestDesc')}
+            </Text>
+
+            <View style={[styles.divider, { backgroundColor: theme.colors.border, marginVertical: 16 }]} />
+
+            <View style={styles.guestFeaturesList}>
+              <Text style={[styles.guestFeature, { color: theme.colors.textSecondary }]}>
+                <Text style={{ color: theme.colors.primary }}>•</Text> {t('profile.crossDeviceSync')}
+              </Text>
+              <Text style={[styles.guestFeature, { color: theme.colors.textSecondary }]}>
+                <Text style={{ color: theme.colors.primary }}>•</Text> {t('profile.neverLoseData')}
+              </Text>
+              <Text style={[styles.guestFeature, { color: theme.colors.textSecondary }]}>
+                <Text style={{ color: theme.colors.primary }}>•</Text> {t('profile.fullFeatureAccess')}
+              </Text>
+            </View>
+          </View>
+
+          {/* Yönlendirme oku (ChevronRight) kaldırıldı */}
+        </View>
+      </View>
+    );
+  };
+
   const renderSubscriptionCard = () => {
+    // Guest user için subscription card gösterme
+    if (user?.isAnonymous) return null;
+
     if (isPlanLoading) {
       return (
         <View style={[styles.subscriptionCard, { backgroundColor: theme.colors.card, justifyContent: 'center', alignItems: 'center', height: 80 }]}>
@@ -254,14 +304,29 @@ export default function ProfileScreen() {
           <View style={[styles.profileCard, { backgroundColor: theme.colors.card }]}>
             <Avatar size={isTablet ? 100 : 80} user={user} />
             <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: theme.colors.text }]}>{user?.displayName || t('profile.guest')}</Text>
-              <Text style={[styles.profileEmail, { color: theme.colors.textLight }]} numberOfLines={1} ellipsizeMode="tail">{user?.email || t('profile.guestSubtitle')}</Text>
+              <Text style={[styles.profileName, { color: theme.colors.text }]}>
+                {user?.displayName || t('profile.guest')}
+                {user?.isAnonymous && (
+                  <Text style={[styles.guestBadge, { color: theme.colors.primary }]}> ({t('common.guest')})</Text>
+                )}
+              </Text>
+              <Text style={[styles.profileEmail, { color: theme.colors.textLight }]} numberOfLines={1} ellipsizeMode="tail">
+                {user?.isAnonymous ? t('profile.guestSubtitle') : (user?.email || t('profile.guestSubtitle'))}
+              </Text>
             </View>
           </View>
-          <View style={styles.settingsSection}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.subscription')}</Text>
-            {renderSubscriptionCard()}
-          </View>
+
+          {/* Guest upgrade section */}
+          {renderGuestUpgradeSection()}
+
+          {/* Subscription section - sadece normal user için */}
+          {!user?.isAnonymous && (
+            <View style={styles.settingsSection}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.subscription')}</Text>
+              {renderSubscriptionCard()}
+            </View>
+          )}
+
           <View style={styles.settingsSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.preferences')}</Text>
             <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
@@ -293,6 +358,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             </View>
           </View>
+
           <View style={styles.settingsSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.account')}</Text>
             <View style={[styles.settingsCard, { backgroundColor: theme.colors.card }]}>
@@ -317,36 +383,47 @@ export default function ProfileScreen() {
                   <HelpCircle color={theme.colors.text} size={isTablet ? 24 : 20} />
                   <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.help')}</Text>
                 </View>
-                <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
-              </TouchableOpacity>
-              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              <TouchableOpacity style={styles.settingRow} onPress={handleRestorePurchases} disabled={isRestoring}>
-                <View style={styles.settingLabelContainer}>
-                  <RefreshCw color={theme.colors.text} size={isTablet ? 24 : 20} />
-                  <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('subscription.restorePurchases')}</Text>
-                </View>
                 <View style={styles.settingAction}>
-                  {isRestoring ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />}
+                  <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
                 </View>
               </TouchableOpacity>
-              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              <TouchableOpacity style={styles.settingRow} onPress={handleClearData} disabled={isDeleting}>
-                <View style={styles.settingLabelContainer}>
-                  <Trash2 color={theme.colors.error} size={isTablet ? 24 : 20} />
-                  <Text style={[styles.settingLabel, { color: theme.colors.error }]}>{t('profile.clearData')}</Text>
-                </View>
-                {isDeleting
-                  ? <ActivityIndicator size="small" color={theme.colors.error} />
-                  : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
-                }
-              </TouchableOpacity>
-              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+              {/* Sadece normal user için restore purchases ve delete account */}
+              {!user?.isAnonymous && (
+                <>
+                  <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                  <TouchableOpacity style={styles.settingRow} onPress={handleRestorePurchases} disabled={isRestoring}>
+                    <View style={styles.settingLabelContainer}>
+                      <RefreshCw color={theme.colors.text} size={isTablet ? 24 : 20} />
+                      <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('subscription.restorePurchases')}</Text>
+                    </View>
+                    <View style={styles.settingAction}>
+                      {isRestoring ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />}
+                    </View>
+                  </TouchableOpacity>
+                  <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                  <TouchableOpacity style={styles.settingRow} onPress={handleClearData} disabled={isDeleting}>
+                    <View style={styles.settingLabelContainer}>
+                      <Trash2 color={theme.colors.error} size={isTablet ? 24 : 20} />
+                      <Text style={[styles.settingLabel, { color: theme.colors.error }]}>{t('profile.clearData')}</Text>
+                    </View>
+                    {isDeleting
+                      ? <ActivityIndicator size="small" color={theme.colors.error} />
+                      : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+                    }
+                  </TouchableOpacity>
+                  <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                </>
+              )}
+
               <TouchableOpacity style={styles.settingRow} onPress={handleLogout}>
                 <View style={styles.settingLabelContainer}>
                   <LogOut color={theme.colors.text} size={isTablet ? 24 : 20} />
                   <Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.logout')}</Text>
                 </View>
-                <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+                <View style={styles.settingAction}>
+                  <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+                </View>
               </TouchableOpacity>
             </View>
           </View>
@@ -393,6 +470,60 @@ const styles = StyleSheet.create({
     fontSize: isTablet ? 16 : 14,
     flexShrink: 1,
   },
+  guestBadge: {
+    fontFamily: 'Montserrat-Medium',
+    fontSize: isTablet ? 16 : 14,
+  },
+  guestUpgradeCard: {
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderWidth: 1,
+  },
+  accentBar: {
+    width: 8,
+    height: '100%',
+  },
+  guestUpgradeContent: {
+    flex: 1,
+    paddingVertical: isTablet ? 20 : 16,
+    paddingHorizontal: isTablet ? 20 : 16,
+  },
+  guestUpgradeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  guestUpgradeTextContainer: {
+    flex: 1,
+  },
+  guestUpgradeTitle: {
+    fontFamily: 'Montserrat-Bold',
+    fontSize: isTablet ? 19 : 17,
+    flex: 1,
+  },
+  guestUpgradeDesc: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: isTablet ? 16 : 14,
+    lineHeight: isTablet ? 24 : 22,
+    paddingLeft: isTablet ? 40 : 36, // İkon ile hizalamak için
+  },
+  guestFeaturesList: {
+    gap: 10,
+    paddingLeft: isTablet ? 40 : 36, // İkon ile hizalamak için
+  },
+  guestFeaturesTitle: {
+    fontFamily: 'Montserrat-SemiBold',
+    fontSize: isTablet ? 16 : 14,
+    marginBottom: 8,
+  },
+  guestFeature: {
+    fontFamily: 'Montserrat-Regular',
+    fontSize: isTablet ? 15 : 13,
+    lineHeight: isTablet ? 22 : 20,
+  },
   settingsSection: {
     marginBottom: 32,
   },
@@ -431,6 +562,9 @@ const styles = StyleSheet.create({
     fontSize: isTablet ? 14 : 12,
     marginTop: 4,
   },
+  chevronIcon: {
+    marginRight: 16,
+  },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -458,7 +592,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    marginHorizontal: 16,
   },
   loadingOverlay: {
     position: 'absolute',

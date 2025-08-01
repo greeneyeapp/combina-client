@@ -125,6 +125,12 @@
     "files": "dosya"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Deneyiminiz hazırlanıyor...",
+      "pleaseWait": "Lütfen bir dakika bekleyin",
+      "creating": "Misafir hesabı oluşturuluyor",
+      "almostReady": "Neredeyse hazır!"
+    },
     "googleSignIn": {
       "redirecting": "Google'a Yönlendiriliyor...",
       "processing": "Giriş Yapılıyor...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Misafir",
+    "createAccount": "Hesap Oluştur",
+    "upgradeAccount": "Hesabı Yükselt",
+    "continueAsGuest": "Misafir Olarak Devam Et",
+    "guestUser": "Misafir Kullanıcı",
+    "or": "veya",
     "done": "Bitti",
     "cancel": "İptal",
     "confirm": "Onayla",
@@ -185,9 +197,12 @@
     "loadMore": "Daha Fazla Yükle"
   },
   "auth": {
+    "continueAsGuest": "Misafir Olarak Devam Et",
     "signInWithGoogle": "Google ile Giriş Yap",
     "signInWithApple": "Apple ile Giriş Yap",
-    "continueAsGuest": "Misafir Olarak Devam Et",
+    "guestAccountCreating": "Misafir hesabı oluşturuluyor...",
+    "guestWelcome": "Hoş Geldin Misafir!",
+    "guestSubtitle": "Geçici bir hesap kullanıyorsunuz",
     "signingInWithGoogle": "Google ile giriş yapılıyor...",
     "signingInWithApple": "Apple ile giriş yapılıyor...",
     "signInError": "Giriş başarısız oldu. Lütfen tekrar deneyin.",
@@ -234,6 +249,9 @@
     "profile": "Profil"
   },
   "home": {
+    "guestWelcome": "Stil Asistanınıza Hoş Geldiniz!",
+    "guestSubtitle": "Gardırobunuzu oluşturmaya başlayın ve yapay zeka destekli kombin önerileri alın",
+    "guestUpgradePrompt": "Cihazlar arasında senkronize etmek için bir hesap oluşturun",
     "title": "Stili Keşfet",
     "styleTipsTitle": "Stil İpuçları",
     "styleTipsSubtitle": "Renk ve stil temellerini öğren",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Stil yolculuğunuzda hiç sınır yok"
   },
   "wardrobe": {
+    "guestMode": "Misafir Modu",
+    "guestDataLocal": "Gardırobunuz bu cihaza yerel olarak kaydedilir",
+    "createAccountToSync": "Cihazlar arasında senkronize etmek için hesap oluşturun",
     "title": "Gardırobum",
     "addItem": "Yeni Parça Ekle",
     "editItem": "Parçayı Düzenle",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Kombin Önerileri",
+    "guestLimitInfo": "Misafir olarak, kayıtlı kullanıcılarla aynı günlük öneri limitlerine sahipsiniz",
     "generating": "Oluşturuluyor...",
     "generatingOutfit": "Mükemmel Kombininiz Yaratılıyor",
     "analyzingWardrobe": "Gardırobunuz analiz ediliyor...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Bu kombindeki bazı parçalar kaldırıldı."
   },
   "profile": {
+    "guest": "Misafir Kullanıcı",
+    "guestSubtitle": "Geçici hesap",
+    "upgradeFromGuest": "Hesabınızı Oluşturun",
+    "upgradeGuestTitle": "Stil Yolculuğunuzu Kaydedin",
+    "upgradeGuestDesc": "Gardırobunuzu cihazlar arasında senkronize etmek ve verilerinizi asla kaybetmemek için kalıcı bir hesap oluşturun.",
+    "createPermanentAccount": "Hesap Oluştur",
+    "guestAccountInfo": "Şu anda geçici bir misafir hesabı kullanıyorsunuz. Verileriniz yerel olarak kaydedilir.",
+    "guestLimitations": "Misafir hesabı sınırlamaları geçerlidir",
+    "upgradeForFullAccess": "Tam erişim için hesap oluşturun",
+    "guestAccount": "Misafir Hesabı",
+    "createAccountBenefits": "Hesap oluşturmanın faydaları",
+    "crossDeviceSync": "Tüm cihazlarınızda senkronize edin",
+    "neverLoseData": "Gardırop verilerinizi asla kaybetmeyin",
+    "fullFeatureAccess": "Tüm özelliklere erişim",
     "deletingData": "Verileriniz siliniyor...",
     "privacyPolicy": "Gizlilik Politikası",
     "termsOfUse": "Kullanım Koşulları",
     "title": "Profil",
-    "guest": "Misafir Kullanıcı",
-    "guestSubtitle": "Tam erişim için giriş yapın veya hesap oluşturun",
     "subscription": "Abonelik",
     "dailyUsage": "{{used}}/{{total}} günlük öneri kullanıldı",
     "upgradeForMore": "Daha fazla öneri için yükseltmek için dokunun!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Yönlendiriliyor..."
+    "redirecting": "Yönlendiriliyor...",
+    "guestMode": "Misafir Modu",
+    "signUpForMore": "Daha fazla özellik için kaydolun"
   },
   "register": {
     "name": "İsim",

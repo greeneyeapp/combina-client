@@ -125,6 +125,12 @@
     "files": "ملفات"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "جاري إعداد تجربتك...",
+      "pleaseWait": "يرجى الانتظار لحظة",
+      "creating": "جاري إنشاء حساب ضيف",
+      "almostReady": "أوشكنا على الانتهاء!"
+    },
     "googleSignIn": {
       "redirecting": "جاري التوجيه إلى جوجل...",
       "processing": "جاري تسجيل الدخول...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "ضيف",
+    "createAccount": "إنشاء حساب",
+    "upgradeAccount": "ترقية الحساب",
+    "continueAsGuest": "المتابعة كضيف",
+    "guestUser": "مستخدم ضيف",
+    "or": "أو",
     "done": "تم",
     "cancel": "إلغاء",
     "confirm": "تأكيد",
@@ -185,9 +197,12 @@
     "loadMore": "تحميل المزيد"
   },
   "auth": {
+    "continueAsGuest": "المتابعة كضيف",
     "signInWithGoogle": "تسجيل الدخول باستخدام جوجل",
     "signInWithApple": "تسجيل الدخول باستخدام آبل",
-    "continueAsGuest": "المتابعة كضيف",
+    "guestAccountCreating": "جاري إنشاء حساب ضيف...",
+    "guestWelcome": "أهلاً بك، أيها الضيف!",
+    "guestSubtitle": "أنت تستخدم حسابًا مؤقتًا",
     "signingInWithGoogle": "جاري تسجيل الدخول باستخدام جوجل...",
     "signingInWithApple": "جاري تسجيل الدخول باستخدام آبل...",
     "signInError": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
@@ -234,6 +249,9 @@
     "profile": "الملف الشخصي"
   },
   "home": {
+    "guestWelcome": "أهلاً بك في مساعد الأزياء الخاص بك!",
+    "guestSubtitle": "ابدأ ببناء خزانة ملابسك واحصل على اقتراحات إطلالات مدعومة بالذكاء الاصطناعي",
+    "guestUpgradePrompt": "أنشئ حسابًا للمزامنة عبر الأجهزة",
     "title": "اكتشف الأناقة",
     "styleTipsTitle": "نصائح للأناقة",
     "styleTipsSubtitle": "تعلم أساسيات الألوان والتنسيق",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "لا حدود في رحلتك نحو الأناقة"
   },
   "wardrobe": {
+    "guestMode": "وضع الضيف",
+    "guestDataLocal": "يتم حفظ خزانة ملابسك محليًا على هذا الجهاز",
+    "createAccountToSync": "أنشئ حسابًا للمزامنة عبر الأجهزة",
     "title": "خزانتي",
     "addItem": "إضافة قطعة جديدة",
     "editItem": "تعديل القطعة",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "اقتراحات الإطلالات",
+    "guestLimitInfo": "كزائر، لديك نفس حدود الاقتراحات اليومية للمستخدمين المسجلين",
     "generating": "جاري الإنشاء...",
     "generatingOutfit": "جاري إنشاء إطلالتك المثالية",
     "analyzingWardrobe": "جاري تحليل خزانة ملابسك...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "تمت إزالة بعض القطع في هذه الإطلالة."
   },
   "profile": {
+    "guest": "مستخدم ضيف",
+    "guestSubtitle": "حساب مؤقت",
+    "upgradeFromGuest": "أنشئ حسابك",
+    "upgradeGuestTitle": "احفظ رحلتك في عالم الأناقة",
+    "upgradeGuestDesc": "أنشئ حسابًا دائمًا لمزامنة خزانة ملابسك عبر الأجهزة وعدم فقدان بياناتك أبدًا.",
+    "createPermanentAccount": "إنشاء حساب دائم",
+    "guestAccountInfo": "أنت تستخدم حاليًا حساب ضيف مؤقت. يتم حفظ بياناتك محليًا.",
+    "guestLimitations": "تطبق قيود حساب الضيف",
+    "upgradeForFullAccess": "أنشئ حسابًا للوصول الكامل",
+    "guestAccount": "حساب ضيف",
+    "createAccountBenefits": "فوائد إنشاء حساب",
+    "crossDeviceSync": "المزامنة عبر جميع أجهزتك",
+    "neverLoseData": "لا تفقد بيانات خزانة ملابسك أبدًا",
+    "fullFeatureAccess": "الوصول إلى جميع الميزات",
     "deletingData": "جارٍ حذف بياناتك...",
     "privacyPolicy": "سياسة الخصوصية",
     "termsOfUse": "شروط الاستخدام",
     "title": "الملف الشخصي",
-    "guest": "مستخدم ضيف",
-    "guestSubtitle": "سجل الدخول أو أنشئ حسابًا للوصول الكامل",
     "subscription": "الاشتراك",
     "dailyUsage": "{{used}}/{{total}} من الاقتراحات اليومية المستخدمة",
     "upgradeForMore": "انقر للترقية للحصول على المزيد من الاقتراحات!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "جاري إعادة التوجيه..."
+    "redirecting": "جاري إعادة التوجيه...",
+    "guestMode": "وضع الضيف",
+    "signUpForMore": "سجل للحصول على المزيد من الميزات"
   },
   "register": {
     "name": "الاسم",

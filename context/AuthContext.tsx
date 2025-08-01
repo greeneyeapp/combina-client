@@ -1,4 +1,4 @@
-// context/AuthContext.tsx - Yönlendirme mantığı gecikme ile sağlamlaştırıldı
+// context/AuthContext.tsx - Yönlendirme yarış durumu düzeltildi
 
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
@@ -42,6 +42,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [lastProfileRefresh, setLastProfileRefresh] = React.useState(0);
+  
+  // DÜZELTME: Navigation state için yeni state'ler
+  const [isNavigating, setIsNavigating] = React.useState(false);
+  const [pendingNavigation, setPendingNavigation] = React.useState<string | null>(null);
 
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
@@ -74,8 +78,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setUser(completeUserInfo);
           await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
           console.log('✅ Token validated, user profile is fresh.');
+          
+          // DÜZELTME: Sadece non-anonymous kullanıcılar için RevenueCat login
           if (completeUserInfo.uid && !completeUserInfo.isAnonymous) {
             await Purchases.logIn(completeUserInfo.uid).catch(e => console.warn('RC login failed during init:', e));
+          } else if (completeUserInfo.isAnonymous) {
+            console.log('📋 Skipping RevenueCat login for anonymous user');
           }
         } else {
           setUser(null);
@@ -96,60 +104,201 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     initializeAuth();
-  }, [isReady, jwt, isInitialized]); // isInitialized eklendi
+  }, [isReady, jwt, isInitialized]);
 
-  // --- DÜZELTME: Yönlendirme mantığı yarış durumunu önlemek için setTimeout içine alındı ---
+  // DÜZELTME: Aggressive navigation flag reset - güvenlik önlemi
   React.useEffect(() => {
-    if (!navigationState?.key || !isInitialized) {
+    // Navigation flag'i çok uzun süre takılı kalmasın
+    const clearStuckNavigation = setInterval(() => {
+      if (isNavigating) {
+        console.log('🔧 Force clearing stuck navigation flag');
+        setIsNavigating(false);
+        setPendingNavigation(null);
+      }
+    }, 2000); // 2 saniyede bir kontrol et
+
+    return () => clearInterval(clearStuckNavigation);
+  }, [isNavigating]);
+
+  // DÜZELTME: User state değişimlerini izle - provider'a göre farklı handling
+  React.useEffect(() => {
+    // User state değiştiğinde navigation'ı resetle
+    if (user && jwt) {
+      const isOAuthProvider = user.provider === 'google' || user.provider === 'apple';
+      
+      if (isOAuthProvider) {
+        console.log(`👤 OAuth user (${user.provider}) state changed, gentle navigation reset`);
+        // OAuth için daha nazik reset - sadece pending'i temizle
+        setPendingNavigation(null);
+        // isNavigating'i hemen temizleme, biraz bekle
+        setTimeout(() => {
+          setIsNavigating(false);
+        }, 100);
+      } else {
+        console.log(`👤 ${user.provider || 'unknown'} user state changed, resetting navigation flags`);
+        setIsNavigating(false);
+        setPendingNavigation(null);
+      }
+    }
+  }, [user?.uid, user?.profile_complete, user?.provider, jwt]);
+
+  // DÜZELTME: Navigation effect'i - OAuth sign-in sürecini koru
+  React.useEffect(() => {
+    if (!navigationState?.key || !isInitialized || loading) {
       return;
     }
+
+    // DÜZELTME: OAuth sign-in sürecindeyse navigation'ı tetikleme
+    const currentPath = segments.join('/');
+    const isOAuthSignInInProgress = currentPath.includes('google-signin') || currentPath.includes('apple-signin');
     
-    // Ekran geçişleri sırasında oluşabilecek yarış durumlarını önlemek için kısa bir gecikme
-    const timer = setTimeout(() => {
-        const inAuthGroup = segments[0] === '(auth)';
+    if (isOAuthSignInInProgress && !user) {
+      console.log('⏳ OAuth sign-in in progress, skipping navigation...');
+      return;
+    }
 
-        if (user && jwt) {
-            if (user.profile_complete === true) {
-                if (inAuthGroup) {
-                    console.log('🏠 Profile is complete. Redirecting to home.');
-                    router.replace('/(tabs)/home');
-                }
-            } else {
-                if (segments.join('/') !== '(auth)/complete-profile') {
-                    console.log('📝 Profile is incomplete. Redirecting to complete-profile.');
-                    router.replace('/(auth)/complete-profile');
-                }
-            }
-        } else {
-            if (!inAuthGroup) {
-                console.log('🚪 No user found. Redirecting to auth screen.');
-                router.replace('/(auth)');
-            }
+    // DÜZELTME: Provider'a göre farklı debounce süreleri
+    const getDebounceTime = () => {
+      if (user?.provider === 'google' || user?.provider === 'apple') {
+        return 500; // OAuth providers için daha uzun bekle
+      }
+      if (user?.provider === 'anonymous') {
+        return 200; // Anonymous için hızlı
+      }
+      return 300; // Diğerleri için orta
+    };
+
+    const navigationTimer = setTimeout(() => {
+      performNavigation();
+    }, getDebounceTime());
+
+    return () => clearTimeout(navigationTimer);
+  }, [
+    user?.profile_complete, 
+    user?.uid, 
+    jwt, 
+    segments.join('/'),
+    navigationState?.key, 
+    isInitialized,
+    loading,
+    user?.provider
+  ]);
+
+  const performNavigation = async () => {
+    const inAuthGroup = segments[0] === '(auth)';
+    const currentPath = segments.join('/');
+
+    console.log('🧭 Navigation check:', {
+      currentPath,
+      inAuthGroup,
+      hasUser: !!user,
+      hasJwt: !!jwt,
+      profileComplete: user?.profile_complete,
+      isAnonymous: user?.isAnonymous,
+      userUid: user?.uid,
+      provider: user?.provider,
+      isNavigating
+    });
+
+    // DÜZELTME: OAuth providers için özel handling
+    const isOAuthProvider = user?.provider === 'google' || user?.provider === 'apple';
+    
+    if (isNavigating) {
+      if (isOAuthProvider) {
+        console.log('🚫 OAuth navigation in progress, waiting once...');
+        return;
+      } else {
+        console.log('🚫 Navigation already in progress, force resetting and continuing...');
+        setIsNavigating(false);
+        setPendingNavigation(null);
+      }
+    }
+    
+    setIsNavigating(true);
+    
+    try {
+      if (user && jwt) {
+        // DÜZELTME: OAuth providers için ekstra kontrol
+        if (isOAuthProvider && !user.profile_complete && user.profile_complete !== false) {
+          console.log('⏳ OAuth user profile still loading, waiting...');
+          return;
         }
-    }, 100); // 100 milisaniye gecikme
 
-    return () => clearTimeout(timer); // Component unmount olduğunda timer'ı temizle
-
-  }, [user, jwt, segments, navigationState?.key, isInitialized]);
-
+        if (user.profile_complete === true) {
+          // Profil tamamlanmış - ana uygulamaya yönlendir
+          if (inAuthGroup) {
+            console.log(`🏠 Profile complete (${user.provider}). Redirecting to home.`);
+            router.replace('/(tabs)/home');
+          }
+        } else {
+          // DÜZELTME: Profil tamamlanmamış - complete-profile'a yönlendir
+          if (currentPath !== '(auth)/complete-profile') {
+            console.log(`📝 Profile incomplete (${user.provider}). Redirecting to complete-profile.`);
+            router.replace('/(auth)/complete-profile');
+          } else {
+            console.log('📍 Already on complete-profile page');
+          }
+        }
+      } else {
+        // DÜZELTME: OAuth sign-in sürecindeyse auth/index'e gitme
+        const isOAuthSignInInProgress = currentPath.includes('google-signin') || currentPath.includes('apple-signin');
+        
+        if (!inAuthGroup && !isOAuthSignInInProgress) {
+          console.log('🚪 No user found. Redirecting to auth screen.');
+          router.replace('/(auth)');
+        } else if (isOAuthSignInInProgress) {
+          console.log('⏳ OAuth sign-in in progress, staying put...');
+          // OAuth sign-in sürecinde yönlendirme yapma
+        }
+      }
+    } catch (error) {
+      console.error('❌ Navigation error:', error);
+    } finally {
+      // DÜZELTME: Provider'a göre farklı cleanup süreleri
+      const cleanupTime = isOAuthProvider ? 200 : 50;
+      setTimeout(() => {
+        setIsNavigating(false);
+        setPendingNavigation(null);
+        console.log(`🔓 Navigation flags cleared (${user?.provider || 'unknown'})`);
+      }, cleanupTime);
+    }
+  };
 
   const signInAnonymously = async (userData: any) => {
-    // setLoading(true); Bu satır artık gereksiz, çünkü yönlendirme merkezi.
     try {
-      const existingAnonymousId = await AsyncStorage.getItem(ANONYMOUS_USER_ID_KEY);
-      console.log(`🆔 Attempting to sign in with anonymous ID: ${existingAnonymousId}`);
+      // DÜZELTME: Sign-in başlamadan önce navigation state'ini temizle
+      setIsNavigating(false);
+      setPendingNavigation(null);
+      
+      // DÜZELTME: Anonymous ID'yi doğrudan userData'dan al (component'ten geliyor)
+      const existingAnonymousId = userData.anonymous_id;
+      console.log(`🆔 Anonymous sign-in request:`, {
+        providedId: existingAnonymousId,
+        hasId: !!existingAnonymousId,
+        language: userData.language,
+        gender: userData.gender
+      });
+      
       const response = await axios.post(`${API_URL}/auth/anonymous`, {
         session_id: 'mobile_app',
         language: userData.language,
         gender: userData.gender,
-        anonymous_id: existingAnonymousId
+        anonymous_id: existingAnonymousId // Component'ten gelen ID'yi kullan
       }, { timeout: 30000 });
+      
       const { access_token, user_info } = response.data;
       await setJwt(access_token);
-      if (user_info.user_id && user_info.user_id !== existingAnonymousId) {
+      
+      // DÜZELTME: Anonymous ID güncellemesi - backend'den gelen ID'yi sakla
+      if (user_info.user_id) {
+        if (user_info.user_id !== existingAnonymousId) {
           await AsyncStorage.setItem(ANONYMOUS_USER_ID_KEY, user_info.user_id);
           console.log(`📝 Stored new anonymous ID: ${user_info.user_id}`);
+        } else {
+          console.log(`🔄 Using existing anonymous ID: ${user_info.user_id}`);
+        }
       }
+      
       const completeUserInfo = {
         uid: user_info.user_id,
         name: user_info.fullname || i18n.t('profile.guest'),
@@ -162,9 +311,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAnonymous: true,
         profile_complete: user_info.profile_complete === true
       };
+      
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
-      console.log('✅ Anonymous session started.');
+      
+      // DÜZELTME: User set edildikten sonra navigation'ı tekrar temizle
+      setTimeout(() => {
+        setIsNavigating(false);
+        setPendingNavigation(null);
+      }, 100);
+      
+      // DÜZELTME: Backend yanıtına göre log mesajı
+      const wasResumed = existingAnonymousId && user_info.user_id === existingAnonymousId;
+      console.log(`✅ Anonymous session ${wasResumed ? 'resumed' : 'created'}.`);
+      
       return completeUserInfo;
     } catch (error) {
       console.error('❌ ANONYMOUS SIGN-IN ERROR:', error);
@@ -175,8 +335,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signInWithGoogle = async (accessToken: string) => {
-    // setLoading(true);
     try {
+      console.log('🔄 Starting Google sign-in process...');
+      
       let response;
       if (user?.isAnonymous) {
         console.log('🔄 Converting anonymous user to Google authenticated user...');
@@ -204,12 +365,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAnonymous: false,
         profile_complete: user_info?.profile_complete || false
       };
+      
       await setJwt(access_token);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
+      
+      console.log('✅ Google user created, setting user state...');
       setUser(completeUserInfo);
+      
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Google RC login failed:', e));
       }
+      
+      console.log(`✅ Google sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
       return completeUserInfo;
     } catch (error) {
       console.error('❌ GOOGLE SIGN-IN ERROR:', error);
@@ -218,8 +385,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signInWithApple = async (credential: any) => {
-    // setLoading(true);
     try {
+      console.log('🔄 Starting Apple sign-in process...');
+      
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
       const nameFromApple = `${givenName} ${familyName}`.trim();
@@ -230,6 +398,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }, { timeout: 30000 });
       const { access_token, user_info } = response.data;
       if (!user_info) throw new Error("User info was not returned from the server.");
+      
       await setJwt(access_token);
       const finalName = user_info.fullname || nameFromApple;
       const finalEmail = user_info.email || credential.email || '';
@@ -245,11 +414,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isAnonymous: false,
         profile_complete: user_info?.profile_complete || false
       };
+      
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
+      
+      console.log('✅ Apple user created, setting user state...');
       setUser(completeUserInfo);
+      
       if (user_info.uid) {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Apple RC login failed:', e));
       }
+      
+      console.log(`✅ Apple sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
       return completeUserInfo;
     } catch (error) {
       console.error('❌ APPLE SIGN-IN ERROR:', error);
@@ -291,15 +466,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       console.log('🚪 Starting logout process...');
       const isAnon = user?.isAnonymous;
+      const currentAnonymousId = isAnon ? user?.uid : null;
+      
+      // DÜZELTME: Logout başında navigation'ı temizle
+      setIsNavigating(false);
+      setPendingNavigation(null);
+      
       setUser(null);
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
       apiDeduplicator.clearCache();
       setLastProfileRefresh(0);
       clearUserPlan();
-      if (!isAnon) {
+      
+      // DÜZELTME: Anonymous kullanıcı logout'unda ID'yi KOR
+      if (isAnon && currentAnonymousId) {
+        console.log(`🔄 Preserving anonymous ID for future login: ${currentAnonymousId}`);
+        // Anonymous ID'yi koruyoruz - logout sonrası tekrar giriş için
+        // ANONYMOUS_USER_ID_KEY'i SİLME!
+      } else {
+        // Normal authenticated kullanıcı - tüm verileri temizle
+        await AsyncStorage.removeItem(ANONYMOUS_USER_ID_KEY);
         await Purchases.logOut().catch(e => console.log('⚠️ RC logout error (expected):', e));
+        console.log('🧹 Cleared all user data including anonymous ID');
       }
+      
       console.log('✅ Logout process completed');
     } catch (error) {
       console.error("🚨 Logout Error:", error);

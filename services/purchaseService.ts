@@ -26,25 +26,25 @@ const mapEntitlementsToDetailedPlan = (entitlements: any): {
   }
 
   const productId = entitlements.premium_access.productIdentifier?.toLowerCase() || '';
-  
+
   if (productId.includes('annual') || productId.includes('yearly')) {
-    return { 
-      plan: 'premium', 
-      type: 'yearly', 
-      productIdentifier: entitlements.premium_access.productIdentifier 
+    return {
+      plan: 'premium',
+      type: 'yearly',
+      productIdentifier: entitlements.premium_access.productIdentifier
     };
   } else if (productId.includes('monthly')) {
-    return { 
-      plan: 'premium', 
-      type: 'monthly', 
-      productIdentifier: entitlements.premium_access.productIdentifier 
+    return {
+      plan: 'premium',
+      type: 'monthly',
+      productIdentifier: entitlements.premium_access.productIdentifier
     };
   }
 
-  return { 
-    plan: 'premium', 
+  return {
+    plan: 'premium',
     type: 'monthly', // Default fallback
-    productIdentifier: entitlements.premium_access.productIdentifier 
+    productIdentifier: entitlements.premium_access.productIdentifier
   };
 };
 
@@ -63,13 +63,13 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
     const currentCustomerInfo = await Purchases.getCustomerInfo();
     const currentPlanInfo = mapEntitlementsToDetailedPlan(currentCustomerInfo.entitlements.active);
     const newPackageType = getPackageType(packageToPurchase);
-    
+
     // Determine transition type
-    const isUpgrade = currentPlanInfo.plan === 'free' || 
-                     (currentPlanInfo.type === 'monthly' && newPackageType === 'yearly');
+    const isUpgrade = currentPlanInfo.plan === 'free' ||
+      (currentPlanInfo.type === 'monthly' && newPackageType === 'yearly');
     const isDowngrade = currentPlanInfo.type === 'yearly' && newPackageType === 'monthly';
-    const isDuplicate = currentPlanInfo.plan === 'premium' && 
-                       currentPlanInfo.type === newPackageType;
+    const isDuplicate = currentPlanInfo.plan === 'premium' &&
+      currentPlanInfo.type === newPackageType;
 
     // Handle duplicate subscription attempt
     if (isDuplicate) {
@@ -93,9 +93,9 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
     // Proceed with purchase/upgrade
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
     const newPlanInfo = mapEntitlementsToDetailedPlan(customerInfo.entitlements.active);
-    
+
     await syncPurchaseWithBackend(customerInfo, newPlanInfo.plan);
-    
+
     return {
       success: true,
       customerInfo,
@@ -106,14 +106,14 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
     };
   } catch (error: any) {
     console.error('Purchase failed:', error);
-    
+
     if (error.userCancelled) {
       return {
         success: false,
         error: 'Purchase was cancelled by user',
       };
     }
-    
+
     return {
       success: false,
       error: error.message || 'Purchase failed',
@@ -125,16 +125,16 @@ export const purchasePackage = async (packageToPurchase: PurchasesPackage): Prom
 export const restorePurchases = async (): Promise<PurchaseResult> => {
   try {
     console.log('🔄 Restoring purchases...');
-    
+
     // Restore purchases through RevenueCat
     const customerInfo = await Purchases.restorePurchases();
     const planInfo = mapEntitlementsToDetailedPlan(customerInfo.entitlements.active);
-    
+
     // Sync with backend
     await syncPurchaseWithBackend(customerInfo, planInfo.plan);
-    
+
     console.log(`✅ Purchases restored: Plan is ${planInfo.plan}`);
-    
+
     return {
       success: true,
       customerInfo,
@@ -143,7 +143,7 @@ export const restorePurchases = async (): Promise<PurchaseResult> => {
     };
   } catch (error: any) {
     console.error('❌ Restore purchases failed:', error);
-    
+
     return {
       success: false,
       error: error.message || 'Failed to restore purchases',
@@ -160,7 +160,7 @@ export const getCurrentCustomerInfo = async (): Promise<{
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const planInfo = mapEntitlementsToDetailedPlan(customerInfo.entitlements.active);
-    
+
     return {
       plan: planInfo.plan,
       type: planInfo.type,
@@ -200,10 +200,10 @@ export const canTransitionToPlan = async (targetPackage: PurchasesPackage): Prom
     const customerInfo = await Purchases.getCustomerInfo();
     const currentPlanInfo = mapEntitlementsToDetailedPlan(customerInfo.entitlements.active);
     const targetType = getPackageType(targetPackage);
-    
+
     const currentPlan = currentPlanInfo.plan === 'free' ? 'free' : `premium_${currentPlanInfo.type}`;
     const targetPlan = `premium_${targetType}`;
-    
+
     // Free to Premium - Always allowed
     if (currentPlanInfo.plan === 'free') {
       return {
@@ -214,7 +214,7 @@ export const canTransitionToPlan = async (targetPackage: PurchasesPackage): Prom
         message: 'New subscription'
       };
     }
-    
+
     // Same plan type - Duplicate
     if (currentPlanInfo.type === targetType) {
       return {
@@ -225,7 +225,7 @@ export const canTransitionToPlan = async (targetPackage: PurchasesPackage): Prom
         message: `You already have an active Premium ${currentPlanInfo.type} subscription`
       };
     }
-    
+
     // Monthly to Yearly - Upgrade (Allowed)
     if (currentPlanInfo.type === 'monthly' && targetType === 'yearly') {
       return {
@@ -236,7 +236,7 @@ export const canTransitionToPlan = async (targetPackage: PurchasesPackage): Prom
         message: 'Upgrade to yearly plan'
       };
     }
-    
+
     // Yearly to Monthly - Downgrade (Requires manual management)
     if (currentPlanInfo.type === 'yearly' && targetType === 'monthly') {
       return {
@@ -248,7 +248,7 @@ export const canTransitionToPlan = async (targetPackage: PurchasesPackage): Prom
         message: 'Downgrade requires manual management through App Store'
       };
     }
-    
+
     return {
       canTransition: false,
       currentPlan,
@@ -256,7 +256,7 @@ export const canTransitionToPlan = async (targetPackage: PurchasesPackage): Prom
       transitionType: 'duplicate',
       message: 'Transition not possible'
     };
-    
+
   } catch (error) {
     console.error('Error checking transition possibility:', error);
     return {
@@ -282,15 +282,15 @@ export const getSubscriptionManagementInfo = async (): Promise<{
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     const planInfo = mapEntitlementsToDetailedPlan(customerInfo.entitlements.active);
-    
+
     const hasActiveSubscription = planInfo.plan === 'premium';
     const canUpgrade = planInfo.type === 'monthly'; // Can upgrade from monthly to yearly
     const canDowngrade = planInfo.type === 'yearly'; // Can downgrade from yearly to monthly (manual)
-    
+
     const premiumEntitlement = customerInfo.entitlements.active.premium_access;
     const expirationDate = premiumEntitlement?.expirationDate || null;
     const willRenew = premiumEntitlement?.willRenew || false;
-    
+
     return {
       hasActiveSubscription,
       currentPlan: planInfo.plan,

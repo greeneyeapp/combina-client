@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "体験をセットアップしています...",
+      "processing": "体験を準備しています...",
       "pleaseWait": "しばらくお待ちください",
       "creating": "ゲストアカウントを作成中",
-      "almostReady": "もうすぐ準備ができます！"
+      "almostReady": "もうすぐです！",
+      "resumingSession": "現在のセッションを再開しています...",
+      "welcomeBack": "おかえりなさい！",
+      "returningUserInfo": "既存のゲストアカウントで続行します"
     },
     "googleSignIn": {
       "redirecting": "Googleにリダイレクトしています...",

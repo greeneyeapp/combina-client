@@ -129,7 +129,10 @@
       "processing": "Inihahanda ang iyong karanasan...",
       "pleaseWait": "Mangyaring maghintay sandali",
       "creating": "Gumagawa ng guest account",
-      "almostReady": "Malapit nang matapos!"
+      "almostReady": "Malapit nang matapos!",
+      "resumingSession": "Ipinagpapatuloy ang kasalukuyang session...",
+      "welcomeBack": "Maligayang pagbabalik!",
+      "returningUserInfo": "Nagpapatuloy gamit ang iyong kasalukuyang guest account"
     },
     "googleSignIn": {
       "redirecting": "Nagre-redirect sa Google...",

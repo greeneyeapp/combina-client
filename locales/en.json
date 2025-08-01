@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "Setting up your experience...",
+      "processing": "Preparing your experience...",
       "pleaseWait": "Please wait a moment",
       "creating": "Creating guest account",
-      "almostReady": "Almost ready!"
+      "almostReady": "Almost ready!",
+      "resumingSession": "Resuming current session...",
+      "welcomeBack": "Welcome back!",
+      "returningUserInfo": "Continuing with your existing guest account"
     },
     "googleSignIn": {
       "redirecting": "Redirecting to Google...",

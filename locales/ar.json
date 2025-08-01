@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "جاري إعداد تجربتك...",
+      "processing": "تحضير تجربتك...",
       "pleaseWait": "يرجى الانتظار لحظة",
-      "creating": "جاري إنشاء حساب ضيف",
-      "almostReady": "أوشكنا على الانتهاء!"
+      "creating": "إنشاء حساب ضيف",
+      "almostReady": "أوشك على الانتهاء!",
+      "resumingSession": "استئناف الجلسة الحالية...",
+      "welcomeBack": "مرحباً بعودتك!",
+      "returningUserInfo": "المتابعة بحساب الضيف الحالي الخاص بك"
     },
     "googleSignIn": {
       "redirecting": "جاري التوجيه إلى جوجل...",

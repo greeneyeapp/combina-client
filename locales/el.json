@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "Ρύθμιση της εμπειρίας σας...",
+      "processing": "Προετοιμασία της εμπειρίας σας...",
       "pleaseWait": "Παρακαλώ περιμένετε μια στιγμή",
       "creating": "Δημιουργία λογαριασμού επισκέπτη",
-      "almostReady": "Σχεδόν έτοιμο!"
+      "almostReady": "Σχεδόν έτοιμο!",
+      "resumingSession": "Συνέχιση της τρέχουσας περιόδου σύνδεσης...",
+      "welcomeBack": "Καλώς ορίσατε ξανά!",
+      "returningUserInfo": "Συνέχεια με τον υπάρχοντα λογαριασμό επισκέπτη σας"
     },
     "googleSignIn": {
       "redirecting": "Ανακατεύθυνση στο Google...",

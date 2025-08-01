@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "מגדיר את החוויה שלך...",
+      "processing": "מכינים את החוויה שלך...",
       "pleaseWait": "אנא המתן רגע",
       "creating": "יוצר חשבון אורח",
-      "almostReady": "כמעט מוכן!"
+      "almostReady": "כמעט מוכן!",
+      "resumingSession": "ממשיך את הסשן הנוכחי...",
+      "welcomeBack": "ברוך שובך!",
+      "returningUserInfo": "ממשיך עם חשבון האורח הקיים שלך"
     },
     "googleSignIn": {
       "redirecting": "מפנה לגוגל...",

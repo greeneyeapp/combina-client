@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "आपके अनुभव को सेट किया जा रहा है...",
+      "processing": "आपके अनुभव को तैयार किया जा रहा है...",
       "pleaseWait": "कृपया एक क्षण प्रतीक्षा करें",
       "creating": "अतिथि खाता बनाया जा रहा है",
-      "almostReady": "लगभग तैयार!"
+      "almostReady": "लगभग तैयार!",
+      "resumingSession": "वर्तमान सत्र फिर से शुरू हो रहा है...",
+      "welcomeBack": "वापसी पर स्वागत है!",
+      "returningUserInfo": "आपके मौजूदा अतिथि खाते के साथ जारी रखा जा रहा है"
     },
     "googleSignIn": {
       "redirecting": "Google पर পুনঃনির্দেশিত করা হচ্ছে...",

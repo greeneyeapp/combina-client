@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "正在为您准备体验...",
+      "processing": "正在准备您的体验...",
       "pleaseWait": "请稍候",
-      "creating": "正在创建访客账户",
-      "almostReady": "即将准备就绪！"
+      "creating": "正在创建访客帐户",
+      "almostReady": "即将准备就绪！",
+      "resumingSession": "正在恢复当前会话...",
+      "welcomeBack": "欢迎回来！",
+      "returningUserInfo": "继续使用您现有的访客帐户"
     },
     "googleSignIn": {
       "redirecting": "正在重定向到 Google...",

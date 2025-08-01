@@ -129,7 +129,10 @@
       "processing": "Préparation de votre expérience...",
       "pleaseWait": "Veuillez patienter un instant",
       "creating": "Création du compte invité",
-      "almostReady": "Presque prêt !"
+      "almostReady": "Presque prêt !",
+      "resumingSession": "Reprise de la session en cours...",
+      "welcomeBack": "Bon retour parmi nous !",
+      "returningUserInfo": "Poursuite avec votre compte invité existant"
     },
     "googleSignIn": {
       "redirecting": "Redirection vers Google...",

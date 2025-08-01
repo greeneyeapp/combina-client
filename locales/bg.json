@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "Настройване на вашето изживяване...",
+      "processing": "Подготвяме вашето изживяване...",
       "pleaseWait": "Моля, изчакайте малко",
       "creating": "Създаване на акаунт за гост",
-      "almostReady": "Почти готово!"
+      "almostReady": "Почти готово!",
+      "resumingSession": "Възобновяване на текущата сесия...",
+      "welcomeBack": "Добре дошли отново!",
+      "returningUserInfo": "Продължаване със съществуващия ви акаунт за гост"
     },
     "googleSignIn": {
       "redirecting": "Пренасочване към Google...",

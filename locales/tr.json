@@ -129,7 +129,10 @@
       "processing": "Deneyiminiz hazırlanıyor...",
       "pleaseWait": "Lütfen bir dakika bekleyin",
       "creating": "Misafir hesabı oluşturuluyor",
-      "almostReady": "Neredeyse hazır!"
+      "almostReady": "Neredeyse hazır!",
+      "resumingSession": "Mevcut oturum devam ettiriliyor...",
+      "welcomeBack": "Tekrar hoş geldiniz!",
+      "returningUserInfo": "Mevcut misafir hesabınızla devam ediyorsunuz"
     },
     "googleSignIn": {
       "redirecting": "Google'a Yönlendiriliyor...",

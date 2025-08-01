@@ -1,4 +1,4 @@
-// services/userService.ts - Firebase dependency kaldırılmış versiyon
+// services/userService.ts - Tam güncellenmiş versiyon
 
 import API_URL from '@/config';
 import { useUserPlanStore, UserPlan } from '@/store/userPlanStore';
@@ -8,12 +8,12 @@ import i18n from '@/locales/i18n';
 
 interface UserProfileResponse {
   user_id: string;
-  fullname: string;
-  email?: string; // email artık opsiyonel bir string
-  gender: string;
+  fullname?: string; // Anonymous kullanıcılar için opsiyonel
+  email?: string; // Email opsiyonel
+  gender?: string; // Gender opsiyonel (başlangıçta unisex olabilir)
   age?: number;
-  birthDate?: string; // birthDate artık opsiyonel bir string
-  plan: 'free' | 'premium';
+  birthDate?: string; // BirthDate opsiyonel
+  plan: 'free' | 'premium' | 'anonymous'; // Anonymous plan eklenmiş
   usage: {
     daily_limit: number | "unlimited";
     current_usage: number;
@@ -23,6 +23,8 @@ interface UserProfileResponse {
     rewarded_count?: number;
   };
   created_at: any;
+  isAnonymous: boolean; // DÜZELTME: Anonymous kontrol alanı eklendi
+  profile_complete: boolean; // DÜZELTME: Profil tamamlanma alanı eklendi
 }
 
 // Global state tracking
@@ -31,7 +33,6 @@ let isInitializing = false;
 const PROFILE_CACHE_TTL = 5 * 60 * 1000; // 5 dakika
 const MIN_FETCH_INTERVAL = 30 * 1000; // 30 saniye minimum aralık
 
-// DÜZELTME: Firebase dependency kaldırıldı
 const getAuthToken = async (): Promise<string> => {
   const storedJwt = useApiAuthStore.getState().jwt;
   if (!storedJwt) {
@@ -79,6 +80,8 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
   try {
     setLoading(true);
     const profileData = await fetchUserProfile();
+    
+    // DÜZELTME: Yeni alanları dahil ederek UserPlan'i oluştur
     const planData: UserPlan = {
       plan: profileData.plan,
       usage: profileData.usage,
@@ -86,8 +89,13 @@ export const getUserProfile = async (forceRefresh: boolean = false): Promise<Use
       gender: profileData.gender,
       age: profileData.age,
       created_at: profileData.created_at,
-      birthDate: profileData.birthDate, // UserPlan'e birthDate'i ekleyin
+      birthDate: profileData.birthDate,
+      // DÜZELTME: Yeni alanlar eklendi
+      isAnonymous: profileData.isAnonymous,
+      profile_complete: profileData.profile_complete,
+      email: profileData.email, // Email de eklenebilir
     };
+    
     setUserPlan(planData);
     return planData;
   } catch (error) {
@@ -111,7 +119,6 @@ export const initializeUserProfile = async (): Promise<void> => {
       return;
     }
 
-    // DÜZELTME: Firebase check kaldırıldı, sadece JWT kontrolü
     const token = useApiAuthStore.getState().jwt;
     if (!token) {
       useUserPlanStore.getState().clearUserPlan();
@@ -169,7 +176,7 @@ export const updateUserPlan = async (plan: 'free' | 'premium'): Promise<void> =>
   }, 1000);
 };
 
-// Utility functions remain the same...
+// Utility functions
 export const canAddWardrobeItem = async (): Promise<{ canAdd: boolean; reason?: string }> => {
   try {
     const profile = await getUserProfile();
@@ -224,17 +231,40 @@ export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?
       remaining: profile.usage.remaining,
       current_usage: profile.usage.current_usage,
       daily_limit: profile.usage.daily_limit,
-      rewarded_count: profile.usage.rewarded_count
+      rewarded_count: profile.usage.rewarded_count,
+      isAnonymous: profile.isAnonymous
     });
 
-    // ✅ DÜZELTME: Sadece daily_limit'e göre kontrol et (UI ile tutarlı)
-    const canSuggest = profile.usage.current_usage < profile.usage.daily_limit;
+    // DÜZELTME: daily_limit tip kontrolü
+    const dailyLimit = profile.usage.daily_limit;
+    
+    // Premium plan veya unlimited ise her zaman true
+    if (dailyLimit === "unlimited" || profile.plan === 'premium') {
+      return { canSuggest: true };
+    }
 
-    console.log('🔍 canGetSuggestion - Calculation (FIXED):', {
+    // daily_limit number olduğundan emin olduktan sonra karşılaştır
+    const numericDailyLimit = typeof dailyLimit === 'number' ? dailyLimit : 0;
+
+    // Anonymous kullanıcılar için özel kontrol
+    if (profile.isAnonymous) {
+      const canSuggest = profile.usage.current_usage < numericDailyLimit;
+      if (!canSuggest) {
+        return {
+          canSuggest: false,
+          reason: i18n.t('suggestions.anonymousLimitReached', 'Daily limit reached for guest users')
+        };
+      }
+      return { canSuggest: true };
+    }
+
+    // Normal kullanıcılar için kontrol
+    const canSuggest = profile.usage.current_usage < numericDailyLimit;
+
+    console.log('🔍 canGetSuggestion - Calculation:', {
       current_usage: profile.usage.current_usage,
-      daily_limit: profile.usage.daily_limit,
-      canSuggest,
-      oldLogic: profile.usage.current_usage < (profile.usage.daily_limit + (profile.usage.rewarded_count || 0))
+      daily_limit: numericDailyLimit,
+      canSuggest
     });
 
     if (canSuggest) {
@@ -243,7 +273,7 @@ export const canGetSuggestion = async (): Promise<{ canSuggest: boolean; reason?
 
     return {
       canSuggest: false,
-      reason: `Daily suggestion limit reached (${profile.usage.current_usage}/${profile.usage.daily_limit})`
+      reason: `Daily suggestion limit reached (${profile.usage.current_usage}/${numericDailyLimit})`
     };
 
   } catch (error) {

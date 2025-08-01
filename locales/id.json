@@ -126,10 +126,13 @@
   },
   "authFlow": {
     "anonymousSignIn": {
-      "processing": "Menyiapkan pengalaman Anda...",
-      "pleaseWait": "Mohon tunggu sebentar",
+      "processing": "Mempersiapkan pengalaman Anda...",
+      "pleaseWait": "Harap tunggu sejenak",
       "creating": "Membuat akun tamu",
-      "almostReady": "Hampir siap!"
+      "almostReady": "Hampir siap!",
+      "resumingSession": "Melanjutkan sesi saat ini...",
+      "welcomeBack": "Selamat datang kembali!",
+      "returningUserInfo": "Melanjutkan dengan akun tamu Anda yang sudah ada"
     },
     "googleSignIn": {
       "redirecting": "Mengarahkan ke Google...",

@@ -45,13 +45,28 @@ const mapEntitlementsToDetailedPlan = (entitlements: any): {
   if (!entitlements?.premium_access?.isActive) {
     return { plan: 'free', type: null, productIdentifier: null };
   }
+
   const productId = entitlements.premium_access.productIdentifier?.toLowerCase() || '';
+
   if (productId.includes('annual') || productId.includes('yearly')) {
-    return { plan: 'premium', type: 'yearly', productIdentifier: entitlements.premium_access.productIdentifier };
+    return {
+      plan: 'premium',
+      type: 'yearly',
+      productIdentifier: entitlements.premium_access.productIdentifier
+    };
   } else if (productId.includes('monthly')) {
-    return { plan: 'premium', type: 'monthly', productIdentifier: entitlements.premium_access.productIdentifier };
+    return {
+      plan: 'premium',
+      type: 'monthly',
+      productIdentifier: entitlements.premium_access.productIdentifier
+    };
   }
-  return { plan: 'premium', type: 'monthly', productIdentifier: entitlements.premium_access.productIdentifier };
+
+  return {
+    plan: 'premium',
+    type: 'monthly', // Default fallback
+    productIdentifier: entitlements.premium_access.productIdentifier
+  };
 };
 
 export default function SubscriptionScreen() {
@@ -239,7 +254,7 @@ export default function SubscriptionScreen() {
         label: t('subscription.currentPlan'),
         variant: 'outline' as const, disabled: true,
         icon: <CheckCircle2 size={16} color={theme.colors.success} />,
-        onPressAction: () => {},
+        onPressAction: () => { },
       };
     }
     if (currentPlanInfo.type === 'monthly' && packageType === 'yearly') {
@@ -337,34 +352,34 @@ export default function SubscriptionScreen() {
     }
     return (
       <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          <View style={styles.contentWrapper}>
-            {renderCurrentSubscriptionStatus()}
-            {renderCurrentFreePlanInfo()}
-            <View style={styles.heroSection}>
-              <Crown color="#FFD700" size={isTablet ? 48 : 32} />
-              <Text style={[styles.heroTitle, { color: theme.colors.text }]}>{t('subscription.premiumHeroTitle')}</Text>
-              <Text style={[styles.heroSubtitle, { color: theme.colors.textLight }]}>{t('subscription.premiumHeroSubtitle')}</Text>
-            </View>
-            {renderPlanToggle()}
-            {renderSelectedPlan()}
-            
-            {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
-            <View style={styles.legalLinksContainer}>
-              <TouchableOpacity onPress={() => Linking.openURL('https://greeneyeapp.com/privacy.html')}>
-                <Text style={[styles.legalLinkText, { color: theme.colors.textLight }]}>
-                  {t('profile.privacyPolicy')}
-                </Text>
-              </TouchableOpacity>
-              <Text style={[styles.legalLinkSeparator, { color: theme.colors.textLight }]}>•</Text>
-              <TouchableOpacity onPress={() => Linking.openURL('https://greeneyeapp.com/terms-of-use.html')}>
-                <Text style={[styles.legalLinkText, { color: theme.colors.textLight }]}>
-                  {t('profile.termsOfUse')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-            {/* --- DEĞİŞİKLİK BİTTİ --- */}
-
+        <View style={styles.contentWrapper}>
+          {renderCurrentSubscriptionStatus()}
+          {renderCurrentFreePlanInfo()}
+          <View style={styles.heroSection}>
+            <Crown color="#FFD700" size={isTablet ? 48 : 32} />
+            <Text style={[styles.heroTitle, { color: theme.colors.text }]}>{t('subscription.premiumHeroTitle')}</Text>
+            <Text style={[styles.heroSubtitle, { color: theme.colors.textLight }]}>{t('subscription.premiumHeroSubtitle')}</Text>
           </View>
+          {renderPlanToggle()}
+          {renderSelectedPlan()}
+
+          {/* --- DEĞİŞİKLİK BURADA BAŞLIYOR --- */}
+          <View style={styles.legalLinksContainer}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://greeneyeapp.com/privacy.html')}>
+              <Text style={[styles.legalLinkText, { color: theme.colors.textLight }]}>
+                {t('profile.privacyPolicy')}
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.legalLinkSeparator, { color: theme.colors.textLight }]}>•</Text>
+            <TouchableOpacity onPress={() => Linking.openURL('https://greeneyeapp.com/terms-of-use.html')}>
+              <Text style={[styles.legalLinkText, { color: theme.colors.textLight }]}>
+                {t('profile.termsOfUse')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {/* --- DEĞİŞİKLİK BİTTİ --- */}
+
+        </View>
       </ScrollView>
     );
   };
@@ -400,7 +415,7 @@ const styles = StyleSheet.create({
   },
   centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16, padding: 24 },
   messageText: { fontFamily: 'Montserrat-Medium', fontSize: isTablet ? 18 : 16 },
-  statusContainer: { marginTop: 16, padding: isTablet ? 24: 16, borderRadius: 16, borderWidth: 2 },
+  statusContainer: { marginTop: 16, padding: isTablet ? 24 : 16, borderRadius: 16, borderWidth: 2 },
   statusHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   statusText: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 18 : 16, marginLeft: 12 },
   statusSubtext: { fontFamily: 'Montserrat-Regular', fontSize: isTablet ? 16 : 14, marginLeft: isTablet ? 40 : 26 },

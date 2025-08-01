@@ -69,7 +69,7 @@ export default function ProfileScreen() {
   ];
 
   const handlePrivacyPolicyPress = () => Linking.openURL('https://greeneyeapp.com/privacy.html');
-  const handleTermsOfUsePress = () => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/');
+  const handleTermsOfUsePress = () => Linking.openURL('https://greeneyeapp.com/terms-of-use.html');
 
   useEffect(() => {
     const fetchUsage = async () => {

@@ -356,7 +356,7 @@ export default function SubscriptionScreen() {
                 </Text>
               </TouchableOpacity>
               <Text style={[styles.legalLinkSeparator, { color: theme.colors.textLight }]}>•</Text>
-              <TouchableOpacity onPress={() => Linking.openURL('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')}>
+              <TouchableOpacity onPress={() => Linking.openURL('https://greeneyeapp.com/terms-of-use.html')}>
                 <Text style={[styles.legalLinkText, { color: theme.colors.textLight }]}>
                   {t('profile.termsOfUse')}
                 </Text>

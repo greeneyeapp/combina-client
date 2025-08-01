@@ -25,8 +25,9 @@ export default function NotFoundScreen() {
       
       // Google OAuth callback kontrolü
       if (params.code || params.access_token || params.state) {
-        console.log('🚫 OAuth callback detected in NotFound, redirecting to auth');
-        router.replace('/(auth)');
+        console.log('🚫 OAuth callback detected in NotFound, redirecting to dedicated redirect screen');
+        // DEĞİŞİKLİK: Yönlendirme artık /(auth) yerine yeni bir redirect sayfasına yapılıyor
+        router.replace('/(auth)/redirect');
         return;
       }
 

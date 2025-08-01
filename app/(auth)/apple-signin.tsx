@@ -47,14 +47,8 @@ export default function AppleSignInScreen() {
             // Sign in işlemini yap
             const userInfo = await signInWithApple(credential);
             
-            // DÜZELTME: Sign-in başarılı olduğunda direkt yönlendirme yap
-            if (userInfo.profile_complete) {
-                console.log('✅ Apple sign-in complete, redirecting to home');
-                router.replace('/(tabs)/home');
-            } else {
-                console.log('✅ Apple sign-in complete, redirecting to complete-profile');
-                router.replace('/(auth)/complete-profile');
-            }
+            // DÜZELTME: Başarılı giriş sonrası yönlendirme artık AuthContext tarafından yönetiliyor.
+            // Bu kod bloğunu kaldırıyoruz.
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);

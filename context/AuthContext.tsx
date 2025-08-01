@@ -138,10 +138,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const currentPath = segments.join('/');
     
-    // DÜZELTME: OAuth ekranlarındayken HİÇBİR navigation yapma
+    // DEĞİŞİKLİK: 'anonymous-signin' rotasını bu listeden kaldırıyoruz.
     const isOAuthScreen = currentPath.includes('google-signin') || 
-                         currentPath.includes('apple-signin') ||
-                         currentPath.includes('anonymous-signin');
+                         currentPath.includes('apple-signin');
     
     if (isOAuthScreen) {
       console.log(`⏸️ Blocking all navigation - on OAuth screen: ${currentPath}`);
@@ -171,10 +170,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const inAuthGroup = segments[0] === '(auth)';
     const currentPath = segments.join('/');
 
-    // DÜZELTME: OAuth ekranlarında HİÇBİR navigation yapma
+    // DEĞİŞİKLİK: 'anonymous-signin' rotası artık engellenmiyor.
     const isOAuthScreen = currentPath.includes('google-signin') || 
-                         currentPath.includes('apple-signin') ||
-                         currentPath.includes('anonymous-signin');
+                         currentPath.includes('apple-signin');
     
     if (isOAuthScreen) {
       console.log(`⏸️ Navigation completely blocked - OAuth screen: ${currentPath}`);
@@ -391,11 +389,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       
       console.log('✅ Apple user created, setting user state...');
-      console.log('🚫 BLOCKING AuthContext navigation for Apple OAuth');
-      
-      // DÜZELTME: Apple OAuth için navigation'ı tamamen engelle
-      setIsNavigating(true);
-      setPendingNavigation('OAUTH_IN_PROGRESS');
       
       setUser(completeUserInfo);
       
@@ -404,7 +397,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       console.log(`✅ Apple sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
-      console.log('🔓 Apple OAuth will handle its own navigation');
       
       return completeUserInfo;
     } catch (error) {

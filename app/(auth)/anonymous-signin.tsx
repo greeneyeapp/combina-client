@@ -19,16 +19,11 @@ const ANONYMOUS_USER_ID_KEY = 'anonymous_user_id';
 export default function AnonymousSignInScreen() {
     const { t, i18n } = useTranslation();
     const { theme } = useTheme();
-    const { signInAnonymously } = useAuth();
+    const { signInAnonymously, user, isInitialized } = useAuth();
     const { show: showAlert } = useAlertStore();
 
-    const [isProcessing, setIsProcessing] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
     const [isReturningUser, setIsReturningUser] = useState(false);
-
-    useEffect(() => {
-        handleAnonymousSignIn();
-    }, []);
 
     const checkIfReturningUser = async (): Promise<boolean> => {
         try {
@@ -41,54 +36,50 @@ export default function AnonymousSignInScreen() {
         }
     };
 
-    const handleAnonymousSignIn = async () => {
-        setIsProcessing(true);
-        
-        try {
-            // DÜZELTME: Önce mevcut anonymous ID'yi kontrol et
-            const isReturning = await checkIfReturningUser();
-            setIsReturningUser(isReturning);
-            
-            if (isReturning) {
-                setStatusMessage(t('authFlow.anonymousSignIn.resumingSession'));
-                console.log('🔄 Resuming existing anonymous session...');
-            } else {
-                setStatusMessage(t('authFlow.anonymousSignIn.creating'));
-                console.log('🆕 Creating new anonymous session...');
-            }
-            
-            // Backend'e gönderilecek veri - mevcut anonymous_id dahil
-            const existingAnonymousId = await AsyncStorage.getItem(ANONYMOUS_USER_ID_KEY);
-            console.log('📤 Sending anonymous request:', {
-                hasExistingId: !!existingAnonymousId,
-                anonymousId: existingAnonymousId,
-                isReturningUser: isReturning,
-                idValid: existingAnonymousId?.startsWith('anon_') || false
-            });
-            
-            const initialUserData = {
-                language: i18n.language,
-                gender: 'unisex',
-                anonymous_id: existingAnonymousId // DÜZELTME: Backend'e mevcut ID'yi gönder
-            };
+    // YENİ: Oturum açma işlemini başlatan useEffect
+    useEffect(() => {
+      const handleAnonymousSignIn = async () => {
+          try {
+              const isReturning = await checkIfReturningUser();
+              setIsReturningUser(isReturning);
+              setStatusMessage(isReturning 
+                  ? t('authFlow.anonymousSignIn.resumingSession') 
+                  : t('authFlow.anonymousSignIn.creating')
+              );
+              
+              const existingAnonymousId = await AsyncStorage.getItem(ANONYMOUS_USER_ID_KEY);
+              const initialUserData = {
+                  language: i18n.language,
+                  gender: 'unisex',
+                  anonymous_id: existingAnonymousId
+              };
 
-            // Giriş işlemini tetikle
-            await signInAnonymously(initialUserData);
-            
-            console.log('✅ Anonymous sign-in completed, navigation should trigger...');
-            
-        } catch (error: any) {
-            console.error('❌ Anonymous sign-in screen error:', error);
-            showAlert({
-                title: t('common.error'),
-                message: t('authFlow.errors.signInFailed'),
-                buttons: [{ text: t('common.ok') }]
-            });
-            router.replace('/(auth)');
-        } finally {
-            setIsProcessing(false); // DÜZELTME: Processing state'ini her durumda temizle
-        }
-    };
+              await signInAnonymously(initialUserData);
+          } catch (error: any) {
+              console.error('❌ Anonymous sign-in screen error:', error);
+              showAlert({
+                  title: t('common.error'),
+                  message: t('authFlow.errors.signInFailed'),
+                  buttons: [{ text: t('common.ok') }]
+              });
+              router.replace('/(auth)');
+          }
+      };
+
+      // Yönlendirme zaten yapıldıysa veya kullanıcı zaten varsa, tekrar başlatma
+      if (!user && isInitialized) {
+        handleAnonymousSignIn();
+      }
+    }, [i18n, user, isInitialized]);
+    
+    // YENİ: Navigasyon için bekleyen useEffect
+    useEffect(() => {
+      if (user) {
+        console.log('✅ Anonymous user logged in, navigating away from this screen.');
+        // Bu ekranı router.replace() ile kapatıyoruz. Yönlendirme AuthContext'ten gelecek.
+        // Bu sayede ekran takılı kalmayacak.
+      }
+    }, [user, isInitialized]);
     
     return (
         <LinearGradient 
@@ -113,7 +104,6 @@ export default function AnonymousSignInScreen() {
                             }
                         </Text>
                         
-                        {/* DÜZELTME: Returning user için açıklama */}
                         {isReturningUser && (
                             <Text style={[styles.infoText, { color: theme.colors.textLight }]}>
                                 {t('authFlow.anonymousSignIn.returningUserInfo')}

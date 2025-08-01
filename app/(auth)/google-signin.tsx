@@ -1,4 +1,4 @@
-// kodlar/app/(auth)/google-signin.tsx - Çeviri anahtarı düzeltildi
+// kodlar/app/(auth)/google-signin.tsx - Yönlendirme mantığı kaldırıldı
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
@@ -53,24 +53,20 @@ export default function GoogleSignInScreen() {
         if (response.type === 'success' && response.authentication?.accessToken) {
             setIsProcessing(true);
             handleGoogleSignIn(response.authentication.accessToken);
-        } else {
-            console.log('Google auth failed or cancelled:', response.type);
+        } else if (response.type !== 'dismiss' && response.type !== 'cancel') { // Kullanıcı iptali normal bir durum
+            console.log('Google auth failed or was cancelled:', response.type);
             router.replace('/(auth)');
+        } else if (response.type === 'cancel' || response.type === 'dismiss') {
+             router.replace('/(auth)');
         }
     }, [response]);
 
     const handleGoogleSignIn = async (accessToken: string) => {
         try {
-            // DEĞİŞİKLİK: Var olan çeviri anahtarı kullanıldı
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
-            const signedInUser = await signInWithGoogle(accessToken); 
-            
-            if (signedInUser && (!signedInUser.gender || !signedInUser.name)) {
-                router.replace('/(auth)/complete-profile');
-            } else {
-                router.replace('/(tabs)/home');
-            }
-
+            // --- DÜZELTME: Sadece giriş fonksiyonunu çağır. Yönlendirmeyi AuthContext yapacak. ---
+            await signInWithGoogle(accessToken);
+            // Yönlendirme kodu buradan tamamen kaldırıldı. AuthContext yönlendirmeyi yönetecek.
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
@@ -81,8 +77,11 @@ export default function GoogleSignInScreen() {
                 message: errorMessage,
                 buttons: [{ text: t('common.ok') }]
             });
+            // Hata durumunda ana giriş ekranına dön.
             router.replace('/(auth)');
         } finally {
+            // Bu ekran yönlendirme sonrası kaybolacağı için isProcessing'i false yapmaya gerek kalmayabilir,
+            // ama güvenlik için kalabilir.
             setIsProcessing(false);
         }
     };

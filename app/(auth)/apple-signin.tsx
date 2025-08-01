@@ -1,4 +1,4 @@
-// kodlar/app/(auth)/apple-signin.tsx - Çeviri anahtarı düzeltildi
+// kodlar/app/(auth)/apple-signin.tsx - Yönlendirme mantığı kaldırıldı
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
@@ -41,15 +41,10 @@ export default function AppleSignInScreen() {
                 ],
             });
 
-            // DEĞİŞİKLİK: Var olan çeviri anahtarı kullanıldı
             setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
-            const signedInUser = await signInWithApple(credential); 
-            
-            if (signedInUser && (!signedInUser.gender || !signedInUser.name)) {
-                router.replace('/(auth)/complete-profile');
-            } else {
-                router.replace('/(tabs)/home');
-            }
+            // --- DÜZELTME: Sadece giriş fonksiyonunu çağır. Yönlendirmeyi AuthContext yapacak. ---
+            await signInWithApple(credential);
+            // Yönlendirme kodu buradan tamamen kaldırıldı.
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);
@@ -60,6 +55,7 @@ export default function AppleSignInScreen() {
                     buttons: [{ text: t('common.ok') }]
                 });
             }
+            // Hata durumunda veya kullanıcı iptal ettiğinde ana giriş ekranına dön.
             router.replace('/(auth)');
         } finally {
             setIsProcessing(false);

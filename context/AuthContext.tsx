@@ -1,4 +1,4 @@
-// context/AuthContext.tsx - NIHAI, TAM VE TÜM HATALARI DÜZELTİLMİŞ VERSİYON
+// context/AuthContext.tsx - Yönlendirme mantığı gecikme ile sağlamlaştırıldı
 
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
@@ -29,9 +29,8 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
-// --- DÜZELTME: Bu fonksiyonun doğru olduğundan emin olalım ---
 export function useAuth() {
-  const context = React.useContext(AuthContext); // Burası 'useContext' olmalı
+  const context = React.useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
@@ -97,41 +96,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     initializeAuth();
-  }, [isReady, jwt]);
+  }, [isReady, jwt, isInitialized]); // isInitialized eklendi
 
-  // --- DÜZELTME: Yönlendirme mantığı tek ve temiz hale getirildi ---
+  // --- DÜZELTME: Yönlendirme mantığı yarış durumunu önlemek için setTimeout içine alındı ---
   React.useEffect(() => {
     if (!navigationState?.key || !isInitialized) {
       return;
     }
-    const handleNavigation = () => {
-      const inAuthGroup = segments[0] === '(auth)';
-      if (user && jwt) {
-        const isProfileComplete = user.profile_complete === true;
-        if (isProfileComplete) {
-          if (inAuthGroup) {
-            console.log('🏠 Profile is complete. Redirecting to home.');
-            router.replace('/(tabs)/home');
-          }
+    
+    // Ekran geçişleri sırasında oluşabilecek yarış durumlarını önlemek için kısa bir gecikme
+    const timer = setTimeout(() => {
+        const inAuthGroup = segments[0] === '(auth)';
+
+        if (user && jwt) {
+            if (user.profile_complete === true) {
+                if (inAuthGroup) {
+                    console.log('🏠 Profile is complete. Redirecting to home.');
+                    router.replace('/(tabs)/home');
+                }
+            } else {
+                if (segments.join('/') !== '(auth)/complete-profile') {
+                    console.log('📝 Profile is incomplete. Redirecting to complete-profile.');
+                    router.replace('/(auth)/complete-profile');
+                }
+            }
         } else {
-          if (segments[1] !== 'complete-profile') {
-            console.log('📝 Profile is incomplete. Redirecting to complete-profile.');
-            router.replace('/(auth)/complete-profile');
-          }
+            if (!inAuthGroup) {
+                console.log('🚪 No user found. Redirecting to auth screen.');
+                router.replace('/(auth)');
+            }
         }
-      } else {
-        if (!inAuthGroup) {
-          console.log('🚪 No user found. Redirecting to auth screen.');
-          router.replace('/(auth)');
-        }
-      }
-    };
-    const timer = setTimeout(handleNavigation, 150);
-    return () => clearTimeout(timer);
+    }, 100); // 100 milisaniye gecikme
+
+    return () => clearTimeout(timer); // Component unmount olduğunda timer'ı temizle
+
   }, [user, jwt, segments, navigationState?.key, isInitialized]);
 
+
   const signInAnonymously = async (userData: any) => {
-    setLoading(true);
+    // setLoading(true); Bu satır artık gereksiz, çünkü yönlendirme merkezi.
     try {
       const existingAnonymousId = await AsyncStorage.getItem(ANONYMOUS_USER_ID_KEY);
       console.log(`🆔 Attempting to sign in with anonymous ID: ${existingAnonymousId}`);
@@ -161,21 +164,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
-      setIsInitialized(true);
       console.log('✅ Anonymous session started.');
-      setLoading(false);
       return completeUserInfo;
     } catch (error) {
       console.error('❌ ANONYMOUS SIGN-IN ERROR:', error);
       await clearJwt();
       setUser(null);
-      setLoading(false);
       throw error;
     }
   };
 
   const signInWithGoogle = async (accessToken: string) => {
-    setLoading(true);
+    // setLoading(true);
     try {
       let response;
       if (user?.isAnonymous) {
@@ -207,21 +207,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await setJwt(access_token);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
-      setIsInitialized(true);
       if (user_info?.uid) {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Google RC login failed:', e));
       }
-      setLoading(false);
       return completeUserInfo;
     } catch (error) {
-      setLoading(false);
       console.error('❌ GOOGLE SIGN-IN ERROR:', error);
       throw error;
     }
   };
 
   const signInWithApple = async (credential: any) => {
-    setLoading(true);
+    // setLoading(true);
     try {
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
@@ -250,14 +247,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
-      setIsInitialized(true);
       if (user_info.uid) {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Apple RC login failed:', e));
       }
-      setLoading(false);
       return completeUserInfo;
     } catch (error) {
-      setLoading(false);
       console.error('❌ APPLE SIGN-IN ERROR:', error);
       throw error;
     }

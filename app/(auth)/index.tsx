@@ -1,4 +1,4 @@
-// app/(auth)/index.tsx - Guest button eklenmesi
+// app/(auth)/index.tsx - Yönlendirme metodu 'replace' olarak güncellendi
 
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, Dimensions } from 'react-native';
@@ -16,7 +16,8 @@ const isTablet = width >= 768;
 export default function AuthIndexScreen() {
   const { t } = useTranslation();
   const { theme, themeMode } = useTheme();
-  const { isAuthFlowActive } = useAuth();
+  // isAuthFlowActive artık AuthContext'ten gelmiyor, bu yüzden kaldıralım.
+  // const { isAuthFlowActive } = useAuth();
 
   return (
     <LinearGradient
@@ -40,17 +41,15 @@ export default function AuthIndexScreen() {
         </View>
 
         <View style={styles.buttonContainer}>
-          {/* Guest Mode Button - En üstte */}
           <Button
             label={t('auth.continueAsGuest')}
-            onPress={() => router.push('/(auth)/anonymous-signin')}
+            // DÜZELTME: push yerine replace kullanılıyor
+            onPress={() => router.replace('/(auth)/anonymous-signin')}
             variant="secondary"
             style={[styles.button, styles.guestButton]}
-            disabled={isAuthFlowActive}
             size={isTablet ? 'large' : 'medium'}
           />
           
-          {/* Divider */}
           <View style={styles.dividerContainer}>
             <View style={[styles.dividerLine, { backgroundColor: theme.colors.border }]} />
             <Text style={[styles.dividerText, { color: theme.colors.textLight }]}>
@@ -61,21 +60,21 @@ export default function AuthIndexScreen() {
 
           <Button
             label={t('auth.signInWithGoogle')}
-            onPress={() => router.push('/(auth)/google-signin')}
+            // DÜZELTME: push yerine replace kullanılıyor
+            onPress={() => router.replace('/(auth)/google-signin')}
             variant="outline"
             style={styles.button}
             icon="google"
-            disabled={isAuthFlowActive}
             size={isTablet ? 'large' : 'medium'}
           />
           
           {Platform.OS === 'ios' && (
             <Button
               label={t('auth.signInWithApple')}
-              onPress={() => router.push('/(auth)/apple-signin')}
+              // DÜZELTME: push yerine replace kullanılıyor
+              onPress={() => router.replace('/(auth)/apple-signin')}
               variant="primary"
               style={styles.button}
-              disabled={isAuthFlowActive}
               size={isTablet ? 'large' : 'medium'}
             />
           )}
@@ -84,14 +83,10 @@ export default function AuthIndexScreen() {
         <View style={styles.footer}>
           <TouchableOpacity 
             onPress={() => router.push({ pathname: '/(auth)/language' })}
-            disabled={isAuthFlowActive}
           >
             <Text style={[
               styles.languageSelector, 
-              { 
-                color: isAuthFlowActive ? theme.colors.textLight : theme.colors.primary,
-                opacity: isAuthFlowActive ? 0.5 : 1
-              }
+              { color: theme.colors.primary }
             ]}>
               {t('login.changeLanguage')}
             </Text>
@@ -131,7 +126,7 @@ const styles = StyleSheet.create({
     marginBottom: 16 
   },
   guestButton: {
-    marginBottom: 24 // Guest button için daha fazla boşluk
+    marginBottom: 24
   },
   dividerContainer: {
     flexDirection: 'row',

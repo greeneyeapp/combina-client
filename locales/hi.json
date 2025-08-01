@@ -125,6 +125,12 @@
     "files": "फाइलें"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "आपके अनुभव को सेट किया जा रहा है...",
+      "pleaseWait": "कृपया एक क्षण प्रतीक्षा करें",
+      "creating": "अतिथि खाता बनाया जा रहा है",
+      "almostReady": "लगभग तैयार!"
+    },
     "googleSignIn": {
       "redirecting": "Google पर পুনঃনির্দেশিত করা হচ্ছে...",
       "processing": "साइन इन हो रहा है...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "अतिथि",
+    "createAccount": "खाता बनाएं",
+    "upgradeAccount": "खाता अपग्रेड करें",
+    "continueAsGuest": "अतिथि के रूप में जारी रखें",
+    "guestUser": "अतिथि उपयोगकर्ता",
+    "or": "या",
     "done": "हो गया",
     "cancel": "रद्द करें",
     "confirm": "पुष्टि करें",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Google से साइन इन करें",
     "signInWithApple": "Apple से साइन इन करें",
     "continueAsGuest": "अतिथि के रूप में जारी रखें",
+    "guestAccountCreating": "अतिथि खाता बनाया जा रहा है...",
+    "guestWelcome": "स्वागत है, अतिथि!",
+    "guestSubtitle": "आप एक अस्थायी खाते का उपयोग कर रहे हैं",
     "signingInWithGoogle": "Google से साइन इन हो रहा है...",
     "signingInWithApple": "Apple से साइन इन हो रहा है...",
     "signInError": "साइन इन विफल। कृपया पुनः प्रयास करें।",
@@ -234,6 +249,9 @@
     "profile": "प्रोफ़ाइल"
   },
   "home": {
+    "guestWelcome": "आपके स्टाइल असिस्टेंट में आपका स्वागत है!",
+    "guestSubtitle": "अपना वार्डरोब बनाना शुरू करें और AI-संचालित पोशाक सुझाव प्राप्त करें",
+    "guestUpgradePrompt": "डिवाइसों में सिंक करने के लिए एक खाता बनाएँ",
     "title": "शैली की खोज करें",
     "styleTipsTitle": "शैली युक्तियाँ",
     "styleTipsSubtitle": "रंग और स्टाइलिंग की मूल बातें जानें",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "आपकी शैली यात्रा में कोई सीमा नहीं"
   },
   "wardrobe": {
+    "guestMode": "अतिथि मोड",
+    "guestDataLocal": "आपका वार्डरोब इस डिवाइस पर स्थानीय रूप से सहेजा गया है",
+    "createAccountToSync": "डिवाइसों में सिंक करने के लिए खाता बनाएँ",
     "title": "मेरा वार्डरोब",
     "addItem": "नया आइटम जोड़ें",
     "editItem": "आइटम संपादित करें",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "पहनावे के सुझाव",
+    "guestLimitInfo": "एक अतिथि के रूप में, आपके पास पंजीकृत उपयोगकर्ताओं के समान ही दैनिक सुझाव सीमाएं हैं",
     "generating": "उत्पन्न हो रहा है...",
     "generatingOutfit": "आपकी सही पोशाक बना रहा है",
     "analyzingWardrobe": "आपके वार्डरोब का विश्लेषण कर रहा है...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "इस पहनावे में कुछ आइटम हटा दिए गए हैं।"
   },
   "profile": {
+    "guest": "अतिथि उपयोगकर्ता",
+    "guestSubtitle": "अस्थायी खाता",
+    "upgradeFromGuest": "अपना खाता बनाएँ",
+    "upgradeGuestTitle": "अपनी शैली यात्रा को सहेजें",
+    "upgradeGuestDesc": "डिवाइसों में अपने वार्डरोब को सिंक करने और अपने डेटा को कभी न खोने के लिए एक स्थायी खाता बनाएँ।",
+    "createPermanentAccount": "स्थायी खाता बनाएँ",
+    "guestAccountInfo": "आप वर्तमान में एक अस्थायी अतिथि खाते का उपयोग कर रहे हैं। आपका डेटा स्थानीय रूप से सहेजा गया है।",
+    "guestLimitations": "अतिथि खाते की सीमाएं लागू होती हैं",
+    "upgradeForFullAccess": "पूर्ण पहुँच के लिए खाता बनाएँ",
+    "guestAccount": "अतिथि खाता",
+    "createAccountBenefits": "खाता बनाने के लाभ",
+    "crossDeviceSync": "आपके सभी डिवाइसों में सिंक करें",
+    "neverLoseData": "अपने वार्डरोब का डेटा कभी न खोएं",
+    "fullFeatureAccess": "सभी सुविधाओं तक पहुँच",
     "deletingData": "आपका डेटा हटाया जा रहा है...",
     "privacyPolicy": "गोपनीयता नीति",
     "termsOfUse": "उपयोग की शर्तें",
     "title": "प्रोफ़ाइल",
-    "guest": "अतिथि उपयोगकर्ता",
-    "guestSubtitle": "पूर्ण पहुँच के लिए साइन इन करें या एक खाता बनाएँ",
     "subscription": "सदस्यता",
     "dailyUsage": "{{used}}/{{total}} दैनिक सुझाव उपयोग किए गए",
     "upgradeForMore": "अधिक सुझावों के लिए अपग्रेड करने के लिए टैप करें!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "पुनঃনির্দেশিত করা হচ্ছে..."
+    "redirecting": "पुनঃনির্দেশিত করা হচ্ছে...",
+    "guestMode": "अतिथि मोड",
+    "signUpForMore": "और सुविधाओं के लिए साइन अप करें"
   },
   "register": {
     "name": "नाम",

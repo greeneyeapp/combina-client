@@ -125,6 +125,12 @@
     "files": "ファイル"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "体験をセットアップしています...",
+      "pleaseWait": "しばらくお待ちください",
+      "creating": "ゲストアカウントを作成中",
+      "almostReady": "もうすぐ準備ができます！"
+    },
     "googleSignIn": {
       "redirecting": "Googleにリダイレクトしています...",
       "processing": "サインイン中...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "ゲスト",
+    "createAccount": "アカウントを作成",
+    "upgradeAccount": "アカウントをアップグレード",
+    "continueAsGuest": "ゲストとして続ける",
+    "guestUser": "ゲストユーザー",
+    "or": "または",
     "done": "完了",
     "cancel": "キャンセル",
     "confirm": "確認",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Googleでサインイン",
     "signInWithApple": "Appleでサインイン",
     "continueAsGuest": "ゲストとして続ける",
+    "guestAccountCreating": "ゲストアカウントを作成中...",
+    "guestWelcome": "ようこそ、ゲスト様！",
+    "guestSubtitle": "一時的なアカウントを使用しています",
     "signingInWithGoogle": "Googleでサインイン中...",
     "signingInWithApple": "Appleでサインイン中...",
     "signInError": "サインインに失敗しました。もう一度お試しください。",
@@ -234,6 +249,9 @@
     "profile": "プロフィール"
   },
   "home": {
+    "guestWelcome": "あなたのスタイルアシスタントへようこそ！",
+    "guestSubtitle": "クローゼットの構築を始めて、AIによるコーディネート提案を受け取りましょう",
+    "guestUpgradePrompt": "デバイス間で同期するためにアカウントを作成してください",
     "title": "スタイルを発見",
     "styleTipsTitle": "スタイルのヒント",
     "styleTipsSubtitle": "色とスタイリングの基本を学ぶ",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "あなたのスタイル遍歴に制限はありません"
   },
   "wardrobe": {
+    "guestMode": "ゲストモード",
+    "guestDataLocal": "あなたのクローゼットはこのデバイスにローカル保存されます",
+    "createAccountToSync": "デバイス間で同期するためにアカウントを作成してください",
     "title": "マイクローゼット",
     "addItem": "新しいアイテムを追加",
     "editItem": "アイテムを編集",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "コーディネート提案",
+    "guestLimitInfo": "ゲストとして、登録ユーザーと同じ1日の提案制限があります",
     "generating": "生成中...",
     "generatingOutfit": "あなたの完璧なコーディネートを作成中",
     "analyzingWardrobe": "あなたのクローゼットを分析中...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "このコーディネートの一部のアイテムは削除されました。"
   },
   "profile": {
+    "guest": "ゲストユーザー",
+    "guestSubtitle": "一時的なアカウント",
+    "upgradeFromGuest": "アカウントを作成",
+    "upgradeGuestTitle": "あなたのスタイル遍歴を保存",
+    "upgradeGuestDesc": "デバイス間でクローゼットを同期し、データを失わないように、永久アカウントを作成してください。",
+    "createPermanentAccount": "永久アカウントを作成",
+    "guestAccountInfo": "現在、一時的なゲストアカウントを使用しています。データはローカルに保存されます。",
+    "guestLimitations": "ゲストアカウントの制限が適用されます",
+    "upgradeForFullAccess": "フルアクセスのためにアカウントを作成",
+    "guestAccount": "ゲストアカウント",
+    "createAccountBenefits": "アカウント作成のメリット",
+    "crossDeviceSync": "すべてのデバイスで同期",
+    "neverLoseData": "クローゼットのデータを失うことはありません",
+    "fullFeatureAccess": "すべての機能へのアクセス",
     "deletingData": "データを削除しています...",
     "privacyPolicy": "プライバシーポリシー",
     "termsOfUse": "利用規約",
     "title": "プロフィール",
-    "guest": "ゲストユーザー",
-    "guestSubtitle": "フルアクセスするにはサインインまたはアカウントを作成してください",
     "subscription": "サブスクリプション",
     "dailyUsage": "{{used}}/{{total}}件の毎日の提案を使用しました",
     "upgradeForMore": "タップしてアップグレードし、より多くの提案を入手してください！",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "リダイレクトしています..."
+    "redirecting": "リダイレクトしています...",
+    "guestMode": "ゲストモード",
+    "signUpForMore": "その他の機能を利用するにはサインアップしてください"
   },
   "register": {
     "name": "名前",

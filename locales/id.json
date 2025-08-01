@@ -125,6 +125,12 @@
     "files": "file"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Menyiapkan pengalaman Anda...",
+      "pleaseWait": "Mohon tunggu sebentar",
+      "creating": "Membuat akun tamu",
+      "almostReady": "Hampir siap!"
+    },
     "googleSignIn": {
       "redirecting": "Mengarahkan ke Google...",
       "processing": "Masuk...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Tamu",
+    "createAccount": "Buat Akun",
+    "upgradeAccount": "Tingkatkan Akun",
+    "continueAsGuest": "Lanjutkan sebagai Tamu",
+    "guestUser": "Pengguna Tamu",
+    "or": "atau",
     "done": "Selesai",
     "cancel": "Batal",
     "confirm": "Konfirmasi",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Masuk dengan Google",
     "signInWithApple": "Masuk dengan Apple",
     "continueAsGuest": "Lanjutkan sebagai Tamu",
+    "guestAccountCreating": "Membuat akun tamu...",
+    "guestWelcome": "Selamat datang, Tamu!",
+    "guestSubtitle": "Anda menggunakan akun sementara",
     "signingInWithGoogle": "Masuk dengan Google...",
     "signingInWithApple": "Masuk dengan Apple...",
     "signInError": "Gagal masuk. Silakan coba lagi.",
@@ -234,6 +249,9 @@
     "profile": "Profil"
   },
   "home": {
+    "guestWelcome": "Selamat Datang di Asisten Gaya Anda!",
+    "guestSubtitle": "Mulai bangun lemari pakaian Anda dan dapatkan saran pakaian bertenaga AI",
+    "guestUpgradePrompt": "Buat akun untuk sinkronisasi antar perangkat",
     "title": "Temukan Gaya",
     "styleTipsTitle": "Tips Gaya",
     "styleTipsSubtitle": "Pelajari dasar-dasar warna & gaya",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Tidak ada batasan dalam perjalanan gaya Anda"
   },
   "wardrobe": {
+    "guestMode": "Mode Tamu",
+    "guestDataLocal": "Lemari pakaian Anda disimpan secara lokal di perangkat ini",
+    "createAccountToSync": "Buat akun untuk sinkronisasi antar perangkat",
     "title": "Lemari Pakaian Saya",
     "addItem": "Tambah Item Baru",
     "editItem": "Edit Item",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Saran Pakaian",
+    "guestLimitInfo": "Sebagai tamu, Anda memiliki batas saran harian yang sama dengan pengguna terdaftar",
     "generating": "Menghasilkan...",
     "generatingOutfit": "Menciptakan Pakaian Sempurna Anda",
     "analyzingWardrobe": "Menganalisis lemari pakaian Anda...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Beberapa item dalam pakaian ini telah dihapus."
   },
   "profile": {
+    "guest": "Pengguna Tamu",
+    "guestSubtitle": "Akun sementara",
+    "upgradeFromGuest": "Buat Akun Anda",
+    "upgradeGuestTitle": "Simpan Perjalanan Gaya Anda",
+    "upgradeGuestDesc": "Buat akun permanen untuk menyinkronkan lemari pakaian Anda di seluruh perangkat dan tidak pernah kehilangan data Anda.",
+    "createPermanentAccount": "Buat Akun Permanen",
+    "guestAccountInfo": "Anda saat ini menggunakan akun tamu sementara. Data Anda disimpan secara lokal.",
+    "guestLimitations": "Batasan akun tamu berlaku",
+    "upgradeForFullAccess": "Buat akun untuk akses penuh",
+    "guestAccount": "Akun Tamu",
+    "createAccountBenefits": "Manfaat membuat akun",
+    "crossDeviceSync": "Sinkronkan di semua perangkat Anda",
+    "neverLoseData": "Jangan pernah kehilangan data lemari pakaian Anda",
+    "fullFeatureAccess": "Akses ke semua fitur",
     "deletingData": "Menghapus data Anda...",
     "privacyPolicy": "Kebijakan Privasi",
     "termsOfUse": "Ketentuan Penggunaan",
     "title": "Profil",
-    "guest": "Pengguna Tamu",
-    "guestSubtitle": "Masuk atau buat akun untuk akses penuh",
     "subscription": "Langganan",
     "dailyUsage": "{{used}}/{{total}} saran harian digunakan",
     "upgradeForMore": "Ketuk untuk meningkatkan untuk lebih banyak saran!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Mengarahkan..."
+    "redirecting": "Mengarahkan...",
+    "guestMode": "Mode Tamu",
+    "signUpForMore": "Daftar untuk fitur lainnya"
   },
   "register": {
     "name": "Nama",

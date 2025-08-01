@@ -125,6 +125,12 @@
     "files": "个文件"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "正在为您准备体验...",
+      "pleaseWait": "请稍候",
+      "creating": "正在创建访客账户",
+      "almostReady": "即将准备就绪！"
+    },
     "googleSignIn": {
       "redirecting": "正在重定向到 Google...",
       "processing": "正在登录...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "访客",
+    "createAccount": "创建帐户",
+    "upgradeAccount": "升级帐户",
+    "continueAsGuest": "以访客身份继续",
+    "guestUser": "访客用户",
+    "or": "或",
     "done": "完成",
     "cancel": "取消",
     "confirm": "确认",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "使用 Google 登录",
     "signInWithApple": "使用 Apple 登录",
     "continueAsGuest": "以访客身份继续",
+    "guestAccountCreating": "正在创建访客账户...",
+    "guestWelcome": "欢迎，访客！",
+    "guestSubtitle": "您正在使用临时账户",
     "signingInWithGoogle": "正在使用 Google 登录...",
     "signingInWithApple": "正在使用 Apple 登录...",
     "signInError": "登录失败。请重试。",
@@ -234,6 +249,9 @@
     "profile": "我的"
   },
   "home": {
+    "guestWelcome": "欢迎来到您的造型助手！",
+    "guestSubtitle": "开始建立您的衣橱并获取AI驱动的穿搭建议",
+    "guestUpgradePrompt": "创建帐户以跨设备同步",
     "title": "发现风格",
     "styleTipsTitle": "风格提示",
     "styleTipsSubtitle": "学习色彩和造型基础",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "您的风格之旅无任何限制"
   },
   "wardrobe": {
+    "guestMode": "访客模式",
+    "guestDataLocal": "您的衣橱保存在此设备的本地",
+    "createAccountToSync": "创建帐户以跨设备同步",
     "title": "我的衣橱",
     "addItem": "添加新衣物",
     "editItem": "编辑衣物",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "穿搭建议",
+    "guestLimitInfo": "作为访客，您拥有与注册用户相同的每日建议限制",
     "generating": "生成中...",
     "generatingOutfit": "正在为您打造完美穿搭",
     "analyzingWardrobe": "正在分析您的衣橱...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "此穿搭中的某些衣物已被删除。"
   },
   "profile": {
+    "guest": "访客用户",
+    "guestSubtitle": "临时帐户",
+    "upgradeFromGuest": "创建您的帐户",
+    "upgradeGuestTitle": "保存您的风格之旅",
+    "upgradeGuestDesc": "创建永久帐户以跨设备同步您的衣橱，并且永不丢失您的数据。",
+    "createPermanentAccount": "创建永久帐户",
+    "guestAccountInfo": "您当前正在使用临时访客帐户。您的数据保存在本地。",
+    "guestLimitations": "访客帐户限制适用",
+    "upgradeForFullAccess": "创建帐户以获得完整访问权限",
+    "guestAccount": "访客帐户",
+    "createAccountBenefits": "创建帐户的好处",
+    "crossDeviceSync": "在您的所有设备上同步",
+    "neverLoseData": "永不丢失您的衣橱数据",
+    "fullFeatureAccess": "访问所有功能",
     "deletingData": "正在删除您的数据...",
     "privacyPolicy": "隐私政策",
     "termsOfUse": "使用条款",
     "title": "我的",
-    "guest": "访客用户",
-    "guestSubtitle": "登录或创建帐户以获得完整访问权限",
     "subscription": "订阅",
     "dailyUsage": "已使用 {{used}}/{{total}} 次每日建议",
     "upgradeForMore": "点击升级以获取更多建议！",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "正在重定向..."
+    "redirecting": "正在重定向...",
+    "guestMode": "访客模式",
+    "signUpForMore": "注册以获取更多功能"
   },
   "register": {
     "name": "姓名",

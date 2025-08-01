@@ -208,7 +208,6 @@ export default function ProfileScreen() {
 
   // OKUNABİLİRLİK GARANTİLİ VE TIKLANAMAZ TASARIM
   const renderGuestUpgradeSection = () => {
-    console.log("hebele", user);
     if (!user?.isAnonymous) return null;
 
     return (

@@ -125,6 +125,12 @@
     "files": "mga file"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Inihahanda ang iyong karanasan...",
+      "pleaseWait": "Mangyaring maghintay sandali",
+      "creating": "Gumagawa ng guest account",
+      "almostReady": "Malapit nang matapos!"
+    },
     "googleSignIn": {
       "redirecting": "Nagre-redirect sa Google...",
       "processing": "Nag-sign in...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Bisita",
+    "createAccount": "Gumawa ng Account",
+    "upgradeAccount": "I-upgrade ang Account",
+    "continueAsGuest": "Magpatuloy bilang Bisita",
+    "guestUser": "Bisitang User",
+    "or": "o",
     "done": "Tapos na",
     "cancel": "Kanselahin",
     "confirm": "Kumpirmahin",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Mag-sign in gamit ang Google",
     "signInWithApple": "Mag-sign in gamit ang Apple",
     "continueAsGuest": "Magpatuloy bilang Bisita",
+    "guestAccountCreating": "Gumagawa ng guest account...",
+    "guestWelcome": "Maligayang pagdating, Bisita!",
+    "guestSubtitle": "Gumagamit ka ng pansamantalang account",
     "signingInWithGoogle": "Nag-sign in gamit ang Google...",
     "signingInWithApple": "Nag-sign in gamit ang Apple...",
     "signInError": "Nabigo ang pag-sign in. Pakisubukang muli.",
@@ -234,6 +249,9 @@
     "profile": "Profile"
   },
   "home": {
+    "guestWelcome": "Maligayang pagdating sa Iyong Style Assistant!",
+    "guestSubtitle": "Simulan ang pagbuo ng iyong wardrobe at makakuha ng mga suhestiyon sa outfit na pinapagana ng AI",
+    "guestUpgradePrompt": "Gumawa ng account para mag-sync sa mga device",
     "title": "Tuklasin ang Estilo",
     "styleTipsTitle": "Mga Tip sa Estilo",
     "styleTipsSubtitle": "Alamin ang mga pangunahing kaalaman sa kulay at pag-istilo",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Walang mga limitasyon sa iyong paglalakbay sa estilo"
   },
   "wardrobe": {
+    "guestMode": "Guest Mode",
+    "guestDataLocal": "Naka-save sa device na ito ang iyong wardrobe",
+    "createAccountToSync": "Gumawa ng account para mag-sync sa mga device",
     "title": "Aking Wardrobe",
     "addItem": "Magdagdag ng Bagong Damit",
     "editItem": "I-edit ang Damit",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Mga Suhestiyon sa Outfit",
+    "guestLimitInfo": "Bilang isang bisita, mayroon kang parehong pang-araw-araw na limitasyon sa suhestiyon tulad ng mga rehistradong user",
     "generating": "Gumagawa...",
     "generatingOutfit": "Ginagawa ang Iyong Perpektong Outfit",
     "analyzingWardrobe": "Sinusuri ang iyong wardrobe...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Inalis ang ilang item sa outfit na ito."
   },
   "profile": {
+    "guest": "Bisitang User",
+    "guestSubtitle": "Pansamantalang account",
+    "upgradeFromGuest": "Gawin ang Iyong Account",
+    "upgradeGuestTitle": "I-save ang Iyong Paglalakbay sa Estilo",
+    "upgradeGuestDesc": "Gumawa ng permanenteng account para i-sync ang iyong wardrobe sa mga device at hindi kailanman mawala ang iyong data.",
+    "createPermanentAccount": "Gumawa ng Permanenteng Account",
+    "guestAccountInfo": "Kasalukuyan kang gumagamit ng pansamantalang guest account. Ang iyong data ay naka-save nang lokal.",
+    "guestLimitations": "Nalalapat ang mga limitasyon sa guest account",
+    "upgradeForFullAccess": "Gumawa ng account para sa buong access",
+    "guestAccount": "Guest Account",
+    "createAccountBenefits": "Mga benepisyo ng paggawa ng account",
+    "crossDeviceSync": "I-sync sa lahat ng iyong device",
+    "neverLoseData": "Huwag kailanman mawala ang data ng iyong wardrobe",
+    "fullFeatureAccess": "Access sa lahat ng feature",
     "deletingData": "Tinatanggal ang iyong data...",
     "privacyPolicy": "Patakaran sa Privacy",
     "termsOfUse": "Mga Tuntunin ng Paggamit",
     "title": "Profile",
-    "guest": "Bisitang User",
-    "guestSubtitle": "Mag-sign in o gumawa ng account para sa buong access",
     "subscription": "Subscription",
     "dailyUsage": "{{used}}/{{total}} na pang-araw-araw na suhestiyon ang nagamit",
     "upgradeForMore": "I-tap para mag-upgrade para sa higit pang mga suhestiyon!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Nagre-redirect..."
+    "redirecting": "Nagre-redirect...",
+    "guestMode": "Guest Mode",
+    "signUpForMore": "Mag-sign up para sa higit pang mga feature"
   },
   "register": {
     "name": "Pangalan",

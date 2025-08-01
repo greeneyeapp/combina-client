@@ -11,7 +11,7 @@
     "performanceAnalysisFailed": "파일 시스템 성능 분석 실패",
     "directoriesReinitialized": "파일 시스템 디렉터리가 다시 초기화되었습니다",
     "removedMissingItems": "파일이 누락된 {{count}}개 항목을 제거했습니다",
-    "cleanedOrphanedFiles": "孤立した{{count}}個のファイルをクリーンアップしました",
+    "cleanedOrphanedFiles": "{{count}}개의 불필요한 파일을 정리했습니다",
     "freedStorage": "{{size}}KB의 저장 공간을 확보했습니다",
     "maintenanceCompleted": "파일 시스템 유지 관리가 성공적으로 완료되었습니다",
     "maintenanceFailed": "유지 관리 실패: {{error}}",
@@ -125,6 +125,12 @@
     "files": "개 파일"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "경험을 설정하는 중...",
+      "pleaseWait": "잠시만 기다려 주세요",
+      "creating": "게스트 계정 생성 중",
+      "almostReady": "거의 준비되었습니다!"
+    },
     "googleSignIn": {
       "redirecting": "Google로 리디렉션 중...",
       "processing": "로그인 중...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "게스트",
+    "createAccount": "계정 생성",
+    "upgradeAccount": "계정 업그레이드",
+    "continueAsGuest": "게스트로 계속",
+    "guestUser": "게스트 사용자",
+    "or": "또는",
     "done": "완료",
     "cancel": "취소",
     "confirm": "확인",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Google로 로그인",
     "signInWithApple": "Apple로 로그인",
     "continueAsGuest": "게스트로 계속",
+    "guestAccountCreating": "게스트 계정 생성 중...",
+    "guestWelcome": "환영합니다, 게스트님!",
+    "guestSubtitle": "임시 계정을 사용하고 있습니다",
     "signingInWithGoogle": "Google로 로그인 중...",
     "signingInWithApple": "Apple로 로그인 중...",
     "signInError": "로그인에 실패했습니다. 다시 시도해 주세요.",
@@ -234,6 +249,9 @@
     "profile": "프로필"
   },
   "home": {
+    "guestWelcome": "스타일 어시스턴트에 오신 것을 환영합니다!",
+    "guestSubtitle": "옷장을 만들고 AI 기반 의상 제안을 받아보세요",
+    "guestUpgradePrompt": "기기 간 동기화를 위해 계정을 만드세요",
     "title": "스타일 발견",
     "styleTipsTitle": "스타일 팁",
     "styleTipsSubtitle": "색상 및 스타일링 기본 배우기",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "스타일 여정에 제한이 없습니다"
   },
   "wardrobe": {
+    "guestMode": "게스트 모드",
+    "guestDataLocal": "옷장은 이 기기에 로컬로 저장됩니다",
+    "createAccountToSync": "기기 간 동기화를 위해 계정을 만드세요",
     "title": "내 옷장",
     "addItem": "새 아이템 추가",
     "editItem": "아이템 수정",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "의상 제안",
+    "guestLimitInfo": "게스트는 등록된 사용자와 동일한 일일 제안 한도를 가집니다",
     "generating": "생성 중...",
     "generatingOutfit": "완벽한 의상을 만드는 중",
     "analyzingWardrobe": "옷장을 분석하는 중...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "이 의상의 일부 항목이 제거되었습니다."
   },
   "profile": {
+    "guest": "게스트 사용자",
+    "guestSubtitle": "임시 계정",
+    "upgradeFromGuest": "계정 만들기",
+    "upgradeGuestTitle": "스타일 여정 저장하기",
+    "upgradeGuestDesc": "기기 간에 옷장을 동기화하고 데이터를 잃지 않으려면 영구 계정을 만드세요.",
+    "createPermanentAccount": "영구 계정 만들기",
+    "guestAccountInfo": "현재 임시 게스트 계정을 사용하고 있습니다. 데이터는 로컬에 저장됩니다.",
+    "guestLimitations": "게스트 계정 제한이 적용됩니다",
+    "upgradeForFullAccess": "전체 액세스를 위해 계정 만들기",
+    "guestAccount": "게스트 계정",
+    "createAccountBenefits": "계정 생성의 이점",
+    "crossDeviceSync": "모든 기기에서 동기화",
+    "neverLoseData": "옷장 데이터를 절대 잃지 마세요",
+    "fullFeatureAccess": "모든 기능에 대한 액세스",
     "deletingData": "데이터를 삭제하는 중입니다...",
     "privacyPolicy": "개인정보 처리방침",
     "termsOfUse": "이용약관",
     "title": "프로필",
-    "guest": "게스트 사용자",
-    "guestSubtitle": "전체 액세스를 위해 로그인하거나 계정을 만드세요",
     "subscription": "구독",
     "dailyUsage": "일일 제안 {{used}}/{{total}}개 사용됨",
     "upgradeForMore": "더 많은 제안을 위해 업그레이드하려면 탭하세요!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "리디렉션 중..."
+    "redirecting": "리디렉션 중...",
+    "guestMode": "게스트 모드",
+    "signUpForMore": "더 많은 기능을 보려면 가입하세요"
   },
   "register": {
     "name": "이름",

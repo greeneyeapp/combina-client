@@ -125,6 +125,12 @@
     "files": "קבצים"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "מגדיר את החוויה שלך...",
+      "pleaseWait": "אנא המתן רגע",
+      "creating": "יוצר חשבון אורח",
+      "almostReady": "כמעט מוכן!"
+    },
     "googleSignIn": {
       "redirecting": "מפנה לגוגל...",
       "processing": "מתחבר...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "אורח",
+    "createAccount": "צור חשבון",
+    "upgradeAccount": "שדרג חשבון",
+    "continueAsGuest": "המשך כאורח",
+    "guestUser": "משתמש אורח",
+    "or": "או",
     "done": "סיום",
     "cancel": "ביטול",
     "confirm": "אישור",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "התחבר עם גוגל",
     "signInWithApple": "התחבר עם אפל",
     "continueAsGuest": "המשך כאורח",
+    "guestAccountCreating": "יוצר חשבון אורח...",
+    "guestWelcome": "ברוך הבא, אורח!",
+    "guestSubtitle": "אתה משתמש בחשבון זמני",
     "signingInWithGoogle": "מתחבר עם גוגל...",
     "signingInWithApple": "מתחבר עם אפל...",
     "signInError": "ההתחברות נכשלה. אנא נסה שוב.",
@@ -234,6 +249,9 @@
     "profile": "פרופיל"
   },
   "home": {
+    "guestWelcome": "ברוך הבא לעוזר הסטייל שלך!",
+    "guestSubtitle": "התחל לבנות את המלתחה שלך וקבל הצעות לבוש מבוססות AI",
+    "guestUpgradePrompt": "צור חשבון כדי לסנכרן בין מכשירים",
     "title": "גלה סגנון",
     "styleTipsTitle": "טיפים לסגנון",
     "styleTipsSubtitle": "למד יסודות צבע וסטיילינג",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "אין גבולות במסע הסגנון שלך"
   },
   "wardrobe": {
+    "guestMode": "מצב אורח",
+    "guestDataLocal": "המלתחה שלך נשמרת באופן מקומי במכשיר זה",
+    "createAccountToSync": "צור חשבון כדי לסנכרן בין מכשירים",
     "title": "המלתחה שלי",
     "addItem": "הוסף פריט חדש",
     "editItem": "ערוך פריט",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "הצעות לתלבושות",
+    "guestLimitInfo": "כאורח, יש לך את אותן מגבלות הצעות יומיות כמו למשתמשים רשומים",
     "generating": "יוצר...",
     "generatingOutfit": "יוצר את התלבושת המושלמת שלך",
     "analyzingWardrobe": "מנתח את המלתחה שלך...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "חלק מהפריטים בתלבושת זו הוסרו."
   },
   "profile": {
+    "guest": "משתמש אורח",
+    "guestSubtitle": "חשבון זמני",
+    "upgradeFromGuest": "צור את חשבונך",
+    "upgradeGuestTitle": "שמור את מסע הסגנון שלך",
+    "upgradeGuestDesc": "צור חשבון קבוע כדי לסנכרן את המלתחה שלך בין מכשירים ולעולם לא לאבד את הנתונים שלך.",
+    "createPermanentAccount": "צור חשבון קבוע",
+    "guestAccountInfo": "אתה משתמש כעת בחשבון אורח זמני. הנתונים שלך נשמרים באופן מקומי.",
+    "guestLimitations": "חלות מגבלות על חשבון אורח",
+    "upgradeForFullAccess": "צור חשבון לגישה מלאה",
+    "guestAccount": "חשבון אורח",
+    "createAccountBenefits": "היתרונות של יצירת חשבון",
+    "crossDeviceSync": "סנכרון בין כל המכשירים שלך",
+    "neverLoseData": "לעולם אל תאבד את נתוני המלתחה שלך",
+    "fullFeatureAccess": "גישה לכל התכונות",
     "deletingData": "...מוחק את הנתונים שלך",
     "privacyPolicy": "מדיניות פרטיות",
     "termsOfUse": "תנאי שימוש",
     "title": "פרופיל",
-    "guest": "משתמש אורח",
-    "guestSubtitle": "התחבר או צור חשבון לגישה מלאה",
     "subscription": "מנוי",
     "dailyUsage": "{{used}}/{{total}} הצעות יומיות נוצלו",
     "upgradeForMore": "הקש לשדרוג לקבלת הצעות נוספות!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "מפנה..."
+    "redirecting": "מפנה...",
+    "guestMode": "מצב אורח",
+    "signUpForMore": "הירשם לתכונות נוספות"
   },
   "register": {
     "name": "שם",

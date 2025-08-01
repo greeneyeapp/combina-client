@@ -27,7 +27,7 @@ const { androidClientIdDev, androidClientIdProd, iosClientId } = Constants.expoC
 export default function GoogleSignInScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
-    const { signInWithGoogle, setAuthFlowActive } = useAuth();
+    const { signInWithGoogle } = useAuth();
     const { show: showAlert } = useAlertStore();
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -41,10 +41,8 @@ export default function GoogleSignInScreen() {
 
     useEffect(() => {
         if (request) {
-            setAuthFlowActive(true);
             promptAsync().catch(error => {
                 console.error("promptAsync error:", error);
-                setAuthFlowActive(false);
                 router.replace('/(auth)');
             });
         }
@@ -57,7 +55,6 @@ export default function GoogleSignInScreen() {
             handleGoogleSignIn(response.authentication.accessToken);
         } else {
             console.log('Google auth failed or cancelled:', response.type);
-            setAuthFlowActive(false);
             router.replace('/(auth)');
         }
     }, [response]);
@@ -87,7 +84,6 @@ export default function GoogleSignInScreen() {
             router.replace('/(auth)');
         } finally {
             setIsProcessing(false);
-            setAuthFlowActive(false);
         }
     };
 

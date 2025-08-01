@@ -1,4 +1,4 @@
-// app/(auth)/anonymous-signin.tsx - Anonymous kullanıcı girişi için yeni ekran
+// app/(auth)/anonymous-signin.tsx - NIHAI VE DÜZELTİLMİŞ VERSİYON
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
@@ -14,16 +14,15 @@ const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
 export default function AnonymousSignInScreen() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const { theme } = useTheme();
-    const { signInAnonymously, setAuthFlowActive } = useAuth();
+    const { signInAnonymously } = useAuth();
     const { show: showAlert } = useAlertStore();
 
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusMessage, setStatusMessage] = useState(t('authFlow.anonymousSignIn.processing'));
 
     useEffect(() => {
-        setAuthFlowActive(true);
         handleAnonymousSignIn();
     }, []);
 
@@ -32,46 +31,28 @@ export default function AnonymousSignInScreen() {
         try {
             setStatusMessage(t('authFlow.anonymousSignIn.creating'));
             
-            // TODO: Backend endpoint çağrısı burada yapılacak
-            // Şimdilik mock response
-            const mockAnonymousUser = {
-                uid: `anonymous_${Date.now()}`,
-                email: `anonymous_${Date.now()}@guest.app`,
-                name: t('profile.guest'),
-                fullname: t('profile.guest'),
-                displayName: t('profile.guest'),
-                gender: null,
-                plan: 'free',
-                provider: 'anonymous',
-                isAnonymous: true
+            const initialUserData = {
+              language: i18n.language,
+              gender: 'unisex'
             };
 
-            setStatusMessage(t('authFlow.anonymousSignIn.almostReady'));
-            
-            // 1 saniye bekle (UX için)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            const signedInUser = await signInAnonymously(mockAnonymousUser);
-            
-            // Complete profile'a yönlendirme (gender seçimi için)
-            if (signedInUser && !signedInUser.gender) {
-                router.replace('/(auth)/complete-profile');
-            } else {
-                router.replace('/(tabs)/home');
-            }
+            // Giriş işlemini tetikle. Yönlendirme kararını AuthContext verecek.
+            await signInAnonymously(initialUserData);
 
+            // Bu ekranda artık hiçbir yönlendirme kodu yok.
+            
         } catch (error: any) {
-            console.error('❌ Anonymous sign-in error:', error);
+            console.error('❌ Anonymous sign-in screen error:', error);
             showAlert({
                 title: t('common.error'),
                 message: t('authFlow.errors.signInFailed'),
                 buttons: [{ text: t('common.ok') }]
             });
+            // Hata durumunda güvenli bir şekilde ana giriş ekranına dön.
             router.replace('/(auth)');
-        } finally {
-            setIsProcessing(false);
-            setAuthFlowActive(false);
         }
+        // finally bloğu, yönlendirme merkezi olarak AuthContext'te olduğu için
+        // gereksiz hale geldi.
     };
     
     return (
@@ -88,11 +69,9 @@ export default function AnonymousSignInScreen() {
                         <Text style={[styles.mainStatus, { color: theme.colors.text }]}>
                             {statusMessage}
                         </Text>
-                        {isProcessing && (
-                            <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>
-                                {t('authFlow.anonymousSignIn.pleaseWait')}
-                            </Text>
-                        )}
+                        <Text style={[styles.stepText, { color: theme.colors.textSecondary }]}>
+                            {t('authFlow.anonymousSignIn.pleaseWait')}
+                        </Text>
                     </View>
                 </View>
             </SafeAreaView>

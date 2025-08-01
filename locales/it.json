@@ -125,6 +125,12 @@
     "files": "file"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Configurazione della tua esperienza...",
+      "pleaseWait": "Attendi un momento",
+      "creating": "Creazione account ospite",
+      "almostReady": "Quasi pronto!"
+    },
     "googleSignIn": {
       "redirecting": "Reindirizzamento a Google...",
       "processing": "Accesso in corso...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Ospite",
+    "createAccount": "Crea account",
+    "upgradeAccount": "Aggiorna account",
+    "continueAsGuest": "Continua come ospite",
+    "guestUser": "Utente ospite",
+    "or": "o",
     "done": "Fatto",
     "cancel": "Annulla",
     "confirm": "Conferma",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Accedi con Google",
     "signInWithApple": "Accedi con Apple",
     "continueAsGuest": "Continua come ospite",
+    "guestAccountCreating": "Creazione account ospite...",
+    "guestWelcome": "Benvenuto, Ospite!",
+    "guestSubtitle": "Stai utilizzando un account temporaneo",
     "signingInWithGoogle": "Accesso con Google...",
     "signingInWithApple": "Accesso con Apple...",
     "signInError": "Accesso fallito. Riprova.",
@@ -234,6 +249,9 @@
     "profile": "Profilo"
   },
   "home": {
+    "guestWelcome": "Benvenuto nel tuo Assistente di Stile!",
+    "guestSubtitle": "Inizia a costruire il tuo guardaroba e ottieni suggerimenti di outfit basati sull'IA",
+    "guestUpgradePrompt": "Crea un account per sincronizzare tra i dispositivi",
     "title": "Scopri lo stile",
     "styleTipsTitle": "Consigli di stile",
     "styleTipsSubtitle": "Impara le basi di colori e styling",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Nessun limite al tuo percorso di stile"
   },
   "wardrobe": {
+    "guestMode": "Modalità ospite",
+    "guestDataLocal": "Il tuo guardaroba è salvato localmente su questo dispositivo",
+    "createAccountToSync": "Crea un account per sincronizzare tra i dispositivi",
     "title": "Il mio guardaroba",
     "addItem": "Aggiungi nuovo capo",
     "editItem": "Modifica capo",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Suggerimenti di outfit",
+    "guestLimitInfo": "Come ospite, hai gli stessi limiti di suggerimenti giornalieri degli utenti registrati",
     "generating": "Generazione in corso...",
     "generatingOutfit": "Creazione del tuo outfit perfetto",
     "analyzingWardrobe": "Analisi del tuo guardaroba...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Alcuni articoli di questo outfit sono stati rimossi."
   },
   "profile": {
+    "guest": "Utente ospite",
+    "guestSubtitle": "Account temporaneo",
+    "upgradeFromGuest": "Crea il tuo Account",
+    "upgradeGuestTitle": "Salva il tuo Percorso di Stile",
+    "upgradeGuestDesc": "Crea un account permanente per sincronizzare il tuo guardaroba su tutti i dispositivi e non perdere mai i tuoi dati.",
+    "createPermanentAccount": "Crea Account Permanente",
+    "guestAccountInfo": "Stai utilizzando un account ospite temporaneo. I tuoi dati sono salvati localmente.",
+    "guestLimitations": "Si applicano le limitazioni dell'account ospite",
+    "upgradeForFullAccess": "Crea un account per l'accesso completo",
+    "guestAccount": "Account Ospite",
+    "createAccountBenefits": "Vantaggi della creazione di un account",
+    "crossDeviceSync": "Sincronizza su tutti i tuoi dispositivi",
+    "neverLoseData": "Non perdere mai i dati del tuo guardaroba",
+    "fullFeatureAccess": "Accesso a tutte le funzionalità",
     "deletingData": "Eliminazione dei dati in corso...",
     "privacyPolicy": "Informativa sulla Privacy",
     "termsOfUse": "Termini di Utilizzo",
     "title": "Profilo",
-    "guest": "Utente ospite",
-    "guestSubtitle": "Accedi o crea un account per l'accesso completo",
     "subscription": "Abbonamento",
     "dailyUsage": "{{used}}/{{total}} suggerimenti giornalieri usati",
     "upgradeForMore": "Tocca per aggiornare per più suggerimenti!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Reindirizzamento..."
+    "redirecting": "Reindirizzamento...",
+    "guestMode": "Modalità ospite",
+    "signUpForMore": "Registrati per più funzionalità"
   },
   "register": {
     "name": "Nome",

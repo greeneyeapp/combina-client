@@ -125,6 +125,12 @@
     "files": "fichiers"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Préparation de votre expérience...",
+      "pleaseWait": "Veuillez patienter un instant",
+      "creating": "Création du compte invité",
+      "almostReady": "Presque prêt !"
+    },
     "googleSignIn": {
       "redirecting": "Redirection vers Google...",
       "processing": "Connexion en cours...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Invité",
+    "createAccount": "Créer un compte",
+    "upgradeAccount": "Mettre à niveau le compte",
+    "continueAsGuest": "Continuer en tant qu'invité",
+    "guestUser": "Utilisateur invité",
+    "or": "ou",
     "done": "Terminé",
     "cancel": "Annuler",
     "confirm": "Confirmer",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Se connecter avec Google",
     "signInWithApple": "Se connecter avec Apple",
     "continueAsGuest": "Continuer en tant qu'invité",
+    "guestAccountCreating": "Création du compte invité...",
+    "guestWelcome": "Bienvenue, Invité !",
+    "guestSubtitle": "Vous utilisez un compte temporaire",
     "signingInWithGoogle": "Connexion avec Google...",
     "signingInWithApple": "Connexion avec Apple...",
     "signInError": "La connexion a échoué. Veuillez réessayer.",
@@ -234,6 +249,9 @@
     "profile": "Profil"
   },
   "home": {
+    "guestWelcome": "Bienvenue dans votre assistant de style !",
+    "guestSubtitle": "Commencez à construire votre garde-robe et obtenez des suggestions de tenues basées sur l'IA",
+    "guestUpgradePrompt": "Créez un compte pour synchroniser sur tous vos appareils",
     "title": "Découvrez le style",
     "styleTipsTitle": "Conseils de style",
     "styleTipsSubtitle": "Apprenez les bases des couleurs et du style",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Aucune limite à votre parcours de style"
   },
   "wardrobe": {
+    "guestMode": "Mode invité",
+    "guestDataLocal": "Votre garde-robe est enregistrée localement sur cet appareil",
+    "createAccountToSync": "Créez un compte pour synchroniser sur tous vos appareils",
     "title": "Ma garde-robe",
     "addItem": "Ajouter un nouvel article",
     "editItem": "Modifier l'article",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Suggestions de tenues",
+    "guestLimitInfo": "En tant qu'invité, vous avez les mêmes limites de suggestions quotidiennes que les utilisateurs enregistrés",
     "generating": "Génération en cours...",
     "generatingOutfit": "Création de votre tenue parfaite",
     "analyzingWardrobe": "Analyse de votre garde-robe...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Certains articles de cette tenue ont été supprimés."
   },
   "profile": {
+    "guest": "Utilisateur invité",
+    "guestSubtitle": "Compte temporaire",
+    "upgradeFromGuest": "Créez votre compte",
+    "upgradeGuestTitle": "Enregistrez votre parcours de style",
+    "upgradeGuestDesc": "Créez un compte permanent pour synchroniser votre garde-robe sur tous vos appareils et ne jamais perdre vos données.",
+    "createPermanentAccount": "Créer un compte permanent",
+    "guestAccountInfo": "Vous utilisez actuellement un compte invité temporaire. Vos données sont enregistrées localement.",
+    "guestLimitations": "Des limitations s'appliquent au compte invité",
+    "upgradeForFullAccess": "Créez un compte pour un accès complet",
+    "guestAccount": "Compte invité",
+    "createAccountBenefits": "Avantages de la création d'un compte",
+    "crossDeviceSync": "Synchronisation sur tous vos appareils",
+    "neverLoseData": "Ne perdez jamais les données de votre garde-robe",
+    "fullFeatureAccess": "Accès à toutes les fonctionnalités",
     "deletingData": "Suppression de vos données...",
     "privacyPolicy": "Politique de Confidentialité",
     "termsOfUse": "Conditions d'Utilisation",
     "title": "Profil",
-    "guest": "Utilisateur invité",
-    "guestSubtitle": "Connectez-vous ou créez un compte pour un accès complet",
     "subscription": "Abonnement",
     "dailyUsage": "{{used}}/{{total}} suggestions quotidiennes utilisées",
     "upgradeForMore": "Appuyez pour mettre à niveau et obtenir plus de suggestions !",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Redirection en cours..."
+    "redirecting": "Redirection en cours...",
+    "guestMode": "Mode invité",
+    "signUpForMore": "Inscrivez-vous pour plus de fonctionnalités"
   },
   "register": {
     "name": "Nom",

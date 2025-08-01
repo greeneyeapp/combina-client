@@ -17,7 +17,7 @@ const isTablet = width >= 768;
 export default function AppleSignInScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
-    const { signInWithApple, setAuthFlowActive } = useAuth();
+    const { signInWithApple } = useAuth();
     const { show: showAlert } = useAlertStore();
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -25,7 +25,6 @@ export default function AppleSignInScreen() {
 
     useEffect(() => {
         if (Platform.OS === 'ios') {
-            setAuthFlowActive(true);
             handleAppleSignIn();
         } else {
             router.replace('/(auth)');
@@ -64,7 +63,6 @@ export default function AppleSignInScreen() {
             router.replace('/(auth)');
         } finally {
             setIsProcessing(false);
-            setAuthFlowActive(false);
         }
     };
     

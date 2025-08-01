@@ -125,6 +125,12 @@
     "files": "archivos"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Configurando tu experiencia...",
+      "pleaseWait": "Por favor, espera un momento",
+      "creating": "Creando cuenta de invitado",
+      "almostReady": "¡Casi listo!"
+    },
     "googleSignIn": {
       "redirecting": "Redirigiendo a Google...",
       "processing": "Iniciando sesión...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Invitado",
+    "createAccount": "Crear cuenta",
+    "upgradeAccount": "Actualizar cuenta",
+    "continueAsGuest": "Continuar como invitado",
+    "guestUser": "Usuario invitado",
+    "or": "o",
     "done": "Hecho",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
@@ -185,9 +197,12 @@
     "loadMore": "Cargar más"
   },
   "auth": {
+    "continueAsGuest": "Continuar como invitado",
     "signInWithGoogle": "Iniciar sesión con Google",
     "signInWithApple": "Iniciar sesión con Apple",
-    "continueAsGuest": "Continuar como invitado",
+    "guestAccountCreating": "Creando cuenta de invitado...",
+    "guestWelcome": "¡Bienvenido, Invitado!",
+    "guestSubtitle": "Estás usando una cuenta temporal",
     "signingInWithGoogle": "Iniciando sesión con Google...",
     "signingInWithApple": "Iniciando sesión con Apple...",
     "signInError": "Inicio de sesión fallido. Por favor, inténtalo de nuevo.",
@@ -234,6 +249,9 @@
     "profile": "Perfil"
   },
   "home": {
+    "guestWelcome": "¡Bienvenido a Tu Asistente de Estilo!",
+    "guestSubtitle": "Empieza a construir tu armario y obtén sugerencias de atuendos impulsadas por IA",
+    "guestUpgradePrompt": "Crea una cuenta para sincronizar entre dispositivos",
     "title": "Descubre estilo",
     "styleTipsTitle": "Consejos de estilo",
     "styleTipsSubtitle": "Aprende los conceptos básicos de color y estilismo",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Sin límites en tu viaje de estilo"
   },
   "wardrobe": {
+    "guestMode": "Modo invitado",
+    "guestDataLocal": "Tu armario se guarda localmente en este dispositivo",
+    "createAccountToSync": "Crea una cuenta para sincronizar entre dispositivos",
     "title": "Mi armario",
     "addItem": "Añadir nueva prenda",
     "editItem": "Editar prenda",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Sugerencias de atuendos",
+    "guestLimitInfo": "Como invitado, tienes los mismos límites diarios de sugerencias que los usuarios registrados",
     "generating": "Generando...",
     "generatingOutfit": "Creando tu atuendo perfecto",
     "analyzingWardrobe": "Analizando tu armario...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Se han eliminado algunas prendas de este atuendo."
   },
   "profile": {
+    "guest": "Usuario invitado",
+    "guestSubtitle": "Cuenta temporal",
+    "upgradeFromGuest": "Crea tu cuenta",
+    "upgradeGuestTitle": "Guarda tu viaje de estilo",
+    "upgradeGuestDesc": "Crea una cuenta permanente para sincronizar tu armario entre dispositivos y no perder nunca tus datos.",
+    "createPermanentAccount": "Crear cuenta permanente",
+    "guestAccountInfo": "Actualmente estás usando una cuenta de invitado temporal. Tus datos se guardan localmente.",
+    "guestLimitations": "Se aplican las limitaciones de la cuenta de invitado",
+    "upgradeForFullAccess": "Crea una cuenta para tener acceso completo",
+    "guestAccount": "Cuenta de invitado",
+    "createAccountBenefits": "Beneficios de crear una cuenta",
+    "crossDeviceSync": "Sincronización en todos tus dispositivos",
+    "neverLoseData": "No pierdas nunca los datos de tu armario",
+    "fullFeatureAccess": "Acceso a todas las funciones",
     "deletingData": "Eliminando tus datos...",
     "privacyPolicy": "Política de Privacidad",
     "termsOfUse": "Términos de Uso",
     "title": "Perfil",
-    "guest": "Usuario invitado",
-    "guestSubtitle": "Inicia sesión o crea una cuenta para tener acceso completo",
     "subscription": "Suscripción",
     "dailyUsage": "{{used}}/{{total}} sugerencias diarias utilizadas",
     "upgradeForMore": "¡Toca para actualizar y obtener más sugerencias!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Redirigiendo..."
+    "redirecting": "Redirigiendo...",
+    "guestMode": "Modo invitado",
+    "signUpForMore": "Regístrate para más funciones"
   },
   "register": {
     "name": "Nombre",

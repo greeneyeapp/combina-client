@@ -125,6 +125,12 @@
     "files": "arquivos"
   },
   "authFlow": {
+    "anonymousSignIn": {
+      "processing": "Configurando sua experiência...",
+      "pleaseWait": "Por favor, aguarde um momento",
+      "creating": "Criando conta de convidado",
+      "almostReady": "Quase pronto!"
+    },
     "googleSignIn": {
       "redirecting": "Redirecionando para o Google...",
       "processing": "Entrando...",
@@ -155,6 +161,12 @@
     }
   },
   "common": {
+    "guest": "Convidado",
+    "createAccount": "Criar Conta",
+    "upgradeAccount": "Atualizar Conta",
+    "continueAsGuest": "Continuar como convidado",
+    "guestUser": "Usuário Convidado",
+    "or": "ou",
     "done": "Concluído",
     "cancel": "Cancelar",
     "confirm": "Confirmar",
@@ -188,6 +200,9 @@
     "signInWithGoogle": "Entrar com o Google",
     "signInWithApple": "Entrar com a Apple",
     "continueAsGuest": "Continuar como convidado",
+    "guestAccountCreating": "Criando conta de convidado...",
+    "guestWelcome": "Bem-vindo, Convidado!",
+    "guestSubtitle": "Você está usando uma conta temporária",
     "signingInWithGoogle": "Entrando com o Google...",
     "signingInWithApple": "Entrando com a Apple...",
     "signInError": "Falha no login. Por favor, tente novamente.",
@@ -234,6 +249,9 @@
     "profile": "Perfil"
   },
   "home": {
+    "guestWelcome": "Bem-vindo ao seu Assistente de Estilo!",
+    "guestSubtitle": "Comece a construir seu guarda-roupa e receba sugestões de looks com IA",
+    "guestUpgradePrompt": "Crie uma conta para sincronizar entre dispositivos",
     "title": "Descubra Estilo",
     "styleTipsTitle": "Dicas de Estilo",
     "styleTipsSubtitle": "Aprenda o básico sobre cores e estilo",
@@ -263,6 +281,9 @@
     "unlimitedSubtitle": "Sem limites na sua jornada de estilo"
   },
   "wardrobe": {
+    "guestMode": "Modo Convidado",
+    "guestDataLocal": "Seu guarda-roupa é salvo localmente neste dispositivo",
+    "createAccountToSync": "Crie uma conta para sincronizar entre dispositivos",
     "title": "Meu Guarda-roupa",
     "addItem": "Adicionar Nova Peça",
     "editItem": "Editar Peça",
@@ -425,6 +446,7 @@
   },
   "suggestions": {
     "title": "Sugestões de Looks",
+    "guestLimitInfo": "Como convidado, você tem os mesmos limites diários de sugestões que os usuários registrados",
     "generating": "Gerando...",
     "generatingOutfit": "Criando seu Look Perfeito",
     "analyzingWardrobe": "Analisando seu guarda-roupa...",
@@ -643,12 +665,24 @@
     "someItemsRemoved": "Alguns itens deste look foram removidos."
   },
   "profile": {
+    "guest": "Usuário Convidado",
+    "guestSubtitle": "Conta temporária",
+    "upgradeFromGuest": "Crie sua Conta",
+    "upgradeGuestTitle": "Salve sua Jornada de Estilo",
+    "upgradeGuestDesc": "Crie uma conta permanente para sincronizar seu guarda-roupa entre dispositivos e nunca perder seus dados.",
+    "createPermanentAccount": "Criar Conta Permanente",
+    "guestAccountInfo": "Você está usando uma conta de convidado temporária. Seus dados são salvos localmente.",
+    "guestLimitations": "Limitações de conta de convidado se aplicam",
+    "upgradeForFullAccess": "Crie uma conta para acesso completo",
+    "guestAccount": "Conta de Convidado",
+    "createAccountBenefits": "Benefícios de criar uma conta",
+    "crossDeviceSync": "Sincronize em todos os seus dispositivos",
+    "neverLoseData": "Nunca perca os dados do seu guarda-roupa",
+    "fullFeatureAccess": "Acesso a todos os recursos",
     "deletingData": "Excluindo seus dados...",
     "privacyPolicy": "Política de Privacidade",
     "termsOfUse": "Termos de Uso",
     "title": "Perfil",
-    "guest": "Usuário Convidado",
-    "guestSubtitle": "Faça login ou crie uma conta para acesso completo",
     "subscription": "Assinatura",
     "dailyUsage": "{{used}}/{{total}} sugestões diárias usadas",
     "upgradeForMore": "Toque para atualizar para mais sugestões!",
@@ -754,7 +788,9 @@
     ]
   },
   "navigation": {
-    "redirecting": "Redirecionando..."
+    "redirecting": "Redirecionando...",
+    "guestMode": "Modo Convidado",
+    "signUpForMore": "Inscreva-se para mais recursos"
   },
   "register": {
     "name": "Nome",

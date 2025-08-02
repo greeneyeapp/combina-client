@@ -1,4 +1,4 @@
-// app/(auth)/apple-signin.tsx - Direkt yönlendirme yapılıyor
+// app/(auth)/apple-signin.tsx - Manuel navigation ile düzeltildi
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
@@ -14,6 +14,11 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
+// Global OAuth flag declare
+declare global {
+    var globalOAuthInProgress: boolean;
+}
+
 export default function AppleSignInScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
@@ -23,10 +28,29 @@ export default function AppleSignInScreen() {
     const [isProcessing, setIsProcessing] = useState(false);
     const [statusMessage, setStatusMessage] = useState(t('authFlow.appleSignIn.processing'));
 
+    // DÜZELTME: Component mount olduğunda global flag set et
+    useEffect(() => {
+        console.log('🔄 Apple signin screen mounted, setting global OAuth flag...');
+        global.globalOAuthInProgress = true;
+        
+        // 10 saniye sonra flag'i temizle (güvenlik için)
+        const clearTimer = setTimeout(() => {
+            global.globalOAuthInProgress = false;
+            console.log('✅ Global OAuth flag cleared (timeout)');
+        }, 10000);
+
+        return () => {
+            clearTimeout(clearTimer);
+            global.globalOAuthInProgress = false;
+            console.log('✅ Global OAuth flag cleared (component unmount)');
+        };
+    }, []);
+
     useEffect(() => {
         if (Platform.OS === 'ios') {
             handleAppleSignIn();
         } else {
+            global.globalOAuthInProgress = false;
             router.replace('/(auth)');
         }
     }, []);
@@ -44,14 +68,30 @@ export default function AppleSignInScreen() {
             setStatusMessage(t('authFlow.appleSignIn.pleaseWait'));
             console.log('🔄 Processing Apple credentials...');
             
-            // Sign in işlemini yap
             const userInfo = await signInWithApple(credential);
             
-            // DÜZELTME: Başarılı giriş sonrası yönlendirme artık AuthContext tarafından yönetiliyor.
-            // Bu kod bloğunu kaldırıyoruz.
+            console.log('✅ Apple sign-in successful:', {
+                uid: userInfo.uid,
+                profileComplete: userInfo.profile_complete
+            });
+
+            // DÜZELTME: Flag'i temizle ve navigation yap
+            global.globalOAuthInProgress = false;
+            console.log('✅ Global OAuth flag cleared (success)');
+            
+            // DÜZELTME: Immediate navigation
+            console.log('🚀 IMMEDIATE navigation from apple-signin...');
+            if (userInfo.profile_complete) {
+                console.log('🏠 Profile complete, redirecting to home IMMEDIATELY');
+                router.replace('/(tabs)/home');
+            } else {
+                console.log('📝 Profile incomplete, redirecting to complete-profile IMMEDIATELY');
+                router.replace('/(auth)/complete-profile');
+            }
 
         } catch (error: any) {
             console.error('❌ Apple sign-in error:', error);
+            global.globalOAuthInProgress = false;
             if (error.code !== 'ERR_CANCELED') {
                 showAlert({
                     title: t('common.error'),

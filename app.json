@@ -16,6 +16,7 @@
       "supportsTablet": true,
       "orientation": "portrait",
       "bundleIdentifier": "com.greeneyeapp.combina",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "This app uses camera to take photos of clothing items for your wardrobe.",
@@ -25,7 +26,10 @@
         "NSFaceIDUsageDescription": "Allow Combina to access your Face ID biometric data for secure authentication."
       },
       "config": {
-        "usesNonExemptEncryption": false
+        "usesNonExemptEncryption": false,
+        "googleSignIn": {
+          "reservedClientId": "58339241217-dvfh2fl5p2hfi9a6m0vaqnuf4esf53qk.apps.googleusercontent.com"
+        }
       }
     },
     "android": {

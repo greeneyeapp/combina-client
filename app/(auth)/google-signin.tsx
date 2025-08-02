@@ -1,7 +1,7 @@
-// app/(auth)/google-signin.tsx - ESKİ ÇALIŞAN VERSİYON + YÖNLENDİRME DÜZELTMESİ
+// app/(auth)/google-signin.tsx - Global OAuth flag eklendi
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +24,11 @@ if (!Constants.expoConfig?.extra?.googleAuth) {
 
 const { androidClientIdDev, androidClientIdProd, iosClientId } = Constants.expoConfig.extra.googleAuth;
 
+// Global OAuth flag import
+declare global {
+    var globalOAuthInProgress: boolean;
+}
+
 export default function GoogleSignInScreen() {
     const { t } = useTranslation();
     const { theme } = useTheme();
@@ -39,10 +44,29 @@ export default function GoogleSignInScreen() {
         scopes: ['profile', 'email'],
     });
 
+    // DÜZELTME: Component mount olduğunda global flag set et
+    useEffect(() => {
+        console.log('🔄 Google signin screen mounted, setting global OAuth flag...');
+        global.globalOAuthInProgress = true;
+        
+        // 10 saniye sonra flag'i temizle (güvenlik için)
+        const clearTimer = setTimeout(() => {
+            global.globalOAuthInProgress = false;
+            console.log('✅ Global OAuth flag cleared (timeout)');
+        }, 10000);
+
+        return () => {
+            clearTimeout(clearTimer);
+            global.globalOAuthInProgress = false;
+            console.log('✅ Global OAuth flag cleared (component unmount)');
+        };
+    }, []);
+
     useEffect(() => {
         if (request) {
             promptAsync().catch(error => {
                 console.error("promptAsync error:", error);
+                global.globalOAuthInProgress = false;
                 router.replace('/(auth)');
             });
         }
@@ -50,14 +74,23 @@ export default function GoogleSignInScreen() {
 
     useEffect(() => {
         if (!response) return;
+        
         if (response.type === 'success' && response.authentication?.accessToken) {
             setIsProcessing(true);
             handleGoogleSignIn(response.authentication.accessToken);
-        } else if (response.type !== 'dismiss' && response.type !== 'cancel') {
-            console.log('Google auth failed or was cancelled:', response.type);
-            router.replace('/(auth)');
         } else if (response.type === 'cancel' || response.type === 'dismiss') {
-             router.replace('/(auth)');
+            console.log('Google auth cancelled by user');
+            global.globalOAuthInProgress = false;
+            router.replace('/(auth)');
+        } else if (response.type === 'error') {
+            console.error('Google auth error:', response.error);
+            global.globalOAuthInProgress = false;
+            showAlert({
+                title: t('common.error'),
+                message: t('authFlow.errors.signInFailed'),
+                buttons: [{ text: t('common.ok') }]
+            });
+            router.replace('/(auth)');
         }
     }, [response]);
 
@@ -66,7 +99,6 @@ export default function GoogleSignInScreen() {
             setStatusMessage(t('authFlow.googleSignIn.gettingProfile'));
             console.log('🔄 Processing Google access token...');
             
-            // AuthContext sign in
             const userInfo = await signInWithGoogle(accessToken);
             
             console.log('✅ Google sign-in successful:', {
@@ -74,19 +106,23 @@ export default function GoogleSignInScreen() {
                 profileComplete: userInfo.profile_complete
             });
             
-            // DÜZELTME: Başarılı giriş sonrası yönlendirme
-            setTimeout(() => {
-                if (userInfo.profile_complete) {
-                    console.log('🏠 Redirecting to home');
-                    router.replace('/(tabs)/home');
-                } else {
-                    console.log('📝 Redirecting to complete-profile');
-                    router.replace('/(auth)/complete-profile');
-                }
-            }, 1000); // 1 saniye bekle
+            // DÜZELTME: Flag'i temizle ve navigation yap
+            global.globalOAuthInProgress = false;
+            console.log('✅ Global OAuth flag cleared (success)');
+            
+            // DÜZELTME: Immediate navigation - NavigationGuard'ı override et
+            console.log('🚀 IMMEDIATE navigation from google-signin...');
+            if (userInfo.profile_complete) {
+                console.log('🏠 Profile complete, redirecting to home IMMEDIATELY');
+                router.replace('/(tabs)/home');
+            } else {
+                console.log('📝 Profile incomplete, redirecting to complete-profile IMMEDIATELY');
+                router.replace('/(auth)/complete-profile');
+            }
             
         } catch (error: any) {
             console.error('❌ Google sign-in error:', error);
+            global.globalOAuthInProgress = false;
             const errorMessage = error.message?.includes('Network Error') || error.message?.includes('bağlanılamadı')
                 ? t('authFlow.errors.networkError')
                 : t('authFlow.errors.signInFailed');

@@ -1,4 +1,4 @@
-// context/AuthContext.tsx - Yönlendirme yarış durumu düzeltildi
+// context/AuthContext.tsx - Navigation tamamen kaldırıldı
 
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
@@ -8,7 +8,6 @@ import axios from 'axios';
 import API_URL from '@/config';
 import Purchases from 'react-native-purchases';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useRootNavigationState, useSegments } from 'expo-router';
 import { apiDeduplicator } from '@/utils/apiDeduplication';
 import i18n from '@/locales/i18n';
 
@@ -42,20 +41,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = React.useState(true);
   const [isInitialized, setIsInitialized] = React.useState(false);
   const [lastProfileRefresh, setLastProfileRefresh] = React.useState(0);
-  
-  // DÜZELTME: Navigation state için yeni state'ler
-  const [isNavigating, setIsNavigating] = React.useState(false);
-  const [pendingNavigation, setPendingNavigation] = React.useState<string | null>(null);
 
   const { setJwt, clearJwt, loadJwt, isReady, jwt } = useApiAuthStore();
   const { clearUserPlan } = useUserPlanStore();
-  const segments = useSegments();
-  const navigationState = useRootNavigationState();
 
   React.useEffect(() => {
     loadJwt();
   }, [loadJwt]);
 
+  // SADECE AUTH INITIALIZATION - Navigation yok
   React.useEffect(() => {
     if (!isReady || isInitialized) return;
     const initializeAuth = async () => {
@@ -79,11 +73,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
           console.log('✅ Token validated, user profile is fresh.');
           
-          // DÜZELTME: Sadece non-anonymous kullanıcılar için RevenueCat login
           if (completeUserInfo.uid && !completeUserInfo.isAnonymous) {
             await Purchases.logIn(completeUserInfo.uid).catch(e => console.warn('RC login failed during init:', e));
-          } else if (completeUserInfo.isAnonymous) {
-            console.log('📋 Skipping RevenueCat login for anonymous user');
           }
         } else {
           setUser(null);
@@ -100,146 +91,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } finally {
         setLoading(false);
         setIsInitialized(true);
-        console.log('✅ Auth initialization completed.');
+        console.log('✅ Auth initialization completed - NO NAVIGATION.');
       }
     };
     initializeAuth();
   }, [isReady, jwt, isInitialized]);
 
-  // DÜZELTME: Aggressive navigation flag reset - güvenlik önlemi
-  React.useEffect(() => {
-    // Navigation flag'i çok uzun süre takılı kalmasın
-    const clearStuckNavigation = setInterval(() => {
-      if (isNavigating) {
-        console.log('🔧 Force clearing stuck navigation flag');
-        setIsNavigating(false);
-        setPendingNavigation(null);
-      }
-    }, 2000); // 2 saniyede bir kontrol et
-
-    return () => clearInterval(clearStuckNavigation);
-  }, [isNavigating]);
-
-  // DÜZELTME: User state değişimlerini izle - sadece anonymous için reset
-  React.useEffect(() => {
-    if (user && jwt && user.provider === 'anonymous') {
-      console.log(`👤 Anonymous user state changed, gentle navigation reset`);
-      setIsNavigating(false);
-      setPendingNavigation(null);
-    }
-    // OAuth providers için navigation reset yapma
-  }, [user?.uid, user?.profile_complete, user?.provider, jwt]);
-
-  // DÜZELTME: Navigation effect'i - OAuth'a dokunmama modeli
-  React.useEffect(() => {
-    if (!navigationState?.key || !isInitialized || loading) {
-      return;
-    }
-
-    const currentPath = segments.join('/');
-    
-    // DEĞİŞİKLİK: 'anonymous-signin' rotasını bu listeden kaldırıyoruz.
-    const isOAuthScreen = currentPath.includes('google-signin') || 
-                         currentPath.includes('apple-signin');
-    
-    if (isOAuthScreen) {
-      console.log(`⏸️ Blocking all navigation - on OAuth screen: ${currentPath}`);
-      return;
-    }
-
-    // DÜZELTME: Sadece anonymous için hızlı, diğerleri için yavaş
-    const debounceTime = user?.provider === 'anonymous' ? 200 : 800;
-
-    const navigationTimer = setTimeout(() => {
-      performNavigation();
-    }, debounceTime);
-
-    return () => clearTimeout(navigationTimer);
-  }, [
-    user?.profile_complete, 
-    user?.uid, 
-    jwt, 
-    segments.join('/'),
-    navigationState?.key, 
-    isInitialized,
-    loading,
-    user?.provider
-  ]);
-
-  const performNavigation = async () => {
-    const inAuthGroup = segments[0] === '(auth)';
-    const currentPath = segments.join('/');
-
-    // DEĞİŞİKLİK: 'anonymous-signin' rotası artık engellenmiyor.
-    const isOAuthScreen = currentPath.includes('google-signin') || 
-                         currentPath.includes('apple-signin');
-    
-    if (isOAuthScreen) {
-      console.log(`⏸️ Navigation completely blocked - OAuth screen: ${currentPath}`);
-      return;
-    }
-
-    console.log('🧭 Navigation check:', {
-      currentPath,
-      inAuthGroup,
-      hasUser: !!user,
-      hasJwt: !!jwt,
-      profileComplete: user?.profile_complete,
-      provider: user?.provider,
-      isNavigating
-    });
-
-    if (isNavigating) {
-      console.log('🚫 Navigation already in progress, skipping...');
-      return;
-    }
-    
-    setIsNavigating(true);
-    
-    try {
-      if (user && jwt) {
-        console.log(`🔍 User authenticated with ${user.provider}, profile_complete: ${user.profile_complete}`);
-
-        if (user.profile_complete === true) {
-          if (inAuthGroup) {
-            console.log(`🏠 Profile complete (${user.provider}). Redirecting to home.`);
-            router.replace('/(tabs)/home');
-          }
-        } else {
-          if (currentPath !== '(auth)/complete-profile') {
-            console.log(`📝 Profile incomplete (${user.provider}). Redirecting to complete-profile.`);
-            router.replace('/(auth)/complete-profile');
-          } else {
-            console.log('📍 Already on complete-profile page');
-          }
-        }
-      } else {
-        // User yok - sadece auth group dışındaysak yönlendir
-        if (!inAuthGroup) {
-          console.log('🚪 No user found. Redirecting to auth screen.');
-          router.replace('/(auth)');
-        } else {
-          console.log('👤 No user but in auth group, staying put');
-        }
-      }
-    } catch (error) {
-      console.error('❌ Navigation error:', error);
-    } finally {
-      setTimeout(() => {
-        setIsNavigating(false);
-        setPendingNavigation(null);
-        console.log(`🔓 Navigation flags cleared`);
-      }, 100);
-    }
-  };
-
   const signInAnonymously = async (userData: any) => {
     try {
-      // DÜZELTME: Sign-in başlamadan önce navigation state'ini temizle
-      setIsNavigating(false);
-      setPendingNavigation(null);
-      
-      // DÜZELTME: Anonymous ID'yi doğrudan userData'dan al (component'ten geliyor)
       const existingAnonymousId = userData.anonymous_id;
       console.log(`🆔 Anonymous sign-in request:`, {
         providedId: existingAnonymousId,
@@ -252,13 +111,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         session_id: 'mobile_app',
         language: userData.language,
         gender: userData.gender,
-        anonymous_id: existingAnonymousId // Component'ten gelen ID'yi kullan
+        anonymous_id: existingAnonymousId
       }, { timeout: 30000 });
       
       const { access_token, user_info } = response.data;
       await setJwt(access_token);
       
-      // DÜZELTME: Anonymous ID güncellemesi - backend'den gelen ID'yi sakla
       if (user_info.user_id) {
         if (user_info.user_id !== existingAnonymousId) {
           await AsyncStorage.setItem(ANONYMOUS_USER_ID_KEY, user_info.user_id);
@@ -284,15 +142,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
       
-      // DÜZELTME: User set edildikten sonra navigation'ı tekrar temizle
-      setTimeout(() => {
-        setIsNavigating(false);
-        setPendingNavigation(null);
-      }, 100);
-      
-      // DÜZELTME: Backend yanıtına göre log mesajı
       const wasResumed = existingAnonymousId && user_info.user_id === existingAnonymousId;
-      console.log(`✅ Anonymous session ${wasResumed ? 'resumed' : 'created'}.`);
+      console.log(`✅ Anonymous session ${wasResumed ? 'resumed' : 'created'} - NO AUTO NAVIGATION.`);
       
       return completeUserInfo;
     } catch (error) {
@@ -346,7 +197,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Google RC login failed:', e));
       }
       
-      console.log(`✅ AuthContext: Google sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
+      console.log(`✅ AuthContext: Google sign-in completed - NO AUTO NAVIGATION. Profile complete: ${completeUserInfo.profile_complete}`);
       return completeUserInfo;
       
     } catch (error) {
@@ -387,23 +238,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       };
       
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
-      
-      console.log('✅ Apple user created, setting user state...');
-      
       setUser(completeUserInfo);
       
       if (user_info.uid) {
         await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Apple RC login failed:', e));
       }
       
-      console.log(`✅ Apple sign-in completed. Profile complete: ${completeUserInfo.profile_complete}`);
+      console.log(`✅ Apple sign-in completed - NO AUTO NAVIGATION. Profile complete: ${completeUserInfo.profile_complete}`);
       
       return completeUserInfo;
     } catch (error) {
       console.error('❌ APPLE SIGN-IN ERROR:', error);
-      // Hata durumunda navigation'ı normale döndür
-      setIsNavigating(false);
-      setPendingNavigation(null);
       throw error;
     }
   };
@@ -430,7 +275,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
       apiDeduplicator.clearCache('user_profile');
-      console.log('✅ User info updated successfully. New state:', updatedUser);
+      console.log('✅ User info updated successfully - NO AUTO NAVIGATION. New state:', updatedUser);
       return updatedUser;
     } catch (error) {
       console.error('Update user info error:', error);
@@ -444,10 +289,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const isAnon = user?.isAnonymous;
       const currentAnonymousId = isAnon ? user?.uid : null;
       
-      // DÜZELTME: Logout başında navigation'ı temizle
-      setIsNavigating(false);
-      setPendingNavigation(null);
-      
       setUser(null);
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
@@ -455,19 +296,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLastProfileRefresh(0);
       clearUserPlan();
       
-      // DÜZELTME: Anonymous kullanıcı logout'unda ID'yi KOR
       if (isAnon && currentAnonymousId) {
         console.log(`🔄 Preserving anonymous ID for future login: ${currentAnonymousId}`);
-        // Anonymous ID'yi koruyoruz - logout sonrası tekrar giriş için
-        // ANONYMOUS_USER_ID_KEY'i SİLME!
       } else {
-        // Normal authenticated kullanıcı - tüm verileri temizle
         await AsyncStorage.removeItem(ANONYMOUS_USER_ID_KEY);
         await Purchases.logOut().catch(e => console.log('⚠️ RC logout error (expected):', e));
         console.log('🧹 Cleared all user data including anonymous ID');
       }
       
-      console.log('✅ Logout process completed');
+      console.log('✅ Logout process completed - NO AUTO NAVIGATION');
     } catch (error) {
       console.error("🚨 Logout Error:", error);
     }

@@ -1,57 +1,66 @@
-// app/+not-found.tsx - OAuth redirect handling eklendi
+// app/+not-found.tsx - OAuth callback sırasında global flag
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator, Text, Dimensions } from 'react-native';
-import { Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/context/AuthContext';
 
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
+// Global OAuth flag
+let globalOAuthInProgress = false;
+
 export default function NotFoundScreen() {
   const { theme } = useTheme();
   const { t } = useTranslation();
-  const { user, isInitialized } = useAuth();
   const params = useLocalSearchParams();
+  
+  const [redirectMessage, setRedirectMessage] = useState(t('navigation.redirecting'));
 
   useEffect(() => {
-    // DÜZELTME: OAuth callback handling
-    const handleRedirect = () => {
-      console.log('🔍 NotFound screen - checking redirect params:', params);
+    const handleOAuthCallback = () => {
+      console.log('🔍 NotFound screen - checking params:', params);
       
-      // Google OAuth callback kontrolü
-      if (params.code || params.access_token || params.state) {
-        console.log('🚫 OAuth callback detected in NotFound, redirecting to dedicated redirect screen');
-        // DEĞİŞİKLİK: Yönlendirme artık /(auth) yerine yeni bir redirect sayfasına yapılıyor
-        router.replace('/(auth)/redirect');
+      // DÜZELTME: OAuth callback parametrelerini kontrol et
+      const isOAuthCallback = !!(
+        params.code || 
+        params.access_token || 
+        params.state || 
+        params.error ||
+        params.authorization_code ||
+        String(params.success) === 'true' ||
+        String(params.cancelled) === 'true'
+      );
+
+      if (isOAuthCallback) {
+        console.log('🔄 OAuth callback detected, setting global flag...');
+        setRedirectMessage(t('authFlow.anonymousSignIn.pleaseWait'));
+        
+        // Global flag set et - NavigationGuard için
+        globalOAuthInProgress = true;
+        
+        // 8 saniye sonra flag'i temizle
+        setTimeout(() => {
+          globalOAuthInProgress = false;
+          console.log('✅ Global OAuth flag cleared');
+        }, 8000);
+        
+        // OAuth callback durumunda hiçbir şey yapma - WebBrowser otomatik handle eder
         return;
       }
 
-      // Auth context hazır olduktan sonra yönlendir
-      if (isInitialized) {
-        if (user) {
-          if (user.profile_complete) {
-            console.log('🏠 User authenticated and complete, redirecting to home');
-            router.replace('/(tabs)/home');
-          } else {
-            console.log('📝 User authenticated but incomplete, redirecting to complete-profile');
-            router.replace('/(auth)/complete-profile');
-          }
-        } else {
-          console.log('🚪 No user found, redirecting to auth');
-          router.replace('/(auth)');
-        }
-      }
+      // OAuth callback değilse, normal not-found
+      setRedirectMessage('Page not found - redirecting...');
     };
 
-    // Kısa bir gecikme ile redirect
-    const timer = setTimeout(handleRedirect, 1000);
+    // Kısa gecikme ile callback kontrolü
+    const timer = setTimeout(handleOAuthCallback, 300);
     return () => clearTimeout(timer);
-  }, [params, user, isInitialized]);
+  }, [params]);
 
   return (
     <>
@@ -67,12 +76,7 @@ export default function NotFoundScreen() {
             </View>
             
             <Text style={[styles.text, { color: theme.colors.text }]}>
-              {t('navigation.redirecting')}
-            </Text>
-            
-            <Text style={[styles.debugText, { color: theme.colors.textLight }]}>
-              {user ? `User: ${user.provider}` : 'No user'}
-              {isInitialized ? ' | Auth Ready' : ' | Auth Loading'}
+              {redirectMessage}
             </Text>
           </View>
         </SafeAreaView>
@@ -80,6 +84,9 @@ export default function NotFoundScreen() {
     </>
   );
 }
+
+// Global flag export
+export { globalOAuthInProgress };
 
 const styles = StyleSheet.create({
   gradient: {
@@ -104,11 +111,5 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: 'Montserrat-Medium',
     fontSize: isTablet ? 20 : 16,
-  },
-  debugText: {
-    fontFamily: 'Montserrat-Regular',
-    fontSize: 12,
-    textAlign: 'center',
-    opacity: 0.7,
   },
 });

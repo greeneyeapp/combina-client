@@ -1,4 +1,4 @@
-// app/_layout.tsx - Splash screen manuel kontrolü ile geliştirilmiş
+// app/_layout.tsx - NavigationGuard eklendi
 
 import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
@@ -17,6 +17,7 @@ import Purchases from 'react-native-purchases';
 import * as Localization from 'expo-localization';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingGuide from '@/components/onboarding/OnboardingGuide';
+import NavigationGuard from '@/components/NavigationGuard';
 import { initializeApp, resetInitializationState } from '@/utils/appInitialization';
 import { initializeCaches, validateAndCleanCaches, resetCacheManager } from '@/utils/cacheManager';
 import { RevenueCatProvider } from '@/context/RevenueCatContext';
@@ -30,7 +31,7 @@ let layoutInitializationPromise: Promise<void> | null = null;
 
 // Splash screen'i gizleme kontrolü için
 const MINIMUM_SPLASH_TIME = 2000; // En az 2 saniye göster
-const MAXIMUM_SPLASH_TIME = 8000; // En fazla 8 saniye göster
+const MAXIMUM_SPLASH_TIME = 6000; // En fazla 6 saniye göster (azaltıldı)
 
 interface SplashControllerProps {
   onInitializationComplete: () => void;
@@ -122,6 +123,7 @@ function RootLayoutNav(): React.JSX.Element | null {
   return (
     <>
       <SplashController onInitializationComplete={handleAuthInitComplete} />
+      <NavigationGuard />
       <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />

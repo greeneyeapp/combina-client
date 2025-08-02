@@ -1,4 +1,4 @@
-// app/(auth)/complete-profile.tsx - iPad için ortalanmış ve orantılı tasarım
+// app/(auth)/complete-profile.tsx - Manuel navigation eklendi
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
@@ -94,7 +94,7 @@ export default function CompleteProfileScreen() {
 
         setLoading(true);
         try {
-            await updateUserInfo({
+            const updatedUser = await updateUserInfo({
                 name: formData.name.trim(),
                 gender: formData.gender,
             });
@@ -105,6 +105,10 @@ export default function CompleteProfileScreen() {
                 text2: t('authFlow.completeProfile.success'),
                 position: 'top'
             });
+
+            // DÜZELTME: Profile update sonrası immediate navigation
+            console.log('✅ Profile completed, navigating to home IMMEDIATELY...');
+            router.replace('/(tabs)/home');
 
         } catch (error) {
             showAlert({
@@ -184,6 +188,7 @@ export default function CompleteProfileScreen() {
     );
 }
 
+// Styles remain the same
 const styles = StyleSheet.create({
     gradient: { flex: 1 },
     container: { flex: 1 },

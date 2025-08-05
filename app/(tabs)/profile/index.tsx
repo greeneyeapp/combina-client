@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, Switch,
   Linking, ScrollView, ActivityIndicator, Dimensions, Modal,
-  Platform // <-- YENİ: Platform modülünü import et
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -10,9 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import {
   Moon, Sun, Globe, LogOut, ChevronRight, Trash2, Crown,
-  Star, // <-- YENİ: Star ikonunu import et
-  Zap, HelpCircle, RefreshCw, HardDrive,
-  FileText, Lock, AlertCircle
+  Star, Zap, HelpCircle, RefreshCw, HardDrive,
+  FileText, Lock
 } from 'lucide-react-native';
 import HeaderBar from '@/components/common/HeaderBar';
 import Avatar from '@/components/profile/Avatar';
@@ -25,9 +24,7 @@ import { useRevenueCat } from '@/context/RevenueCatContext';
 const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 
-// --- YENİ: Uygulamanızın Mağaza Bilgileri ---
 const ANDROID_PACKAGE_NAME = 'com.greeneyeapp.combina';
-// DİKKAT: Buradaki 'YOUR_APPLE_APP_ID' kısmını App Store Connect'teki sayısal ID'niz ile değiştirin.
 const APPLE_APP_ID = '6747253602'; 
 
 export default function ProfileScreen() {
@@ -55,14 +52,11 @@ export default function ProfileScreen() {
   const handlePrivacyPolicyPress = () => Linking.openURL('https://greeneyeapp.com/privacy.html');
   const handleTermsOfUsePress = () => Linking.openURL('https://greeneyeapp.com/terms-of-use.html');
   const handleHelpPress = () => Linking.openURL('https://greeneyeapp.com/contact.html');
-
-  // --- YENİ: Uygulamayı Değerlendirme Fonksiyonu ---
   const handleRateApp = async () => {
     const url = Platform.select({
       ios: `itms-apps://itunes.apple.com/app/id${APPLE_APP_ID}?action=write-review`,
       android: `market://details?id=${ANDROID_PACKAGE_NAME}`,
     });
-
     if (url) {
       try {
         const supported = await Linking.canOpenURL(url);
@@ -108,7 +102,7 @@ export default function ProfileScreen() {
             setIsGlobalLoading(true);
             const result = await deleteUserAccount();
             if (result.success) {
-              await logout();
+              await logout(); // Logout fonksiyonu tüm lokal verileri temizleyecek
             } else {
               showAlert({ title: t('common.error'), message: result.error || t('subscription.unexpectedError'), buttons: [{ text: t('common.ok') }]});
             }
@@ -132,25 +126,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const renderGuestUpgradeSection = () => {
-    if (!user?.isAnonymous) return null;
-    return (
-      <View style={styles.settingsSection}>
-        <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.guestAccount')}</Text>
-        <TouchableOpacity style={[styles.guestUpgradeCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]} onPress={handleLogout}>
-          <View style={[styles.accentBar, { backgroundColor: theme.colors.primary }]} />
-          <View style={styles.guestUpgradeContent}>
-            <View style={styles.guestUpgradeHeader}>
-              <AlertCircle color={theme.colors.primary} size={isTablet ? 28 : 24} />
-              <Text style={[styles.guestUpgradeTitle, { color: theme.colors.text }]}>{t('profile.upgradeGuestTitle')}</Text>
-            </View>
-            <Text style={[styles.guestUpgradeDesc, { color: theme.colors.textSecondary }]}>{t('profile.upgradeGuestDesc')}</Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-    );
-  };
-  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Modal transparent={true} animationType="fade" visible={isGlobalLoading}>
@@ -169,24 +144,20 @@ export default function ProfileScreen() {
               <Text style={[styles.profileEmail, { color: theme.colors.textLight }]} numberOfLines={1} ellipsizeMode="tail">{user?.isAnonymous ? t('profile.guestSubtitle') : (user?.email || '')}</Text>
             </View>
           </View>
-
-          {renderGuestUpgradeSection()}
-
-          {!user?.isAnonymous && (
-            <View style={styles.settingsSection}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.subscription')}</Text>
-              <TouchableOpacity style={[styles.subscriptionCard, { backgroundColor: theme.colors.card }]} onPress={handleSubscriptionPress}>
-                <View style={styles.subscriptionHeader}>
-                  <View style={styles.planInfo}>
-                    {isPlanLoading ? <ActivityIndicator size="small" /> : currentPlan === 'premium' ? <Crown color="#FFD700" size={isTablet ? 24 : 20} /> : <Zap color={theme.colors.textLight} size={isTablet ? 24 : 20} />}
-                    <Text style={[styles.planName, { color: currentPlan === 'premium' ? "#FFD700" : theme.colors.text }]}>{t(`profile.plans.${currentPlan}`)}</Text>
-                  </View>
-                  <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+          
+          <View style={styles.settingsSection}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.subscription')}</Text>
+            <TouchableOpacity style={[styles.subscriptionCard, { backgroundColor: theme.colors.card }]} onPress={handleSubscriptionPress}>
+              <View style={styles.subscriptionHeader}>
+                <View style={styles.planInfo}>
+                  {isPlanLoading ? <ActivityIndicator size="small" /> : currentPlan === 'premium' ? <Crown color="#FFD700" size={isTablet ? 24 : 20} /> : <Zap color={theme.colors.textLight} size={isTablet ? 24 : 20} />}
+                  <Text style={[styles.planName, { color: currentPlan === 'premium' ? "#FFD700" : theme.colors.text }]}>{t(`profile.plans.${currentPlan}`)}</Text>
                 </View>
-                {currentPlan === 'free' && (<Text style={[styles.upgradeText, { color: theme.colors.primary }]}>{t('profile.upgradeForMore')}</Text>)}
-              </TouchableOpacity>
-            </View>
-          )}
+                <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
+              </View>
+              {currentPlan === 'free' && (<Text style={[styles.upgradeText, { color: theme.colors.primary }]}>{t('profile.upgradeForMore')}</Text>)}
+            </TouchableOpacity>
+          </View>
 
           <View style={styles.settingsSection}>
             <Text style={[styles.sectionTitle, { color: theme.colors.textLight }]}>{t('profile.preferences')}</Text>
@@ -207,24 +178,22 @@ export default function ProfileScreen() {
               <TouchableOpacity style={styles.settingRow} onPress={handleTermsOfUsePress}><View style={styles.settingLabelContainer}><FileText color={theme.colors.text} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.termsOfUse')}</Text></View><ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} /></TouchableOpacity>
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <TouchableOpacity style={styles.settingRow} onPress={handleHelpPress}><View style={styles.settingLabelContainer}><HelpCircle color={theme.colors.text} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.help')}</Text></View><ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} /></TouchableOpacity>
-              
-              {/* --- YENİ BUTON --- */}
               <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-              <TouchableOpacity style={styles.settingRow} onPress={handleRateApp}>
-                <View style={styles.settingLabelContainer}><Star color={theme.colors.text} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.rateTheApp', 'Rate the App')}</Text></View>
-                <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />
-              </TouchableOpacity>
-
-              {!user?.isAnonymous && (
-                <>
-                  <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-                  <TouchableOpacity style={styles.settingRow} onPress={handleRestorePurchases} disabled={isRestoring}><View style={styles.settingLabelContainer}><RefreshCw color={theme.colors.text} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('subscription.restorePurchases')}</Text></View><View style={styles.settingAction}>{isRestoring ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />}</View></TouchableOpacity>
-                  <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-                  <TouchableOpacity style={styles.settingRow} onPress={handleDeleteAccount} disabled={isDeleting}><View style={styles.settingLabelContainer}><Trash2 color={theme.colors.error} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.error }]}>{t('profile.clearData')}</Text></View>{isDeleting ? <ActivityIndicator size="small" color={theme.colors.error} /> : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />}</TouchableOpacity>
-                  <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-                </>
-              )}
+              <TouchableOpacity style={styles.settingRow} onPress={handleRateApp}><View style={styles.settingLabelContainer}><Star color={theme.colors.text} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('profile.rateTheApp')}</Text></View><ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} /></TouchableOpacity>
               
+              {/* --- YENİ MANTIKSAL DEĞİŞİKLİK: Bu butonlar artık tüm kullanıcılar için görünür --- */}
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              <TouchableOpacity style={styles.settingRow} onPress={handleRestorePurchases} disabled={isRestoring}>
+                <View style={styles.settingLabelContainer}><RefreshCw color={theme.colors.text} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.text }]}>{t('subscription.restorePurchases')}</Text></View>
+                <View style={styles.settingAction}>{isRestoring ? <ActivityIndicator size="small" color={theme.colors.primary} /> : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />}</View>
+              </TouchableOpacity>
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              <TouchableOpacity style={styles.settingRow} onPress={handleDeleteAccount} disabled={isDeleting}>
+                <View style={styles.settingLabelContainer}><Trash2 color={theme.colors.error} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.error }]}>{t('profile.clearData')}</Text></View>
+                {isDeleting ? <ActivityIndicator size="small" color={theme.colors.error} /> : <ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} />}
+              </TouchableOpacity>
+              
+              <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
               <TouchableOpacity style={styles.settingRow} onPress={handleLogout}><View style={styles.settingLabelContainer}><LogOut color={theme.colors.text} size={isTablet ? 24 : 20} /><Text style={[styles.settingLabel, { color: theme.colors.text }]}>{user?.isAnonymous ? t('auth.loginSignUp') : t('profile.logout')}</Text></View><ChevronRight color={theme.colors.textLight} size={isTablet ? 20 : 16} /></TouchableOpacity>
             </View>
           </View>
@@ -244,12 +213,6 @@ const styles = StyleSheet.create({
   profileName: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 24 : 18, marginBottom: 8 },
   profileEmail: { fontFamily: 'Montserrat-Regular', fontSize: isTablet ? 16 : 14, flexShrink: 1 },
   guestBadge: { fontFamily: 'Montserrat-Medium', fontSize: isTablet ? 16 : 14 },
-  guestUpgradeCard: { borderRadius: 20, flexDirection: 'row', alignItems: 'center', overflow: 'hidden', borderWidth: 1 },
-  accentBar: { width: 8, height: '100%' },
-  guestUpgradeContent: { flex: 1, paddingVertical: isTablet ? 20 : 16, paddingHorizontal: isTablet ? 20 : 16 },
-  guestUpgradeHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
-  guestUpgradeTitle: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 19 : 17, flex: 1 },
-  guestUpgradeDesc: { fontFamily: 'Montserrat-Regular', fontSize: isTablet ? 16 : 14, lineHeight: isTablet ? 24 : 22, paddingLeft: isTablet ? 40 : 36 },
   settingsSection: { marginBottom: 32 },
   sectionTitle: { fontFamily: 'Montserrat-Bold', fontSize: isTablet ? 16 : 14, marginBottom: 12, paddingHorizontal: 8, textTransform: 'uppercase' },
   settingsCard: { borderRadius: 20 },

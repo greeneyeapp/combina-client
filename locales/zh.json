@@ -203,6 +203,7 @@
     "signInWithGoogle": "使用 Google 登录",
     "signInWithApple": "使用 Apple 登录",
     "continueAsGuest": "以访客身份继续",
+    "loginSignUp": "登录 / 注册",
     "guestAccountCreating": "正在创建访客账户...",
     "guestWelcome": "欢迎，访客！",
     "guestSubtitle": "您正在使用临时账户",

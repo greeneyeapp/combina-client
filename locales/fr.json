@@ -202,6 +202,7 @@
   "auth": {
     "signInWithGoogle": "Se connecter avec Google",
     "signInWithApple": "Se connecter avec Apple",
+    "loginSignUp": "Connexion / Inscription",
     "continueAsGuest": "Continuer en tant qu'invité",
     "guestAccountCreating": "Création du compte invité...",
     "guestWelcome": "Bienvenue, Invité !",

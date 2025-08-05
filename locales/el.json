@@ -201,6 +201,7 @@
   },
   "auth": {
     "signInWithGoogle": "Σύνδεση με Google",
+    "loginSignUp": "Σύνδεση / Εγγραφή",
     "signInWithApple": "Σύνδεση με Apple",
     "continueAsGuest": "Συνέχεια ως επισκέπτης",
     "guestAccountCreating": "Δημιουργία λογαριασμού επισκέπτη...",

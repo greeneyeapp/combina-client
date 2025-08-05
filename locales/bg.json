@@ -201,6 +201,7 @@
   },
   "auth": {
     "continueAsGuest": "Продължи като гост",
+    "loginSignUp": "Вход / Регистрация",
     "signInWithGoogle": "Влез с Google",
     "signInWithApple": "Влез с Apple",
     "guestAccountCreating": "Създаване на акаунт за гост...",

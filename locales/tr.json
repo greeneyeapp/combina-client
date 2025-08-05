@@ -201,6 +201,7 @@
   },
   "auth": {
     "continueAsGuest": "Misafir Olarak Devam Et",
+    "loginSignUp": "Giriş Yap / Kaydol",
     "signInWithGoogle": "Google ile Giriş Yap",
     "signInWithApple": "Apple ile Giriş Yap",
     "guestAccountCreating": "Misafir hesabı oluşturuluyor...",

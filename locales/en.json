@@ -201,6 +201,7 @@
   },
   "auth": {
     "continueAsGuest": "Continue as Guest",
+    "loginSignUp": "Login / Sign Up",
     "signInWithGoogle": "Sign in with Google",
     "signInWithApple": "Sign in with Apple",
     "guestAccountCreating": "Creating guest account...",

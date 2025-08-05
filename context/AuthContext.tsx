@@ -1,5 +1,3 @@
-// context/AuthContext.tsx - Navigation tamamen kaldırıldı
-
 import React from 'react';
 import { useApiAuthStore } from '@/store/apiAuthStore';
 import { useUserPlanStore } from '@/store/userPlanStore';
@@ -49,17 +47,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     loadJwt();
   }, [loadJwt]);
 
-  // SADECE AUTH INITIALIZATION - Navigation yok
   React.useEffect(() => {
     if (!isReady || isInitialized) return;
     const initializeAuth = async () => {
-      console.log('🔐 Initializing auth session...');
       try {
         if (jwt) {
           const profileData = await fetchUserProfile();
           const completeUserInfo = {
             uid: profileData.user_id,
-            email: (profileData as any).email || '',
+            email: profileData.email || '',
             name: profileData.fullname || '',
             fullname: profileData.fullname || '',
             displayName: profileData.fullname || '',
@@ -71,8 +67,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           };
           setUser(completeUserInfo);
           await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
-          console.log('✅ Token validated, user profile is fresh.');
-          
           if (completeUserInfo.uid && !completeUserInfo.isAnonymous) {
             await Purchases.logIn(completeUserInfo.uid).catch(e => console.warn('RC login failed during init:', e));
           }
@@ -82,7 +76,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await AsyncStorage.removeItem(USER_CACHE_KEY);
         }
       } catch (error) {
-        console.error('🚨 Token validation failed. Logging out...', error);
         await clearJwt();
         clearUserPlan();
         setUser(null);
@@ -91,7 +84,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } finally {
         setLoading(false);
         setIsInitialized(true);
-        console.log('✅ Auth initialization completed - NO NAVIGATION.');
       }
     };
     initializeAuth();
@@ -100,13 +92,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signInAnonymously = async (userData: any) => {
     try {
       const existingAnonymousId = userData.anonymous_id;
-      console.log(`🆔 Anonymous sign-in request:`, {
-        providedId: existingAnonymousId,
-        hasId: !!existingAnonymousId,
-        language: userData.language,
-        gender: userData.gender
-      });
-      
       const response = await axios.post(`${API_URL}/auth/anonymous`, {
         session_id: 'mobile_app',
         language: userData.language,
@@ -117,13 +102,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { access_token, user_info } = response.data;
       await setJwt(access_token);
       
-      if (user_info.user_id) {
-        if (user_info.user_id !== existingAnonymousId) {
-          await AsyncStorage.setItem(ANONYMOUS_USER_ID_KEY, user_info.user_id);
-          console.log(`📝 Stored new anonymous ID: ${user_info.user_id}`);
-        } else {
-          console.log(`🔄 Using existing anonymous ID: ${user_info.user_id}`);
-        }
+      if (user_info.user_id && user_info.user_id !== existingAnonymousId) {
+        await AsyncStorage.setItem(ANONYMOUS_USER_ID_KEY, user_info.user_id);
       }
       
       const completeUserInfo = {
@@ -133,7 +113,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         displayName: user_info.fullname || i18n.t('profile.guest'),
         email: '',
         gender: user_info.gender || 'unisex',
-        plan: user_info.plan || 'anonymous',
+        plan: user_info.plan || 'free',
         provider: 'anonymous',
         isAnonymous: true,
         profile_complete: user_info.profile_complete === true
@@ -141,13 +121,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(completeUserInfo));
       setUser(completeUserInfo);
-      
-      const wasResumed = existingAnonymousId && user_info.user_id === existingAnonymousId;
-      console.log(`✅ Anonymous session ${wasResumed ? 'resumed' : 'created'} - NO AUTO NAVIGATION.`);
-      
       return completeUserInfo;
     } catch (error) {
-      console.error('❌ ANONYMOUS SIGN-IN ERROR:', error);
       await clearJwt();
       setUser(null);
       throw error;
@@ -156,25 +131,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signInWithGoogle = async (accessToken: string) => {
     try {
-      console.log('🔄 AuthContext: Starting Google sign-in...');
-      
       let response;
       if (user?.isAnonymous) {
-        console.log('🔄 Converting anonymous user to Google authenticated user...');
         response = await axios.post(`${API_URL}/auth/convert-anonymous`, {
           oauth_token: accessToken, provider: 'google'
         }, { headers: { Authorization: `Bearer ${jwt}` }, timeout: 30000 });
         await AsyncStorage.removeItem(ANONYMOUS_USER_ID_KEY);
-        console.log('🧹 Cleared anonymous ID after account conversion.');
       } else {
-        console.log('🔄 Normal Google sign-in...');
         response = await axios.post(`${API_URL}/auth/google`, { 
           access_token: accessToken 
         }, { timeout: 30000 });
       }
       
       const { access_token, user_info } = response.data;
-      console.log('📬 Google API Response received');
       
       const completeUserInfo = {
         uid: user_info?.uid,
@@ -194,22 +163,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(completeUserInfo);
       
       if (user_info?.uid) {
-        await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Google RC login failed:', e));
+        await Purchases.logIn(user_info.uid).catch(e => console.warn('Google RC login failed:', e));
       }
       
-      console.log(`✅ AuthContext: Google sign-in completed - NO AUTO NAVIGATION. Profile complete: ${completeUserInfo.profile_complete}`);
       return completeUserInfo;
-      
     } catch (error) {
-      console.error('❌ AuthContext: Google sign-in error:', error);
       throw error;
     }
   };
 
   const signInWithApple = async (credential: any) => {
     try {
-      console.log('🔄 Starting Apple sign-in process in AuthContext...');
-      
       const givenName = credential.fullName?.givenName || '';
       const familyName = credential.fullName?.familyName || '';
       const nameFromApple = `${givenName} ${familyName}`.trim();
@@ -241,14 +205,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(completeUserInfo);
       
       if (user_info.uid) {
-        await Purchases.logIn(user_info.uid).catch(e => console.warn('⚠️ Apple RC login failed:', e));
+        await Purchases.logIn(user_info.uid).catch(e => console.warn('Apple RC login failed:', e));
       }
-      
-      console.log(`✅ Apple sign-in completed - NO AUTO NAVIGATION. Profile complete: ${completeUserInfo.profile_complete}`);
       
       return completeUserInfo;
     } catch (error) {
-      console.error('❌ APPLE SIGN-IN ERROR:', error);
       throw error;
     }
   };
@@ -257,12 +218,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const token = useApiAuthStore.getState().jwt;
       if (!token) throw new Error("No token found");
-      console.log('🚀 Updating user info via API for user:', user?.uid);
+      
       const response = await axios.post(
         `${API_URL}/api/users/update-info`, 
         { name: info.name, gender: info.gender }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      
       const { profile_complete } = response.data;
       const updatedUser = {
         ...user,
@@ -275,20 +237,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(updatedUser);
       await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(updatedUser));
       apiDeduplicator.clearCache('user_profile');
-      console.log('✅ User info updated successfully - NO AUTO NAVIGATION. New state:', updatedUser);
+      
       return updatedUser;
     } catch (error) {
-      console.error('Update user info error:', error);
       throw error;
     }
   };
 
   const logout = async () => {
     try {
-      console.log('🚪 Starting logout process...');
       const isAnon = user?.isAnonymous;
-      const currentAnonymousId = isAnon ? user?.uid : null;
-      
       setUser(null);
       await clearJwt();
       await AsyncStorage.removeItem(USER_CACHE_KEY);
@@ -296,17 +254,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLastProfileRefresh(0);
       clearUserPlan();
       
-      if (isAnon && currentAnonymousId) {
-        console.log(`🔄 Preserving anonymous ID for future login: ${currentAnonymousId}`);
-      } else {
+      if (!isAnon) {
         await AsyncStorage.removeItem(ANONYMOUS_USER_ID_KEY);
-        await Purchases.logOut().catch(e => console.log('⚠️ RC logout error (expected):', e));
-        console.log('🧹 Cleared all user data including anonymous ID');
+        await Purchases.logOut().catch(e => console.log('RC logout error (expected):', e));
       }
-      
-      console.log('✅ Logout process completed - NO AUTO NAVIGATION');
     } catch (error) {
-      console.error("🚨 Logout Error:", error);
+      console.error("Logout Error:", error);
     }
   };
 

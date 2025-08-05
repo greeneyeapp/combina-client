@@ -203,6 +203,7 @@
     "continueAsGuest": "المتابعة كضيف",
     "signInWithGoogle": "تسجيل الدخول باستخدام جوجل",
     "signInWithApple": "تسجيل الدخول باستخدام آبل",
+    "loginSignUp": "تسجيل الدخول / إنشاء حساب",
     "guestAccountCreating": "جاري إنشاء حساب ضيف...",
     "guestWelcome": "أهلاً بك، أيها الضيف!",
     "guestSubtitle": "أنت تستخدم حسابًا مؤقتًا",

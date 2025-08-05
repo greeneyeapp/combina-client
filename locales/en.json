@@ -670,6 +670,7 @@
   },
   "profile": {
     "guest": "Guest User",
+    "rateTheApp": "We value your feedback",
     "guestSubtitle": "Temporary account",
     "upgradeFromGuest": "Create Your Account",
     "upgradeGuestTitle": "Save Your Style Journey",

@@ -670,6 +670,7 @@
   },
   "profile": {
     "guest": "게스트 사용자",
+    "rateTheApp": "소중한 의견을 들려주세요",
     "guestSubtitle": "임시 계정",
     "upgradeFromGuest": "계정 만들기",
     "upgradeGuestTitle": "스타일 여정 저장하기",
